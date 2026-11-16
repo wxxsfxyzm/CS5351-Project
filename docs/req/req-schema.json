@@ -1,0 +1,293 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "InstallerX AI requirements registry",
+  "type": "object",
+  "required": [
+    "document",
+    "version",
+    "date",
+    "status",
+    "schema",
+    "notes",
+    "revision",
+    "prioritization",
+    "requirements",
+    "decision_rules"
+  ],
+  "properties": {
+    "document": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "date": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "status": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "schema": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "notes": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "prioritization": {
+      "type": "object",
+      "required": [
+        "method",
+        "tradeoff",
+        "could",
+        "wont"
+      ],
+      "properties": {
+        "method": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "tradeoff": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "could": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "wont": {
+          "type": "string",
+          "pattern": "\\S"
+        }
+      },
+      "additionalProperties": false
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/requirement"
+      },
+      "minItems": 1
+    },
+    "decision_rules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/decisionRule"
+      },
+      "minItems": 1
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "requirement": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "priority",
+        "title",
+        "statement",
+        "fit_criterion",
+        "source",
+        "enforcing_component",
+        "status",
+        "asr",
+        "depends_on",
+        "verification"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^REQ-IX-[A-Z]+-[0-9]{3}$"
+        },
+        "type": {
+          "enum": [
+            "architectural_constraint",
+            "availability",
+            "cost",
+            "data_constraint",
+            "functional",
+            "governance",
+            "input_constraint",
+            "invariant",
+            "non_functional",
+            "performance",
+            "quality",
+            "robustness",
+            "scenario",
+            "security",
+            "security_quality"
+          ]
+        },
+        "priority": {
+          "enum": [
+            "Could",
+            "Must",
+            "Should",
+            "Won't"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "statement": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "fit_criterion": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "source": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "enforcing_component": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "status": {
+          "enum": [
+            "conceptual",
+            "future",
+            "implemented"
+          ]
+        },
+        "asr": {
+          "type": "boolean"
+        },
+        "depends_on": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^REQ-IX-[A-Z]+-[0-9]{3}$"
+          },
+          "uniqueItems": true
+        },
+        "verification": {
+          "type": "object",
+          "required": [
+            "method",
+            "test",
+            "evidence"
+          ],
+          "properties": {
+            "method": {
+              "type": "string",
+              "pattern": "\\S"
+            },
+            "test": {
+              "type": "string",
+              "pattern": "\\S"
+            },
+            "evidence": {
+              "type": "string",
+              "pattern": "\\S"
+            }
+          },
+          "additionalProperties": false
+        },
+        "subtype": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "asr_rationale": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "note": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "source_links": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^https://"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false,
+      "if": {
+        "properties": {
+          "asr": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "asr_rationale"
+        ]
+      }
+    },
+    "decisionRule": {
+      "type": "object",
+      "required": [
+        "id",
+        "evidence",
+        "advice",
+        "policy",
+        "human",
+        "decision",
+        "disposition",
+        "reason_code"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^DR-[0-9]{2}$"
+        },
+        "evidence": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "advice": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "policy": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "human": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "decision": {
+          "enum": [
+            "ALLOW_AUTO",
+            "BLOCK",
+            "REQUIRE_REVIEW"
+          ]
+        },
+        "disposition": {
+          "enum": [
+            "AWAIT_HUMAN",
+            "BLOCKED",
+            "EXECUTE_ONCE",
+            "INVALIDATED",
+            "RECOLLECT"
+          ]
+        },
+        "reason_code": {
+          "type": "string",
+          "pattern": "\\S"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

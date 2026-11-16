@@ -1,0 +1,786 @@
+document: InstallerX AI Component Requirements
+version: 0.2.1
+revision: 4
+date: '2026-11-16'
+status: draft_for_group_review
+schema: req-schema.json
+notes: All requirements are conceptual (not implemented). verification.test/evidence marked 'planned' are commitments, not results. Candidate component names follow V0.2 and
+  may be renamed in ADD.
+prioritization:
+  method: MoSCoW
+  tradeoff: 时间不足时优先缩减 Should 的展示项，保留 INV-001 至 INV-007 与 REL-002 至 REL-004。调整 Must 需重新评审范围与验收。
+  could: 更丰富的风险解释、更多审计导出格式和安装模式。
+  wont: 本版不含批量或分包安装、模块安装、多 Agent、恶意软件检测平台和云管理端。
+decision_rules:
+- id: DR-01
+  evidence: 任意
+  advice: 任意
+  policy: HARD_BLOCK
+  human: 任意
+  decision: BLOCK
+  disposition: BLOCKED
+  reason_code: HARD_BLOCK
+- id: DR-10
+  evidence: 任意
+  advice: 任意
+  policy: 非 HARD_BLOCK
+  human: 批准后复验失败
+  decision: REQUIRE_REVIEW
+  disposition: INVALIDATED
+  reason_code: APPROVAL_INVALIDATED
+- id: DR-03
+  evidence: UNREADABLE 或 KEY_UNKNOWN
+  advice: 任意
+  policy: 非 HARD_BLOCK
+  human: 任意
+  decision: REQUIRE_REVIEW
+  disposition: RECOLLECT
+  reason_code: EVIDENCE_INCOMPLETE
+- id: DR-02
+  evidence: 任意
+  advice: UNAVAILABLE（CONSENT_DECLINED）
+  policy: 非 HARD_BLOCK
+  human: 未取得
+  decision: REQUIRE_REVIEW
+  disposition: AWAIT_HUMAN
+  reason_code: CONSENT_DECLINED
+- id: DR-04
+  evidence: CONTRADICTORY
+  advice: 任意
+  policy: 非 HARD_BLOCK
+  human: 未取得
+  decision: REQUIRE_REVIEW
+  disposition: AWAIT_HUMAN
+  reason_code: EVIDENCE_CONTRADICTORY
+- id: DR-05
+  evidence: COMPLETE
+  advice: VALID_LOW
+  policy: AUTO_RULES_MET
+  human: 未取得
+  decision: ALLOW_AUTO
+  disposition: EXECUTE_ONCE
+  reason_code: AUTO_APPROVED
+- id: DR-06
+  evidence: COMPLETE
+  advice: VALID_LOW
+  policy: AUTO_RULES_NOT_MET
+  human: 未取得
+  decision: REQUIRE_REVIEW
+  disposition: AWAIT_HUMAN
+  reason_code: AUTO_RULES_NOT_MET
+- id: DR-07
+  evidence: COMPLETE
+  advice: VALID_MEDIUM / VALID_HIGH / VALID_UNKNOWN
+  policy: 非 HARD_BLOCK
+  human: 未取得
+  decision: REQUIRE_REVIEW
+  disposition: AWAIT_HUMAN
+  reason_code: RISK_NOT_LOW
+- id: DR-08
+  evidence: COMPLETE
+  advice: INVALID / UNAVAILABLE
+  policy: 非 HARD_BLOCK
+  human: 未取得
+  decision: REQUIRE_REVIEW
+  disposition: AWAIT_HUMAN
+  reason_code: ADVICE_UNUSABLE
+- id: DR-09
+  evidence: 任意
+  advice: 任意
+  policy: 非 HARD_BLOCK
+  human: 有效批准且复验通过
+  decision: REQUIRE_REVIEW
+  disposition: EXECUTE_ONCE
+  reason_code: APPROVED_AFTER_REVIEW
+requirements:
+- id: REQ-IX-FR-001
+  type: functional
+  priority: Must
+  title: 接收审批请求
+  statement: 在 AI 审批启用且路径受支持时（InstallerActivity 发起、InstallMode.AutoDialog），系统应为每个单 APK 请求生成唯一安装操作 ID（operation ID），每次模型分析生成尝试 ID（attempt ID），并在任何安装后端调用前启动审批。
+  fit_criterion: 提交一个受支持 APK，产生可查询的 operation ID；审批未完成时安装后端调用次数为 0；同一 operation 的用户重试保持 operation ID 不变、只新增 attempt ID。
+  source: V0.2 §5.1
+  depends_on: []
+  status: conceptual
+  asr: false
+  enforcing_component: ApprovalCoordinator
+  verification:
+    method: integration + negative
+    test: 'planned: ApprovalRequestTest'
+    evidence: planned
+  source_links:
+  - https://github.com/wxxsfxyzm/InstallerX-Revived/blob/main/app/src/main/java/com/rosan/installer/ui/page/main/installer/InstallerViewModel.kt
+- id: REQ-IX-FR-002
+  type: functional
+  priority: Must
+  title: 收集安装证据
+  statement: 系统应收集 APK SHA-256、包名、版本、声明权限、签名检查结果、已安装应用签名比较结果、来源信息、目标用户、安装模式及影响安装的配置快照；无法确定的字段标记为 UNKNOWN，不得推测。
+  fit_criterion: 已知 APK 的提取结果与固定样例一致；无法确定的来源显示 UNKNOWN 且不生成来源事实；证据包含目标用户与安装模式。
+  source: V0.2 §4.2
+  depends_on:
+  - REQ-IX-FR-001
+  status: conceptual
+  asr: false
+  enforcing_component: InstallEvidenceCollector
+  verification:
+    method: unit + fixture
+    test: 'planned: EvidenceCollectorTest'
+    evidence: planned
+  note: 来源信息缺失记 UNKNOWN，不单独判为 KEY_UNKNOWN；KEY_UNKNOWN 仅指 INV-003 绑定字段缺失或不可验证。
+- id: REQ-IX-FR-003
+  type: functional
+  priority: Must
+  title: 真实模型分析
+  statement: 系统应在取得外发同意且联网开关允许时，将白名单字段发送给一个真实模型服务，取得包含模型标识、Prompt 版本、风险级别、理由和证据引用的结构化建议；每次尝试（attempt）只调用一次模型，不自动重试。
+  fit_criterion: 一次在线集成返回模型标识、Prompt 版本、调用状态和符合契约的建议；离线测试使用固定响应；未同意或断网时调用次数为 0；超时后不产生第二次自动调用。
+  source: V0.2 §5.1
+  depends_on:
+  - REQ-IX-FR-002
+  - REQ-IX-FR-011
+  - REQ-IX-SEC-004
+  status: conceptual
+  asr: false
+  enforcing_component: AIRiskAdvisor
+  verification:
+    method: integration (online) + offline fixed response
+    test: 'planned: AdvisorIntegrationTest'
+    evidence: planned
+- id: REQ-IX-FR-004
+  type: functional
+  priority: Must
+  title: 验证模型输出
+  statement: 系统应校验模型响应的结构、必填字段、枚举、长度和证据引用，拒绝执行指令、未知操作字段、伪造证据引用和越界内容，并将响应标记为 INVALID。
+  fit_criterion: 无效 JSON、缺字段、非法风险级别、超长、伪造引用和执行指令样例均判为 INVALID，且不产生自动批准。
+  source: V0.2 §4.2
+  depends_on:
+  - REQ-IX-FR-003
+  status: conceptual
+  asr: false
+  enforcing_component: AIOutputValidator
+  verification:
+    method: unit negative
+    test: 'planned: OutputValidationTest'
+    evidence: planned
+- id: REQ-IX-FR-005
+  type: functional
+  priority: Must
+  title: 计算审批结果
+  statement: 系统应仅依据生效策略版本和已验证建议，将请求判定为 ALLOW_AUTO、REQUIRE_REVIEW 或 BLOCK，并返回规则 ID 与理由；硬性禁止优先于任何建议或人工确认。
+  fit_criterion: 决策表每个分支均有用例；相同证据、建议和策略版本产生相同决定；硬性禁止始终 BLOCK 且后端调用为 0。
+  source: V0.2 §4.2
+  depends_on:
+  - REQ-IX-FR-004
+  - REQ-IX-SEC-002
+  status: conceptual
+  asr: false
+  enforcing_component: DeterministicPolicyEngine
+  verification:
+    method: decision-table + property
+    test: 'planned: PolicyDecisionTableTest'
+    evidence: planned
+- id: REQ-IX-FR-006
+  type: functional
+  priority: Must
+  title: 人工审核
+  statement: 系统应展示包名、版本、签名检查、重要权限（运行时危险权限、无障碍、设备管理及安装未知应用相关权限）、AI 建议、策略理由及两者分歧，允许用户批准或取消 REQUIRE_REVIEW 请求；RECOLLECT 状态下不得提供可提交的确认操作。
+  fit_criterion: 批准前后端调用为 0；取消后为 0；BLOCK 页面无继续安装操作；RECOLLECT 页面确认按钮禁用且后端 0；分歧显示为一致/升级/降级三态之一。
+  source: V0.2 §5.1
+  depends_on:
+  - REQ-IX-FR-005
+  status: conceptual
+  asr: false
+  enforcing_component: HumanReviewHandler
+  verification:
+    method: UI + negative
+    test: 'planned: ReviewUiTest'
+    evidence: planned
+- id: REQ-IX-FR-007
+  type: functional
+  priority: Must
+  title: 受控安装
+  statement: 系统应仅在 ALLOW_AUTO 或有效人工批准后，经唯一授权入口调用既有安装后端；提交前必须重新核对全部审批绑定字段，任一缺失或变化即禁止提交。
+  fit_criterion: 两类有效批准均可进入测试后端；BLOCK、待审核、失效、取消请求均不能进入；复验失败或缺任一绑定字段时后端调用为 0。
+  source: V0.2 §4.2
+  depends_on:
+  - REQ-IX-FR-005
+  - REQ-IX-SEC-003
+  status: conceptual
+  asr: false
+  enforcing_component: InstallationGateway
+  verification:
+    method: integration + negative
+    test: 'planned: ControlledInstallTest'
+    evidence: planned
+- id: REQ-IX-FR-008
+  type: functional
+  priority: Must
+  title: 反馈和取消
+  statement: 系统应展示审批与安装进度，允许在提交前取消；已提交后应显示平台实际状态（含 RESULT_UNKNOWN），不得把未知结果显示为未安装或可撤销。
+  fit_criterion: 模型等待/人工审核阶段取消后无提交；提交后取消不把未知结果标为未安装；状态与平台核对一致。
+  source: V0.2 §6 阶段五
+  depends_on:
+  - REQ-IX-FR-001
+  status: conceptual
+  asr: false
+  enforcing_component: InstallerSession UI
+  verification:
+    method: UI + negative
+    test: 'planned: ProgressCancelTest'
+    evidence: planned
+- id: REQ-IX-FR-009
+  type: functional
+  priority: Must
+  title: 决策审计
+  statement: 系统应按 operation ID 与 attempt ID 保存证据摘要、APK 哈希、安装模式与后端、配置与策略版本、模型与 Prompt 版本、建议或失败类型、规则 ID、最终决定、人工操作、时间戳和安装结果；不得保存凭据。
+  fit_criterion: 正常、BLOCK、人工批准、模型失败四类记录均可还原决策依据；审计中无 token/凭据；记录 append-only。
+  source: V0.2 §3.3
+  depends_on:
+  - REQ-IX-FR-005
+  - REQ-IX-REL-002
+  status: conceptual
+  asr: false
+  enforcing_component: DecisionAuditRecorder
+  verification:
+    method: audit replay
+    test: 'planned: AuditRecordTest'
+    evidence: planned
+- id: REQ-IX-FR-010
+  type: functional
+  priority: Should
+  title: 查询审计
+  statement: 用户应能在应用内按请求查看审批记录、最终规则、人工操作和安装结果，并导出为机器可读格式。
+  fit_criterion: 两个不同请求的记录互不混用；导出包含 FR-009 全部字段；无权限用户不可读。
+  source: V0.2 §3.3
+  depends_on:
+  - REQ-IX-FR-009
+  status: conceptual
+  asr: false
+  enforcing_component: AuditQuery UI
+  verification:
+    method: UI + export
+    test: 'planned: AuditQueryTest'
+    evidence: planned
+- id: REQ-IX-FR-011
+  type: functional
+  priority: Must
+  title: 外发数据同意
+  statement: 首次向外部模型发送数据前，系统应展示接收方、字段清单、用途与保留方式并取得明确同意；拒绝或撤回后不得发起模型调用，不得自动批准，转入 REQUIRE_REVIEW（硬性禁止仍 BLOCK）；该路径不等于关闭 AI。
+  fit_criterion: 首次使用出现同意页；同意后请求仅含白名单字段；拒绝/撤回后模型调用为 0、决定为 REQUIRE_REVIEW；与 FR-012（AI 关闭=基线）分别有验收用例；同意与撤回写入审计。
+  source: V0.2 §9 + 隐私风险
+  depends_on: []
+  status: conceptual
+  asr: false
+  enforcing_component: ConsentGate
+  verification:
+    method: UI + counter
+    test: 'planned: ConsentGateTest'
+    evidence: planned
+- id: REQ-IX-FR-012
+  type: functional
+  priority: Must
+  title: AI 开关语义
+  statement: AI 审批开关关闭时，系统应保持既有安装行为，不发起模型调用，并在审计中记录 AI_DISABLED；开关不得削弱既有签名、黑名单、权限与策略检查。
+  fit_criterion: 关闭后模型调用为 0、既有检查仍执行、审计含 AI_DISABLED；该路径与 FR-011 的拒绝同意路径分别测试；任何开关组合下既有检查通过率与基线一致。
+  source: OI-07（本版决议）
+  depends_on:
+  - REQ-IX-FR-011
+  status: conceptual
+  asr: false
+  enforcing_component: Settings + ConsentGate
+  verification:
+    method: config matrix + negative
+    test: 'planned: ToggleSemanticsTest'
+    evidence: planned
+- id: REQ-IX-INV-001
+  type: invariant
+  priority: Must
+  title: AI 无直接特权执行能力
+  statement: AI 组件仅返回建议数据，不得持有或调用安装、卸载、Root、Shizuku 或任何安装后端能力。
+  fit_criterion: 静态检查：AI 适配器包不引用 InstallationGateway / AppInstallerRepository；动态：返回 install/approve 指令的模型桩触发后端 0 次。
+  source: V0.2 INV-001
+  depends_on: []
+  status: conceptual
+  asr: false
+  enforcing_component: ApprovalCoordinator
+  verification:
+    method: static + dynamic negative
+    test: 'planned: AdvisorIsolationTest'
+    evidence: planned
+- id: REQ-IX-INV-002
+  type: invariant
+  priority: Must
+  title: 建议不覆盖确定性禁止
+  statement: AI 建议与人工确认均不得覆盖生效中的硬性禁止规则；签名异常、黑名单、禁止降级、test-only 等规则由确定性代码执行。
+  fit_criterion: AI 返回 LOW 且用户确认时，被禁止 APK 仍为 BLOCK；后端调用 0；禁用 AI 后同一规则仍 BLOCK。
+  source: V0.2 INV-002
+  depends_on: []
+  status: conceptual
+  asr: false
+  enforcing_component: DeterministicPolicyEngine
+  verification:
+    method: negative
+    test: 'planned: HardBlockPrecedenceTest'
+    evidence: planned
+- id: REQ-IX-INV-003
+  type: invariant
+  priority: Must
+  title: 批准绑定安装对象
+  statement: 批准应绑定 operation ID、attempt ID、APK SHA-256、包名、目标用户、安装模式、安装后端、配置快照和策略版本；任一绑定项缺失或变化即失效，提交前必须复验。
+  fit_criterion: 逐项修改绑定字段，旧批准均被拒绝；证据读取与提交之间的替换尝试不能安装未批准字节；复验通过率 100%。
+  source: V0.2 INV-003
+  depends_on:
+  - REQ-IX-FR-002
+  status: conceptual
+  asr: true
+  asr_rationale: 决定审批状态模型、执行边界与提交前复验，是安全链的核心结构约束。
+  enforcing_component: ApprovalStateStore
+  verification:
+    method: negative + TOCTOU
+    test: 'planned: ApprovalBindingTest'
+    evidence: planned
+- id: REQ-IX-INV-004
+  type: invariant
+  priority: Must
+  title: 模型故障不静默批准
+  statement: 模型超时、断网、限流、服务错误、无效输出或不可用时，系统不得自动批准；有硬性禁止时保持 BLOCK，否则进入 REQUIRE_REVIEW。用户拒绝外发同意不属于模型故障，按 FR-011 处理（零调用、REQUIRE_REVIEW）。
+  fit_criterion: 每类故障注入后自动执行 0 次；硬性禁止仍 BLOCK；界面给出故障原因与人工入口。
+  source: V0.2 INV-004
+  depends_on: []
+  status: conceptual
+  asr: true
+  asr_rationale: 塑造失败处理结构与降级路径，影响协调器、UI 和审计三处。
+  enforcing_component: ApprovalCoordinator
+  verification:
+    method: fault injection
+    test: 'planned: FailureFallbackTest'
+    evidence: planned
+- id: REQ-IX-INV-005
+  type: invariant
+  priority: Must
+  title: 重复事件最多一次提交
+  statement: 同一安装操作 ID 在重复事件、并发回调、进程恢复和用户重试下，最多产生一次自动提交；模型调用重试（attempt）不改变该约束。
+  fit_criterion: 同一 operation ID 并发 20 次执行事件，后端提交 ≤1；恢复重放不增加提交；用户重试只新增 attempt ID，不新增提交权。
+  source: V0.2 INV-005
+  depends_on:
+  - REQ-IX-REL-002
+  status: conceptual
+  asr: false
+  enforcing_component: ApprovalStateStore
+  verification:
+    method: concurrency + recovery
+    test: 'planned: IdempotencyTest'
+    evidence: planned
+- id: REQ-IX-INV-006
+  type: invariant
+  priority: Must
+  title: 策略判定独立于模型
+  statement: 策略判定必须独立于模型可用性：无模型时仍能确定性给出 BLOCK 或 REQUIRE_REVIEW；策略代码不得依赖模型 SDK 或网络。
+  fit_criterion: 断开模型/注入空适配器后策略单测全通过；策略包静态检查无模型/网络依赖；相同输入输出稳定。
+  source: 课程 deterministic cage + FR-005
+  depends_on: []
+  status: conceptual
+  asr: true
+  asr_rationale: 强制模型与策略分离，决定模块边界和可测试性，是 AI 笼子的结构基础。
+  enforcing_component: DeterministicPolicyEngine
+  verification:
+    method: static + unit
+    test: 'planned: PolicyWithoutModelTest'
+    evidence: planned
+- id: REQ-IX-INV-007
+  type: invariant
+  priority: Must
+  title: AI 不降低确定性限制
+  statement: AI 建议不得降低确定性策略给出的限制：基础策略为 REQUIRE_REVIEW 或 BLOCK 时，AI 只能维持或提高限制；仅当基础策略为 ALLOW_AUTO 且 AUTO_RULES_MET 时，才允许自动批准。
+  fit_criterion: 基础策略 REVIEW + AI LOW + rules met → 仍为 REQUIRE_REVIEW；基础 ALLOW_AUTO + AI LOW + rules met → ALLOW_AUTO；基础 BLOCK + AI LOW + 人工批准 → 仍为 BLOCK；均无越级自动提交。
+  source: 旧 docs registry INV-005；V0.1 正文 INV-005；OI-04
+  depends_on:
+  - REQ-IX-FR-005
+  status: conceptual
+  asr: true
+  asr_rationale: 决定 AI 与策略的优先级关系，自动批准只能在基础策略允许时成立，是安全链的结构约束。
+  enforcing_component: DeterministicPolicyEngine
+  verification:
+    method: decision-table negative
+    test: 'planned: NoDowngradeTest'
+    evidence: planned
+  note: 新 INV-005 为幂等；旧 INV-005 的“不得降低审核级别”语义迁至本条。
+- id: REQ-IX-SEC-001
+  type: security
+  priority: Must
+  title: 隔离模型权限
+  statement: 模型适配器应运行在最小权限边界内，仅能读取白名单证据字段并返回结构化建议，不得访问安装会话、特权服务或文件系统原始 APK。
+  fit_criterion: 权限/依赖静态检查通过；适配器无法读取 APK 原始字节（接口级断言）；攻击指令样例后端调用 0。
+  source: V0.2 INV-001
+  depends_on: []
+  status: conceptual
+  asr: false
+  enforcing_component: AIRiskAdvisor
+  verification:
+    method: static + negative
+    test: 'planned: AdapterPermissionTest'
+    evidence: planned
+- id: REQ-IX-SEC-002
+  type: security
+  priority: Must
+  title: 保留硬性禁止规则
+  statement: 既有硬性禁止规则应由确定性代码在 AI 前后各执行一次，AI 建议和人工确认不得改变其结果。
+  fit_criterion: AI LOW + 人工确认下被禁止 APK 仍 BLOCK；AI 前后规则结果一致；后端 0。
+  source: V0.2 INV-002
+  depends_on: []
+  status: conceptual
+  asr: false
+  enforcing_component: DeterministicPolicyEngine
+  verification:
+    method: negative
+    test: 'planned: HardRuleRegressionTest'
+    evidence: planned
+- id: REQ-IX-SEC-003
+  type: security
+  priority: Must
+  title: 审批记录防篡改与失效
+  statement: 审批记录应防篡改；绑定字段与 INV-003 一致，任一字段缺失或对象变化时立即失效，不得生成有效批准。
+  fit_criterion: 修改存储中的绑定位后复验失败；旧批准无法用于新对象；审计可检测记录篡改（DATA-001）。
+  source: V0.2 INV-003
+  depends_on:
+  - REQ-IX-FR-002
+  status: conceptual
+  asr: false
+  enforcing_component: ApprovalStateStore
+  verification:
+    method: tamper + negative
+    test: 'planned: ApprovalTamperTest'
+    evidence: planned
+- id: REQ-IX-SEC-004
+  type: security
+  priority: Must
+  title: 控制外发数据
+  statement: 外发数据应遵守同意与联网开关，仅发送白名单元数据；不得发送 APK 二进制、设备标识、账号、token 或日志中的凭据。
+  fit_criterion: 拒绝/断网时外发 0；请求体字段与白名单完全一致；日志扫描无 token/设备标识；抓包无 APK 字节。
+  source: V0.2 §9 + 隐私风险
+  depends_on:
+  - REQ-IX-FR-002
+  - REQ-IX-FR-011
+  status: conceptual
+  asr: false
+  enforcing_component: NetworkGate
+  verification:
+    method: capture + log scan
+    test: 'planned: OutboundWhitelistTest'
+    evidence: planned
+  source_links:
+  - https://github.com/wxxsfxyzm/InstallerX-Revived/blob/main/app/src/main/java/com/rosan/installer/data/session/resolver/OkHttpNetworkResolver.kt
+- id: REQ-IX-SEC-005
+  type: security
+  priority: Must
+  title: 处理不可信文本
+  statement: APK 标签、来源字符串和其他包内文本在进入模型前应作为不可信数据处理：剥离 C0/C1 控制字符、NFKC 归一化、JSON 转义、单字段 ≤4KB、总输入 ≤32KB，并中和指令样式文本。
+  fit_criterion: ≥20 条注入样本（Latin/CJK/Unicode/JSON/超长）自动批准 0 次；净化后模型输入不含原恶意串；超长被截断并记录；系统无崩溃。
+  source: V0.2 §3.1 Prompt Injection
+  depends_on:
+  - REQ-IX-FR-002
+  status: conceptual
+  asr: true
+  asr_rationale: 在外部模型前引入净化管线，决定证据流与接口契约，是注入防线的结构点。
+  enforcing_component: EvidenceSanitizer
+  verification:
+    method: adversarial corpus
+    test: 'planned: SanitizerInjectionTest'
+    evidence: planned
+- id: REQ-IX-REL-001
+  type: robustness
+  priority: Must
+  title: 失败安全降级
+  statement: 模型超时、断网、限流、服务错误及无效输出应降级为 REQUIRE_REVIEW；硬性禁止保持 BLOCK；不得静默自动批准。
+  fit_criterion: 五类故障注入自动执行 0；界面显示故障与下一步；硬性禁止仍 BLOCK。
+  source: V0.2 INV-004
+  depends_on:
+  - REQ-IX-INV-004
+  status: conceptual
+  asr: false
+  enforcing_component: ApprovalCoordinator
+  verification:
+    method: fault injection
+    test: 'planned: FailureModeTest'
+    evidence: planned
+- id: REQ-IX-REL-002
+  type: robustness
+  priority: Must
+  title: 持久化审批状态
+  statement: 系统应在关键状态转换（收到请求、证据完成、建议完成、决定、批准、提交前）持久化请求、绑定信息与决定；无法可靠写入时停止自动提交。
+  fit_criterion: 写入故障注入后无自动安装；重启后读到最后一个成功状态与请求 ID；事务边界测试通过。
+  source: V0.2 §5.1
+  depends_on:
+  - REQ-IX-FR-001
+  status: conceptual
+  asr: true
+  asr_rationale: 引入持久状态存储与事务边界，决定恢复协议和 Room 数据模型。
+  enforcing_component: ApprovalStateStore
+  verification:
+    method: restart + write-fault
+    test: 'planned: StatePersistenceTest'
+    evidence: planned
+  source_links:
+  - https://github.com/wxxsfxyzm/InstallerX-Revived/blob/main/app/src/main/java/com/rosan/installer/data/session/repository/InstallerSessionRepositoryImpl.kt
+- id: REQ-IX-REL-003
+  type: robustness
+  priority: Must
+  title: 处理中断恢复
+  statement: 进程重启后，未提交请求应重新验证并重新审批；已提交但结果未知的请求应核对平台状态；无法核实时标记 RESULT_UNKNOWN 并禁止自动重放。
+  fit_criterion: 在模型等待、待审核、批准未提交、提交后终止四类场景恢复：不复用过期批准、不重复提交、未知可识别。
+  source: V0.2 §3.2
+  depends_on:
+  - REQ-IX-REL-002
+  - REQ-IX-SEC-003
+  status: conceptual
+  asr: true
+  asr_rationale: 新增崩溃恢复协议、幂等键与状态对账，影响存储、网关和 UI。
+  enforcing_component: ApprovalStateStore
+  verification:
+    method: crash recovery
+    test: 'planned: RecoveryTest'
+    evidence: planned
+- id: REQ-IX-REL-004
+  type: robustness
+  priority: Must
+  title: 防止重复提交
+  statement: 系统应对同一安装操作 ID 的重复事件、连续点击、并发回调和恢复重放执行去重，保证最多一次自动提交；用户主动重试只新增 attempt ID，不新增提交权，且总调用受 COST-001 约束。
+  fit_criterion: 同一 operation ID 并发 20 次提交 ≤1；用户重试产生新 attempt ID、同 operation ID；第 3 次调用被阻止；去重窗口内无重复执行。
+  source: V0.2 §6 阶段六
+  depends_on:
+  - REQ-IX-REL-002
+  status: conceptual
+  asr: false
+  enforcing_component: ApprovalStateStore
+  verification:
+    method: concurrency
+    test: 'planned: DedupTest'
+    evidence: planned
+- id: REQ-IX-PER-001
+  type: performance
+  priority: Should
+  title: 限制等待时间
+  statement: AI 审批的单次尝试预算为 15 秒：从请求进入 AWAITING_AI（证据完成且已同意）起，到决定写入持久状态止；单次模型调用超时 7 秒，不做自动重试；用户主动发起的第二次尝试单独计时。预算不含人工审核、排队与用户操作时间。
+  fit_criterion: 超时桩下 7 秒调用超时后 1 秒内出现 REQUIRE_REVIEW、15 秒内决定落库；调用计数为 1（无自动重试）；第二次用户触发单独计时；等待期间取消与页面交互可响应；无 ANR/主线程阻塞。
+  source: V0.2 §6 Cost/Performance
+  depends_on:
+  - REQ-IX-REL-001
+  status: conceptual
+  asr: false
+  enforcing_component: AIRiskAdvisor
+  verification:
+    method: timeout stub
+    test: 'planned: LatencyBudgetTest'
+    evidence: planned
+- id: REQ-IX-COST-001
+  type: cost
+  priority: Should
+  title: 控制模型调用
+  statement: 同一安装操作最多 2 次模型调用：第 1 次由系统自动发起，第 2 次仅由用户主动触发；不做自动重试。单次调用输入+输出 ≤2000 tokens（至少 95% 调用），硬上限 4000；超限或超次数按失败处理并转 REQUIRE_REVIEW。
+  fit_criterion: 成功请求调用数 1；超时不自动重试；用户可触发第 2 次；第 3 次被阻止并提示人工；token 统计与阈值报告齐全；超限转人工。
+  source: V0.2 §6 Cost/Performance
+  depends_on:
+  - REQ-IX-FR-003
+  status: conceptual
+  asr: false
+  enforcing_component: AIRiskAdvisor
+  verification:
+    method: counter
+    test: 'planned: CallBudgetTest'
+    evidence: planned
+- id: REQ-IX-MOD-001
+  type: quality
+  subtype: modifiability
+  priority: Should
+  title: 替换模型实现
+  statement: 模型供应商与调用配置应通过统一适配接口封装；策略与 UI 不得依赖供应商响应细节。
+  fit_criterion: 固定响应适配器替换在线模型后，策略与审批测试无需修改业务规则即可通过；适配器契约测试通过。
+  source: V0.2 §6 Modifiability
+  depends_on:
+  - REQ-IX-FR-003
+  - REQ-IX-FR-004
+  status: conceptual
+  asr: true
+  asr_rationale: 定义外部依赖边界与测试替身，影响模块接口和依赖注入。
+  enforcing_component: AIRiskAdvisor
+  verification:
+    method: adapter swap
+    test: 'planned: AdapterContractTest'
+    evidence: planned
+- id: REQ-IX-COMP-001
+  type: quality
+  subtype: compatibility
+  priority: Must
+  title: 保留既有约束
+  statement: AI 扩展应复用既有 APK 分析与安装能力，保持基线中既有策略、权限检查、通知、历史及两套 UI 的受影响行为可回归。
+  fit_criterion: 记录基线提交或归档哈希；列出的回归场景（安装/更新/降级/签名不符/黑名单）全部通过；未支持路径不显示“受 AI 审批保护”。
+  source: V0.2 §2.1；§3.4
+  depends_on: []
+  status: conceptual
+  asr: false
+  enforcing_component: Baseline regression suite
+  verification:
+    method: baseline regression
+    test: 'planned: BaselineRegressionTest'
+    evidence: planned
+- id: REQ-IX-AIQ-001
+  type: quality
+  subtype: ai_quality
+  priority: Should
+  title: 评估建议质量
+  statement: 小组应建立人工标注的正常、异常、缺失证据和恶意文本用例集，人工评估理由是否真实、相关且不过度推断，并与结构有效性分开报告；例：APK 声明 READ_CONTACTS 可支持“申请读取联系人权限”，不能支持“已上传联系人”。
+  fit_criterion: ≥20 例、每例 3 次；结构有效率 ≥95%（自动）；人工有据率 ≥90%、相关性 ≥90%；报告含原始输出/分母/评分人；结果不得用于自动授权。
+  source: V0.2 §9 AI 输出质量
+  depends_on:
+  - REQ-IX-FR-004
+  status: conceptual
+  asr: false
+  enforcing_component: Evaluation harness
+  verification:
+    method: labeled evaluation
+    test: 'planned: AIQualityEvaluation'
+    evidence: planned
+- id: REQ-IX-QUAL-001
+  type: quality
+  subtype: explainability
+  priority: Should
+  title: 建议可解释
+  statement: 每条被接受的 AI 理由必须引用至少一个存在的证据字段；自动检查只验证引用存在性与字段名合法性，不判断语义真实性；无引用或伪造引用判为 INVALID。
+  fit_criterion: 标注集上 100% 被接受理由引用存在字段；0 条伪造引用；自动测试不依赖人工语义判断；语义支持由 AIQ-001 单独评估。
+  source: V0.2 §9 AI 输出质量
+  depends_on:
+  - REQ-IX-FR-004
+  status: conceptual
+  asr: false
+  enforcing_component: AIOutputValidator
+  verification:
+    method: fixture + negative
+    test: 'planned: ExplanationGroundingTest'
+    evidence: planned
+- id: REQ-IX-VER-001
+  type: governance
+  subtype: verification_process
+  priority: Must
+  title: 离线与在线验证
+  statement: 每条 Must 需求应关联测试或可执行检查；每条 invariant 至少一项负向测试；应分别保留固定响应测试与真实模型集成证据。
+  fit_criterion: 需求→验证映射无空缺；移除保护后对应负向测试失败；真实模型记录环境、模型与 Prompt 版本。
+  source: V0.2 §6 阶段六
+  depends_on: []
+  status: conceptual
+  asr: false
+  enforcing_component: Test suite
+  verification:
+    method: trace audit
+    test: 'planned: requirements trace check'
+    evidence: planned
+- id: REQ-IX-GOV-001
+  type: governance
+  subtype: traceability
+  priority: Must
+  title: 需求追踪与人工评审
+  statement: 需求应保留唯一 ID、来源、优先级、验收标准、依赖与状态；依赖图无环；需求、架构、测试变更可追踪并经小组评审。
+  fit_criterion: YAML 可解析、ID 唯一、无悬空依赖、无环；评审记录可关联版本与理由。
+  source: V0.2 §6 阶段二
+  depends_on: []
+  status: conceptual
+  asr: false
+  enforcing_component: requirements registry
+  verification:
+    method: static check
+    test: validate_requirements.py
+    evidence: planned
+- id: REQ-IX-GOV-002
+  type: governance
+  subtype: agent_governance
+  priority: Must
+  title: Coding Agent 治理
+  statement: 小组应保存 Plan、Build、Verify 活动与人工审查记录；代码生成前审批计划，安全关键改动关联人工批准与 ADR。
+  fit_criterion: 抽查 AI 组件改动和授权改动各 1 项。每项关联计划批准、生成记录、验证结果、人工审查四项可定位记录；两项合计缺失记录数为 0。
+  source: V0.2 §6 阶段四
+  depends_on:
+  - REQ-IX-GOV-001
+  status: conceptual
+  asr: false
+  enforcing_component: Process records
+  verification:
+    method: process audit
+    test: 'planned: review log'
+    evidence: planned
+- id: REQ-IX-SCOPE-001
+  type: governance
+  subtype: scope
+  priority: Must
+  title: v1 范围
+  statement: v1 仅覆盖 InstallerActivity 发起、InstallMode.AutoDialog、Authorizer.None（系统 PackageInstaller）演示后端的单 APK 安装；其他应用发起的 session（含 ActionHandler 自动批准）、模块、批量/分包、卸载/解包/网络 URL、Root/Shizuku
+    全覆盖、恶意软件检测、多 Agent、云平台均不在本版。
+  fit_criterion: 入口清单评审通过；范围外路径 AI 调用 0 次且行为不变；session 旁路写入威胁模型与 future work；非目标在文档中列出。
+  source: V0.2 §2 + 组长边界
+  depends_on: []
+  status: conceptual
+  asr: false
+  enforcing_component: Scope inventory
+  verification:
+    method: scope inventory
+    test: 'planned: entry-point audit'
+    evidence: planned
+  note: session 旁路为已知绕过，不在 v1 修复；不得宣称该路径受 AI 审批保护。
+  source_links:
+  - https://github.com/wxxsfxyzm/InstallerX-Revived/blob/main/app/src/main/java/com/rosan/installer/data/session/handler/ActionHandler.kt
+  - https://github.com/wxxsfxyzm/InstallerX-Revived/blob/main/app/src/main/java/com/rosan/installer/ui/page/main/installer/InstallerViewModel.kt
+- id: REQ-IX-ARCH-001
+  type: architectural_constraint
+  priority: Must
+  title: 单一授权收口
+  statement: 对 SCOPE-001 指定的单个本地 APK、InstallMode.AutoDialog、Authorizer.None 路径，每次安装提交前必须经 ApprovalCoordinator → InstallationGateway 唯一收口；该路径的安装后端接口不得被 AI、UI 或策略直接调用。范围外路径不要求收口，但不得调用
+    AI 组件。
+  fit_criterion: 范围内正向测试经 Gateway；范围外路径 AI 调用 0；静态检查仅约束范围内后端注入；动态 spy 绕过 Coordinator 的调用为 0；架构评审记录收口图。
+  source: V0.2 §4.2 + 基线架构
+  depends_on:
+  - REQ-IX-FR-007
+  status: conceptual
+  asr: true
+  asr_rationale: 定义组件边界与调用契约，影响所有安装入口和依赖注入结构。
+  enforcing_component: InstallationGateway
+  verification:
+    method: static + dynamic spy
+    test: 'planned: ChokePointTest'
+    evidence: planned
+  source_links:
+  - https://github.com/wxxsfxyzm/InstallerX-Revived/blob/main/app/src/main/java/com/rosan/installer/data/engine/repository/AppInstallerRepositoryImpl.kt
+- id: REQ-IX-ARCH-002
+  type: architectural_constraint
+  subtype: ui_consistency
+  priority: Should
+  title: 双 UI 一致性
+  statement: 新增的审核、同意与审计界面应同时适配 Material 3 与 Miuix 两套 UI；两套均能编译并完成同一流程，或由维护者批准并记录豁免。
+  fit_criterion: 两套 UI 的截图/测试各一份；编译通过；豁免需链接评审记录。
+  source: AGENTS.md + 基线双 UI
+  depends_on:
+  - REQ-IX-FR-006
+  status: conceptual
+  asr: false
+  enforcing_component: UI layer
+  verification:
+    method: build + UI smoke
+    test: 'planned: DualUiSmokeTest'
+    evidence: planned
+  source_links:
+  - https://github.com/wxxsfxyzm/InstallerX-Revived/blob/main/AGENTS.md
+  - https://github.com/wxxsfxyzm/InstallerX-Revived/tree/main/app/src/main/java/com/rosan/installer/ui/page/main
+  - https://github.com/wxxsfxyzm/InstallerX-Revived/tree/main/app/src/main/java/com/rosan/installer/ui/page/miuix
+- id: REQ-IX-DATA-001
+  type: data_constraint
+  subtype: audit_integrity
+  priority: Must
+  title: 审计数据完整性
+  statement: 审计记录应 append-only、带哈希链、可导出且仅本机保存；保留期限与删除入口在 OI-06 冻结前不得自动删除。
+  fit_criterion: 篡改任一条记录可被检测；导出包含全部字段且可重放决策；无凭据；删除需显式操作并留痕。
+  source: V0.2 §3.3 + 课程 data_constraint
+  depends_on:
+  - REQ-IX-FR-009
+  status: conceptual
+  asr: false
+  enforcing_component: DecisionAuditRecorder
+  verification:
+    method: tamper test
+    test: 'planned: AuditIntegrityTest'
+    evidence: planned
