@@ -1,0 +1,18 @@
+# CS5351 group project — default reviewer
+# All changes request review from the project lead.
+* @wxxsfxyzm
+
+# Safety- and course-governance-sensitive paths
+/docs/req/ @wxxsfxyzm
+/docs/architecture/ @wxxsfxyzm
+/docs/code-governance/ @wxxsfxyzm
+/AGENTS.md @wxxsfxyzm
+/Prompt.md @wxxsfxyzm
+/architecture-blueprint.md @wxxsfxyzm
+/.opencode/ @wxxsfxyzm
+/.agent/ @wxxsfxyzm
+/.github/workflows/ @wxxsfxyzm
+/app/src/main/ @wxxsfxyzm
+
+# Review ownership alone is advisory unless the repository rules
+# require code-owner approval. Authors cannot approve their own PRs.
