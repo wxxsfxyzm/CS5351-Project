@@ -12,7 +12,10 @@
     "revision",
     "prioritization",
     "requirements",
-    "decision_rules"
+    "decision_rules",
+    "outbound_metadata_allowlist",
+    "mode_priorities",
+    "advisory_axes"
   ],
   "properties": {
     "document": {
@@ -84,6 +87,15 @@
         "$ref": "#/$defs/decisionRule"
       },
       "minItems": 1
+    },
+    "outbound_metadata_allowlist": {
+      "$ref": "#/$defs/outboundAllowlist"
+    },
+    "mode_priorities": {
+      "$ref": "#/$defs/mode_priorities"
+    },
+    "advisory_axes": {
+      "$ref": "#/$defs/advisory_axes"
     }
   },
   "additionalProperties": false,
@@ -217,6 +229,12 @@
           },
           "minItems": 1,
           "uniqueItems": true
+        },
+        "cost_policy": {
+          "$ref": "#/$defs/costPolicy"
+        },
+        "completeness": {
+          "$ref": "#/$defs/evidence_completeness"
         }
       },
       "additionalProperties": false,
@@ -243,7 +261,8 @@
         "human",
         "decision",
         "disposition",
-        "reason_code"
+        "reason_code",
+        "compatibility"
       ],
       "properties": {
         "id": {
@@ -285,9 +304,784 @@
         "reason_code": {
           "type": "string",
           "pattern": "\\S"
+        },
+        "compatibility": {
+          "enum": [
+            "ANY",
+            "COMPATIBLE"
+          ]
         }
       },
       "additionalProperties": false
+    },
+    "outboundAllowlist": {
+      "type": "object",
+      "required": [
+        "status",
+        "applies_to",
+        "consent_requirement",
+        "transmission_requirement",
+        "policy",
+        "fields",
+        "local_only",
+        "consent",
+        "local_approval_binding",
+        "negative_fit_criteria",
+        "approved_decisions",
+        "pending_member_a_review",
+        "completeness",
+        "derived_compatibility_signals"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "proposed_pending_member_a_review",
+            "approved",
+            "not_applicable"
+          ]
+        },
+        "applies_to": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "consent_requirement": {
+          "type": "string",
+          "pattern": "^REQ-IX-[A-Z]+-[0-9]{3}$"
+        },
+        "transmission_requirement": {
+          "type": "string",
+          "pattern": "^REQ-IX-[A-Z]+-[0-9]{3}$"
+        },
+        "policy": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/allowlistField"
+          }
+        },
+        "local_only": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/localOnlyEvidence"
+          }
+        },
+        "consent": {
+          "$ref": "#/$defs/consentPolicy"
+        },
+        "local_approval_binding": {
+          "$ref": "#/$defs/localApprovalBinding"
+        },
+        "negative_fit_criteria": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/negativeFitCriterion"
+          }
+        },
+        "approved_decisions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/approvedDecision"
+          }
+        },
+        "pending_member_a_review": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/pendingReviewItem"
+          }
+        },
+        "completeness": {
+          "$ref": "#/$defs/evidence_completeness"
+        },
+        "derived_compatibility_signals": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "allowlistField": {
+      "type": "object",
+      "required": [
+        "id",
+        "path",
+        "type",
+        "required",
+        "purpose"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^evidence\\.[a-z0-9_.]+$"
+        },
+        "type": {
+          "enum": [
+            "array<string>",
+            "boolean",
+            "enum",
+            "integer",
+            "string"
+          ]
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "purpose": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "max_items": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_length": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sanitization": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "redaction": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "derivation": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "unknown_encoding": {
+          "type": "string",
+          "pattern": "\\S"
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "enum"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "values"
+            ]
+          }
+        }
+      ]
+    },
+    "localOnlyEvidence": {
+      "type": "object",
+      "required": [
+        "id",
+        "egress",
+        "reason"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "egress": {
+          "enum": [
+            "local",
+            "never"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "pattern": "\\S"
+        }
+      },
+      "additionalProperties": false
+    },
+    "consentPolicy": {
+      "type": "object",
+      "required": [
+        "requirement",
+        "fields_shown",
+        "prerequisites",
+        "declined_or_withdrawn"
+      ],
+      "properties": {
+        "requirement": {
+          "type": "string",
+          "pattern": "^REQ-IX-[A-Z]+-[0-9]{3}$"
+        },
+        "fields_shown": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "prerequisites": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "minItems": 1
+        },
+        "declined_or_withdrawn": {
+          "type": "object",
+          "required": [
+            "model_calls",
+            "auto_approval",
+            "decision",
+            "hard_block_precedence",
+            "audit_events"
+          ],
+          "properties": {
+            "model_calls": {
+              "const": 0
+            },
+            "auto_approval": {
+              "const": false
+            },
+            "decision": {
+              "const": "REQUIRE_REVIEW"
+            },
+            "hard_block_precedence": {
+              "const": true
+            },
+            "audit_events": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "\\S"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "localApprovalBinding": {
+      "type": "object",
+      "required": [
+        "requirement",
+        "retains",
+        "note"
+      ],
+      "properties": {
+        "requirement": {
+          "type": "string",
+          "pattern": "^REQ-IX-[A-Z]+-[0-9]{3}$"
+        },
+        "retains": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "note": {
+          "type": "string",
+          "pattern": "\\S"
+        }
+      },
+      "additionalProperties": false
+    },
+    "negativeFitCriterion": {
+      "type": "object",
+      "required": [
+        "id",
+        "criterion"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^NFC-[A-Z0-9-]+$"
+        },
+        "criterion": {
+          "type": "string",
+          "pattern": "\\S"
+        }
+      },
+      "additionalProperties": false
+    },
+    "approvedDecision": {
+      "type": "object",
+      "required": [
+        "id",
+        "decision",
+        "scope",
+        "does_not_cover",
+        "status",
+        "approved_by",
+        "confirmed_by",
+        "rationale"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^PMA-[A-Z0-9-]+$"
+        },
+        "decision": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "scope": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "does_not_cover": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "approved",
+            "pending_member_a_review",
+            "rejected"
+          ]
+        },
+        "approved_by": {
+          "type": "string",
+          "minLength": 1
+        },
+        "confirmed_by": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rationale": {
+          "type": "string",
+          "pattern": "\\S"
+        }
+      },
+      "additionalProperties": false
+    },
+    "pendingReviewItem": {
+      "type": "object",
+      "required": [
+        "id",
+        "proposal",
+        "rationale"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^PMA-[A-Z0-9-]+$"
+        },
+        "proposal": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "rationale": {
+          "type": "string",
+          "pattern": "\\S"
+        }
+      },
+      "additionalProperties": false
+    },
+    "costPolicy": {
+      "type": "object",
+      "required": [
+        "max_calls_per_operation",
+        "call_triggers",
+        "automatic_retry",
+        "token_unit",
+        "aggregate_target",
+        "hard_cap",
+        "boundary_outcomes",
+        "token_counting",
+        "evaluation_population",
+        "pending_member_a_review",
+        "attempt_policy"
+      ],
+      "properties": {
+        "max_calls_per_operation": {
+          "const": 2
+        },
+        "call_triggers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/costCallTrigger"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "automatic_retry": {
+          "const": false
+        },
+        "token_unit": {
+          "const": "input_plus_output_total"
+        },
+        "aggregate_target": {
+          "$ref": "#/$defs/costAggregateTarget"
+        },
+        "hard_cap": {
+          "$ref": "#/$defs/costHardCap"
+        },
+        "boundary_outcomes": {
+          "type": "array",
+          "minItems": 4,
+          "items": {
+            "$ref": "#/$defs/costBoundaryOutcome"
+          }
+        },
+        "token_counting": {
+          "$ref": "#/$defs/costTokenCounting"
+        },
+        "evaluation_population": {
+          "$ref": "#/$defs/costEvaluationPopulation"
+        },
+        "pending_member_a_review": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/pendingReviewItem"
+          }
+        },
+        "attempt_policy": {
+          "$ref": "#/$defs/dispatch_policy"
+        }
+      },
+      "additionalProperties": false
+    },
+    "costCallTrigger": {
+      "type": "object",
+      "required": [
+        "attempt",
+        "trigger"
+      ],
+      "properties": {
+        "attempt": {
+          "enum": [
+            1,
+            2
+          ]
+        },
+        "trigger": {
+          "enum": [
+            "system_automatic",
+            "user_initiated_only"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "costAggregateTarget": {
+      "type": "object",
+      "required": [
+        "threshold_percent",
+        "max_total_tokens",
+        "population",
+        "on_miss",
+        "status"
+      ],
+      "properties": {
+        "threshold_percent": {
+          "const": 95
+        },
+        "max_total_tokens": {
+          "const": 2000
+        },
+        "population": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "on_miss": {
+          "const": "evaluation_or_release_gate_failure_not_runtime_failure"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "proposed_pending_member_a_review",
+            "approved",
+            "not_applicable"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "costHardCap": {
+      "type": "object",
+      "required": [
+        "max_total_tokens",
+        "enforcement",
+        "preflight_rule",
+        "output_limit_rule",
+        "on_violation",
+        "automatic_retry",
+        "hard_block_precedence"
+      ],
+      "properties": {
+        "max_total_tokens": {
+          "const": 4000
+        },
+        "enforcement": {
+          "const": "before_send"
+        },
+        "preflight_rule": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "output_limit_rule": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "on_violation": {
+          "const": "failed_attempt_no_auto_approval_require_review"
+        },
+        "automatic_retry": {
+          "const": false
+        },
+        "hard_block_precedence": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "costBoundaryOutcome": {
+      "type": "object",
+      "required": [
+        "range",
+        "runtime",
+        "evaluation"
+      ],
+      "properties": {
+        "range": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "runtime": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "evaluation": {
+          "type": "string",
+          "pattern": "\\S"
+        }
+      },
+      "additionalProperties": false
+    },
+    "costTokenCounting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "accounting",
+        "enforcement",
+        "counts_cached_or_hidden_reasoning_if_provider_reports",
+        "status",
+        "double_count_rule"
+      ],
+      "properties": {
+        "accounting": {
+          "type": "string",
+          "minLength": 1
+        },
+        "enforcement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "counts_cached_or_hidden_reasoning_if_provider_reports": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "double_count_rule": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "costEvaluationPopulation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposed_sample_size",
+        "fixed_cohort_per_model_and_prompt_version",
+        "counts_both_attempts",
+        "reports_attempts_dispatches_calls_and_exclusions",
+        "status",
+        "denominator"
+      ],
+      "properties": {
+        "proposed_sample_size": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "fixed_cohort_per_model_and_prompt_version": {
+          "type": "boolean"
+        },
+        "counts_both_attempts": {
+          "type": "boolean"
+        },
+        "reports_attempts_dispatches_calls_and_exclusions": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "denominator": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "mode_priorities": {
+      "type": "object",
+      "required": [
+        "AutoDialog",
+        "AutoNotification"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "AutoDialog": {
+          "type": "string",
+          "enum": [
+            "Must"
+          ]
+        },
+        "AutoNotification": {
+          "type": "string",
+          "enum": [
+            "Should"
+          ]
+        }
+      }
+    },
+    "advisory_axes": {
+      "type": "object",
+      "required": [
+        "install_success_likelihood",
+        "security_risk"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "install_success_likelihood": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "enum": [
+            [
+              "HIGH",
+              "MEDIUM",
+              "LOW",
+              "UNKNOWN"
+            ]
+          ]
+        },
+        "security_risk": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "enum": [
+            [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "UNKNOWN"
+            ]
+          ]
+        }
+      }
+    },
+    "evidence_completeness": {
+      "type": "object",
+      "required": [
+        "required_fields_always_present",
+        "unknown_encoding",
+        "truncated_is_complete",
+        "states"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "required_fields_always_present": {
+          "type": "boolean"
+        },
+        "unknown_encoding": {
+          "type": "string"
+        },
+        "truncated_is_complete": {
+          "const": false
+        },
+        "states": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "dispatch_policy": {
+      "type": "object",
+      "required": [
+        "max_attempts_per_operation",
+        "automatic_retry",
+        "provider_dispatch_on_preflight_rejection",
+        "provider_dispatch_when_sent"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "max_attempts_per_operation": {
+          "const": 2
+        },
+        "attempt_1": {
+          "type": "string"
+        },
+        "attempt_2": {
+          "type": "string"
+        },
+        "preflight_rejection_consumes_attempt": {
+          "type": "boolean"
+        },
+        "provider_dispatch_on_preflight_rejection": {
+          "const": 0
+        },
+        "provider_dispatch_when_sent": {
+          "const": 1
+        },
+        "provider_dispatch_on_blocked_third": {
+          "const": 0
+        },
+        "automatic_retry": {
+          "const": false
+        }
+      }
     }
   }
 }

@@ -1,104 +1,465 @@
 document: InstallerX AI Component Requirements
 version: 0.2.1
-revision: 4
+revision: 6
 date: '2026-11-16'
 status: draft_for_group_review
 schema: req-schema.json
-notes: All requirements are conceptual (not implemented). verification.test/evidence marked 'planned' are commitments, not results. Candidate component names follow V0.2 and
-  may be renamed in ADD.
+notes: Revision 6 is an English D1 revision awaiting human approval. It preserves all 41 rev.5 requirement IDs and adds two independent advisory axes, mode priorities, compatibility
+  folded into FR-002 and FR-005, completeness-aware outbound evidence, separate attempt and provider-dispatch accounting, and corrected Continue/Retry semantics. FR-012 remains AI-toggle
+  semantics. AI-use log updates are recorded separately; no verification result is claimed here. Match decision rules in listed order. VALID_ANY matches a validated two-axis assessment.
+  VALID_HIGH_SUCCESS_LOW_RISK is its favorable subset. AUTO_RULES_MET includes a permissive base policy. An unreadable APK is UNREADABLE. An active prohibition dominates every outcome.
+  AI-off and out-of-scope flows use the baseline.
 prioritization:
   method: MoSCoW
-  tradeoff: 时间不足时优先缩减 Should 的展示项，保留 INV-001 至 INV-007 与 REL-002 至 REL-004。调整 Must 需重新评审范围与验收。
-  could: 更丰富的风险解释、更多审计导出格式和安装模式。
-  wont: 本版不含批量或分包安装、模块安装、多 Agent、恶意软件检测平台和云管理端。
+  tradeoff: "If time is short, reduce Should-level presentation items first and retain INV-001 through INV-007 and REL-002 through REL-004. Changing a Must requires re-review of scope and acceptance."
+  could: "Richer risk explanations, more audit export formats, and more installation modes."
+  wont: "This version excludes batch or split installation, module installation, multi-agent designs, a malware-detection platform, and a cloud management console."
 decision_rules:
 - id: DR-01
-  evidence: 任意
-  advice: 任意
+  evidence: ANY
+  advice: ANY
   policy: HARD_BLOCK
-  human: 任意
+  human: ANY
   decision: BLOCK
   disposition: BLOCKED
   reason_code: HARD_BLOCK
+  compatibility: ANY
 - id: DR-10
-  evidence: 任意
-  advice: 任意
-  policy: 非 HARD_BLOCK
-  human: 批准后复验失败
+  evidence: ANY
+  advice: ANY
+  policy: NOT_HARD_BLOCK
+  human: REVALIDATION_FAILED_AFTER_APPROVAL
   decision: REQUIRE_REVIEW
   disposition: INVALIDATED
   reason_code: APPROVAL_INVALIDATED
+  compatibility: ANY
 - id: DR-03
-  evidence: UNREADABLE 或 KEY_UNKNOWN
-  advice: 任意
-  policy: 非 HARD_BLOCK
-  human: 任意
+  evidence: UNREADABLE_OR_KEY_UNKNOWN_OR_TRUNCATED
+  advice: ANY
+  policy: NOT_HARD_BLOCK
+  human: ANY
   decision: REQUIRE_REVIEW
   disposition: RECOLLECT
   reason_code: EVIDENCE_INCOMPLETE
+  compatibility: ANY
 - id: DR-02
-  evidence: 任意
-  advice: UNAVAILABLE（CONSENT_DECLINED）
-  policy: 非 HARD_BLOCK
-  human: 未取得
+  evidence: ANY
+  advice: UNAVAILABLE_CONSENT_DECLINED
+  policy: NOT_HARD_BLOCK
+  human: NOT_OBTAINED
   decision: REQUIRE_REVIEW
   disposition: AWAIT_HUMAN
   reason_code: CONSENT_DECLINED
+  compatibility: ANY
 - id: DR-04
   evidence: CONTRADICTORY
-  advice: 任意
-  policy: 非 HARD_BLOCK
-  human: 未取得
+  advice: ANY
+  policy: NOT_HARD_BLOCK
+  human: NOT_OBTAINED
   decision: REQUIRE_REVIEW
   disposition: AWAIT_HUMAN
   reason_code: EVIDENCE_CONTRADICTORY
+  compatibility: ANY
 - id: DR-05
   evidence: COMPLETE
-  advice: VALID_LOW
+  advice: VALID_HIGH_SUCCESS_LOW_RISK
   policy: AUTO_RULES_MET
-  human: 未取得
+  human: NOT_OBTAINED
   decision: ALLOW_AUTO
   disposition: EXECUTE_ONCE
   reason_code: AUTO_APPROVED
+  compatibility: COMPATIBLE
 - id: DR-06
   evidence: COMPLETE
-  advice: VALID_LOW
+  advice: VALID_HIGH_SUCCESS_LOW_RISK
   policy: AUTO_RULES_NOT_MET
-  human: 未取得
+  human: NOT_OBTAINED
   decision: REQUIRE_REVIEW
   disposition: AWAIT_HUMAN
   reason_code: AUTO_RULES_NOT_MET
+  compatibility: COMPATIBLE
 - id: DR-07
   evidence: COMPLETE
-  advice: VALID_MEDIUM / VALID_HIGH / VALID_UNKNOWN
-  policy: 非 HARD_BLOCK
-  human: 未取得
+  advice: VALID_ANY
+  policy: NOT_HARD_BLOCK
+  human: NOT_OBTAINED
   decision: REQUIRE_REVIEW
   disposition: AWAIT_HUMAN
-  reason_code: RISK_NOT_LOW
+  reason_code: ADVISORY_OR_COMPATIBILITY_REQUIRES_REVIEW
+  compatibility: ANY
 - id: DR-08
-  evidence: COMPLETE
-  advice: INVALID / UNAVAILABLE
-  policy: 非 HARD_BLOCK
-  human: 未取得
+  evidence: ANY
+  advice: INVALID_OR_UNAVAILABLE_OR_BUDGET_REJECTED_OR_OVERAGE_OR_BLOCKED_THIRD
+  policy: NOT_HARD_BLOCK
+  human: NOT_OBTAINED
   decision: REQUIRE_REVIEW
   disposition: AWAIT_HUMAN
   reason_code: ADVICE_UNUSABLE
+  compatibility: ANY
 - id: DR-09
-  evidence: 任意
-  advice: 任意
-  policy: 非 HARD_BLOCK
-  human: 有效批准且复验通过
+  evidence: ANY
+  advice: ANY
+  policy: NOT_HARD_BLOCK
+  human: VALID_APPROVAL_AND_REVALIDATION_PASSED
   decision: REQUIRE_REVIEW
   disposition: EXECUTE_ONCE
   reason_code: APPROVED_AFTER_REVIEW
+  compatibility: ANY
+outbound_metadata_allowlist:
+  status: proposed_pending_member_a_review
+  applies_to: v1 scope defined by REQ-IX-SCOPE-001
+  consent_requirement: REQ-IX-FR-011
+  transmission_requirement: REQ-IX-FR-003
+  policy: Send only the enumerated fields below. All other APK evidence, identifiers, hashes, configuration, and APK bytes remain local. Free-text fields are redacted for local-only
+    identifiers before transmission. This allowlist is the single source of truth for collection review, consent display, request construction, and outbound validation. Apply declared
+    field-specific unknown encodings. TRUNCATED denotes actual evidence loss. A list at the limit with no discarded elements remains intact.
+  fields:
+  - id: version_code
+    path: evidence.version_code
+    type: integer
+    required: true
+    purpose: Identify the release for outdated or vulnerable-version reasoning.
+    unknown_encoding: 'null'
+  - id: version_name
+    path: evidence.version_name
+    type: string
+    required: true
+    max_length: 256
+    purpose: Provide a human-readable release label for version context.
+    sanitization: Treat as untrusted text under REQ-IX-SEC-005 before transmission.
+    redaction: Remove any occurrence of local-only identifiers, including the target and source package names.
+    unknown_encoding: 'null'
+  - id: min_sdk
+    path: evidence.min_sdk
+    type: integer
+    required: true
+    purpose: Expose minimum platform compatibility as a risk signal.
+    unknown_encoding: 'null'
+  - id: target_sdk
+    path: evidence.target_sdk
+    type: integer
+    required: true
+    purpose: Expose target platform level; low target SDK is a concrete risk signal.
+    unknown_encoding: 'null'
+  - id: declared_permissions
+    path: evidence.declared_permissions
+    type: array<string>
+    required: true
+    max_items: 200
+    purpose: Expose declared capability names for risk reasoning without sending grant state.
+    sanitization: Names only; each name passes REQ-IX-SEC-005; an empty list is valid.
+    redaction: Reject or redact permission names containing local-only identifiers, including the target and source package names.
+    unknown_encoding: 'null'
+  - id: signature_verification_status
+    path: evidence.signature_verification_status
+    type: enum
+    required: true
+    values:
+    - VERIFIED
+    - FAILED
+    - SIGNING_BLOCK_ONLY
+    - UNKNOWN
+    purpose: Provide the deterministic trust result without exposing certificates or signer hashes.
+    unknown_encoding: UNKNOWN
+  - id: installed_signature_match
+    path: evidence.installed_signature_match
+    type: enum
+    required: true
+    values:
+    - NOT_INSTALLED
+    - MATCH
+    - MISMATCH
+    - ROTATION_COMPATIBLE
+    - CANDIDATE_ROTATION_UNCONFIRMED
+    - UNKNOWN_ERROR
+    purpose: Distinguish a safe update from a signer change without exposing installed signer hashes.
+    unknown_encoding: UNKNOWN_ERROR
+  - id: install_relation
+    path: evidence.install_relation
+    type: enum
+    required: true
+    values:
+    - NEW_INSTALL
+    - UPDATE
+    - DOWNGRADE
+    - UNKNOWN
+    purpose: Provide the update relationship without exposing the installed version.
+    derivation: Derived locally from the target version and installed version.
+    unknown_encoding: UNKNOWN
+  - id: apk_identity
+    path: evidence.apk_identity
+    type: enum
+    required: true
+    values:
+    - IDENTICAL
+    - DIFFERENT
+    - NOT_APPLICABLE
+    - ERROR
+    - UNKNOWN
+    purpose: Indicate whether the candidate differs from the installed contents without exposing hashes.
+    derivation: Derived locally from deterministic content comparison.
+    unknown_encoding: UNKNOWN
+  - id: install_mode
+    path: evidence.install_mode
+    type: enum
+    required: true
+    values:
+    - AutoDialog
+    - AutoNotification
+    purpose: Provide installation-context risk information.
+  - id: target_user_scope
+    path: evidence.target_user_scope
+    type: enum
+    required: true
+    values:
+    - CURRENT_USER
+    - OTHER_USER
+    - ALL_USERS
+    - UNKNOWN
+    purpose: Provide impact scope while keeping the numeric target user ID local.
+    derivation: Derived locally from the target user ID.
+    unknown_encoding: UNKNOWN
+  - id: package_source
+    path: evidence.package_source
+    type: enum
+    required: true
+    values:
+    - UNSPECIFIED
+    - OTHER
+    - STORE
+    - LOCAL_FILE
+    - DOWNLOADED_FILE
+    purpose: Provide the source category without exposing the source package name.
+    unknown_encoding: UNSPECIFIED
+  - id: source_confidence
+    path: evidence.source_confidence
+    type: enum
+    required: true
+    values:
+    - EXACT_CALLER
+    - LAUNCHED_FROM_UID
+    - TRUSTED_PROXY_ORIGINATING_UID
+    - PROVIDER_OWNER
+    - REFERRER_HEURISTIC
+    - UNKNOWN
+    purpose: Provide source confidence without exposing the source UID or package identifiers.
+    unknown_encoding: UNKNOWN
+  - id: has_shared_uid
+    path: evidence.has_shared_uid
+    type: boolean
+    required: true
+    purpose: Preserve a structural risk signal while keeping the raw sharedUserId local.
+    unknown_encoding: 'null'
+  - id: is_xposed_module
+    path: evidence.is_xposed_module
+    type: boolean
+    required: true
+    purpose: Preserve a structural risk signal while keeping module details local.
+    unknown_encoding: 'null'
+  - id: platform_compatibility
+    path: evidence.platform_compatibility
+    type: enum
+    required: true
+    values:
+    - COMPATIBLE
+    - INCOMPATIBLE
+    - UNKNOWN
+    purpose: Derived local platform compatibility result without raw device identifiers.
+    unknown_encoding: UNKNOWN
+  - id: abi_compatibility
+    path: evidence.abi_compatibility
+    type: enum
+    required: true
+    values:
+    - COMPATIBLE
+    - INCOMPATIBLE
+    - UNKNOWN
+    purpose: Derived local ABI compatibility result without raw ABI lists.
+    unknown_encoding: UNKNOWN
+  - id: storage_sufficient
+    path: evidence.storage_sufficient
+    type: boolean
+    required: true
+    purpose: Derived storage sufficiency without exposing device storage values.
+    unknown_encoding: 'null'
+  - id: installer_capability
+    path: evidence.installer_capability
+    type: enum
+    required: true
+    values:
+    - SYSTEM_PACKAGE_INSTALLER
+    - UNKNOWN
+    purpose: Derived authorizer capability without exposing installer identifiers.
+    unknown_encoding: UNKNOWN
+  local_only:
+  - id: target_package_name
+    egress: local
+    reason: Required for local approval binding (REQ-IX-INV-003) and audit; a stable app identifier that is not needed for v1 risk advice.
+  - id: source_package_name
+    egress: local
+    reason: Can fingerprint the installer; the model receives package_source and source_confidence instead.
+  - id: source_uid
+    egress: local
+    reason: Device- and installer-specific identifier; prohibited by REQ-IX-SEC-004.
+  - id: apk_sha256
+    egress: local
+    reason: Used for approval binding, idempotency, and audit; an LLM has no reliable hash reputation.
+  - id: signer_sha256_set
+    egress: local
+    reason: Stable signer identifier; deterministic code and audit use it, while the model receives the verification result.
+  - id: certificate_details
+    egress: local
+    reason: Certificate subject, issuer, serial, and scheme details are identifying and not needed for advisory reasoning.
+  - id: installed_version
+    egress: local
+    reason: The derived install_relation conveys the decision-relevant relationship.
+  - id: installed_signer_hashes
+    egress: local
+    reason: The installed_signature_match enum conveys the comparison result.
+  - id: label
+    egress: local
+    reason: Untrusted display text with low decision value and an injection surface.
+  - id: architecture
+    egress: local
+    reason: Low decision value for v1 risk advice.
+  - id: size
+    egress: local
+    reason: Low decision value without a reliable baseline for anomaly comparison.
+  - id: shared_user_id_raw
+    egress: local
+    reason: has_shared_uid preserves the risk signal without the raw identifier.
+  - id: install_location
+    egress: local
+    reason: Low decision value for v1 risk advice.
+  - id: file_paths_and_source_dir
+    egress: local
+    reason: Filesystem paths are identifying and may embed user or device details.
+  - id: full_config_snapshot
+    egress: local
+    reason: Policy belongs to the deterministic gate; sending policy flags can bias advice and leak installer or requester identifiers.
+  - id: installer_requester_authorizer_ids
+    egress: local
+    reason: Package identifiers can fingerprint the installer and are not needed for APK risk advice.
+  - id: apk_bytes
+    egress: never
+    reason: Explicitly prohibited by REQ-IX-SEC-004.
+  - id: device_api_level
+    egress: local
+    reason: Raw device fingerprint; only the derived platform_compatibility result is sent.
+  - id: supported_abi_set
+    egress: local
+    reason: Raw device capability list; only the derived abi_compatibility result is sent.
+  - id: native_library_abis
+    egress: local
+    reason: Detailed APK capability data; aggregate signals are sufficient for advice.
+  - id: authorizer_capability_raw
+    egress: local
+    reason: Backend identity and capability detail stay local; only an enum is sent.
+  consent:
+    requirement: REQ-IX-FR-011
+    fields_shown: outbound_metadata_allowlist.fields
+    prerequisites:
+    - explicit_consent
+    - network_enabled
+    declined_or_withdrawn:
+      model_calls: 0
+      auto_approval: false
+      decision: REQUIRE_REVIEW
+      hard_block_precedence: true
+      audit_events:
+      - CONSENT_DECLINED
+      - CONSENT_WITHDRAWN
+  local_approval_binding:
+    requirement: REQ-IX-INV-003
+    retains:
+    - target_package_name
+    - operation_id
+    - attempt_id
+    - apk_sha256
+    - target_user_id
+    - install_mode
+    - installation_backend
+    - config_snapshot
+    - policy_version
+    note: Removing a field from outbound egress does not remove it from local approval binding or audit. The target package name stays local for binding and audit.
+  negative_fit_criteria:
+  - id: NFC-OUT-001
+    criterion: With consent granted, after allowlisted free-text fields are sanitized and redacted, the complete outbound model request, including all metadata and the fully assembled
+      prompt and messages, contains zero occurrences of the target package name, source package name, APK SHA-256, any signer SHA-256 value, source UID, sourceDir, label, installer or
+      requester package identifiers, or any other field listed as local-only.
+  - id: NFC-OUT-002
+    criterion: The evidence leaf paths in the outbound request are exactly the allowlisted paths; every required field is present, and no additional evidence field appears at any nesting
+      level.
+  - id: NFC-OUT-003
+    criterion: When consent is declined or withdrawn, model-call count is 0, auto-approval is false, the decision is REQUIRE_REVIEW, and any active hard prohibition remains BLOCK.
+  - id: NFC-OUT-004
+    criterion: 'Using a fixture whose target package name and install-source package name are distinct, independently of outbound egress: with the approval binding unchanged, revalidation
+      succeeds and execution is permitted only through that valid local binding; then modifying only the bound target package name in the stored approval causes revalidation to fail,
+      invalidates the prior approval, and results in zero backend submissions. The distinct source package name must not be mistaken for the bound target package.'
+  - id: NFC-OUT-005
+    criterion: After a configured cap truncates any allowlisted field, the evidence is not COMPLETE; the decision is REQUIRE_REVIEW with RECOLLECT, model calls are 0, and no auto-approval
+      occurs.
+  - id: NFC-OUT-006
+    criterion: With consent granted, the complete outbound request contains no raw device API level, ABI list, native-library ABI list, authorizer package identifier, or other local-only
+      compatibility fact; only the derived compatibility signals appear.
+  approved_decisions:
+  - id: PMA-OUT-001
+    decision: Keep the target APK package name local in v1.
+    scope: Applies only to the target APK package name within the v1 scope defined by REQ-IX-SCOPE-001.
+    does_not_cover:
+    - install_source_package_name
+    - apk_sha256
+    - signer_sha256_set
+    - source_uid
+    - other_outbound_allowlist_items
+    status: approved
+    approved_by: Member A
+    confirmed_by: Member B
+    rationale: The target package name remains available for local approval binding and audit and is not sent to the model in v1.
+  pending_member_a_review:
+  - id: PMA-OUT-002
+    proposal: Keep the install-source package name and source UID local; send only package_source and source_confidence.
+    rationale: Raw source identity can fingerprint the installer or device; categories preserve decision value.
+  - id: PMA-OUT-003
+    proposal: Keep raw APK and signer hashes, certificate details, and installed-app hashes local.
+    rationale: The model cannot validate them; deterministic code and audit use them for binding, identity, and tamper checks.
+  - id: PMA-OUT-004
+    proposal: Include has_shared_uid and is_xposed_module as booleans while omitting raw sharedUserId and module details.
+    rationale: Preserves structural risk signals without exposing identifiers.
+  - id: PMA-OUT-005
+    proposal: Use this allowlist as the single source for FR-002 collection review, FR-003 egress, FR-011 consent display, and SEC-004 validation.
+    rationale: Prevents collection, consent UI, request builder, and tests from drifting apart.
+  - id: PMA-OUT-006
+    proposal: Cap declared_permissions at 200 entries and version_name at 256 characters before transmission.
+    rationale: Bounds request size; the exact caps require Member A review.
+  completeness:
+    required_fields_always_present: true
+    unknown_encoding: Required means the key is present. For unknown enum values use the documented unknown category; for other unknown values use JSON null. A missing binding field
+      prevents dispatch. A missing required payload key fails validation.
+    truncated_is_complete: false
+    states:
+    - COMPLETE
+    - KEY_UNKNOWN
+    - TRUNCATED
+    - CONTRADICTORY
+    - UNREADABLE
+  derived_compatibility_signals:
+  - platform_compatibility
+  - abi_compatibility
+  - storage_sufficient
+  - install_relation
+  - apk_identity
+  - installer_capability
 requirements:
 - id: REQ-IX-FR-001
   type: functional
   priority: Must
-  title: 接收审批请求
-  statement: 在 AI 审批启用且路径受支持时（InstallerActivity 发起、InstallMode.AutoDialog），系统应为每个单 APK 请求生成唯一安装操作 ID（operation ID），每次模型分析生成尝试 ID（attempt ID），并在任何安装后端调用前启动审批。
-  fit_criterion: 提交一个受支持 APK，产生可查询的 operation ID；审批未完成时安装后端调用次数为 0；同一 operation 的用户重试保持 operation ID 不变、只新增 attempt ID。
+  title: Accept approval request
+  statement: When AI approval is enabled and an in-scope path is supported (InstallerActivity with InstallMode.AutoDialog or AutoNotification, Authorizer.None), the system shall create
+    a unique installation operation ID for each single-APK request and an attempt ID for each model-analysis attempt, and shall start approval before any installation backend is invoked.
+    AutoNotification shall complete assessment and decision before submission.
+  fit_criterion: Submitting a supported APK produces a queryable operation ID; attempts are counted separately from provider dispatches; while approval is incomplete, installation-backend
+    invocations are 0; a user retry keeps the operation ID unchanged and adds only an attempt ID; an out-of-scope path makes 0 model calls.
   source: V0.2 §5.1
   depends_on: []
   status: conceptual
@@ -113,9 +474,16 @@ requirements:
 - id: REQ-IX-FR-002
   type: functional
   priority: Must
-  title: 收集安装证据
-  statement: 系统应收集 APK SHA-256、包名、版本、声明权限、签名检查结果、已安装应用签名比较结果、来源信息、目标用户、安装模式及影响安装的配置快照；无法确定的字段标记为 UNKNOWN，不得推测。
-  fit_criterion: 已知 APK 的提取结果与固定样例一致；无法确定的来源显示 UNKNOWN 且不生成来源事实；证据包含目标用户与安装模式。
+  title: Collect installation evidence
+  statement: 'The system shall collect, locally, APK SHA-256, package name, version, declared permissions, signature-check result, installed-app signature comparison result, source information,
+    target user, install mode, a configuration snapshot that affects installation, and compatibility facts needed for a local assessment: device API level, supported and required ABIs,
+    native-library ABIs, minSdk and targetSdk, available storage, relevant platform restrictions, authorizer capability, and the installed-version relationship. Each evidence field records
+    whether it is present, whether its value is known, and whether it is complete. Undetermined values shall be UNKNOWN and shall not be inferred. A truncated list, string, or compatibility
+    fact is not complete. Target and source package names, raw hashes, source UID, signer material, paths, and raw device identifiers remain local.'
+  fit_criterion: Fixed APK fixtures produce the expected evidence values; a missing source is UNKNOWN and does not by itself make the evidence KEY_UNKNOWN; a missing or unverifiable
+    INV-003 binding field produces KEY_UNKNOWN. A permission list or version label that loses content at the configured cap is marked TRUNCATED and is not COMPLETE. A fixture with an
+    unsupported ABI or a device API below minSdk produces a local INCOMPATIBLE assessment; missing device facts produce UNKNOWN. Contradictory local facts produce CONTRADICTORY. No outbound
+    field is implied by collection alone.
   source: V0.2 §4.2
   depends_on:
   - REQ-IX-FR-001
@@ -126,13 +494,35 @@ requirements:
     method: unit + fixture
     test: 'planned: EvidenceCollectorTest'
     evidence: planned
-  note: 来源信息缺失记 UNKNOWN，不单独判为 KEY_UNKNOWN；KEY_UNKNOWN 仅指 INV-003 绑定字段缺失或不可验证。
+  note: A missing source is recorded as UNKNOWN and is not by itself KEY_UNKNOWN; KEY_UNKNOWN applies only when a field bound by INV-003 is missing or unverifiable. Collection is local;
+    egress is governed separately by SEC-004 and outbound_metadata_allowlist.
+  completeness:
+    required_fields_always_present: true
+    unknown_encoding: Required means the key is present. For unknown enum values use the documented unknown category; for other unknown values use JSON null. A missing binding field
+      prevents dispatch. A missing required payload key fails validation.
+    truncated_is_complete: false
+    states:
+    - COMPLETE
+    - KEY_UNKNOWN
+    - TRUNCATED
+    - CONTRADICTORY
+    - UNREADABLE
+  source_links:
+  - https://github.com/wxxsfxyzm/CS5351-Project/blob/fcdd2348/app/src/main/java/com/rosan/installer/data/session/handler/ProgressHandler.kt#L51
 - id: REQ-IX-FR-003
   type: functional
   priority: Must
-  title: 真实模型分析
-  statement: 系统应在取得外发同意且联网开关允许时，将白名单字段发送给一个真实模型服务，取得包含模型标识、Prompt 版本、风险级别、理由和证据引用的结构化建议；每次尝试（attempt）只调用一次模型，不自动重试。
-  fit_criterion: 一次在线集成返回模型标识、Prompt 版本、调用状态和符合契约的建议；离线测试使用固定响应；未同意或断网时调用次数为 0；超时后不产生第二次自动调用。
+  title: Real model analysis
+  statement: After explicit outbound consent and when the network switch permits, and only for an in-scope path, the system shall send only the fields enumerated in outbound_metadata_allowlist
+    to a real model service and obtain a structured advisory recommendation containing model identifier, prompt version, install_success_likelihood, security_risk, reasons, and evidence
+    references. install_success_likelihood shall be HIGH, MEDIUM, LOW, or UNKNOWN; security_risk shall be LOW, MEDIUM, HIGH, or UNKNOWN. The recommendation is an estimate, not a guarantee,
+    and shall not include installation or approval actions. Compatibility facts sent to the model shall be derived signals only. Each attempt shall make at most one provider dispatch
+    and shall not retry automatically. Consent declined or withdrawn, network disabled, shall produce zero dispatches and no AI auto-approval; out-of-scope paths retain baseline behavior;
+    hard prohibitions remain BLOCK.
+  fit_criterion: An online integration returns model identifier, prompt version, both dimensions, and a contract-conforming recommendation; offline tests use fixed responses. Consent
+    declined or withdrawn produces zero model calls and REQUIRE_REVIEW; network disabled produces zero model calls; an out-of-scope path produces zero model calls. A timeout produces
+    no second automatic call. The outbound request contains only allowlisted leaf paths, including only derived compatibility signals, and contains no target package name, source package
+    name, raw hash, signer hash, source UID, sourceDir, label, or raw device identifier. A response that states a guarantee or an installation action is INVALID.
   source: V0.2 §5.1
   depends_on:
   - REQ-IX-FR-002
@@ -145,12 +535,17 @@ requirements:
     method: integration (online) + offline fixed response
     test: 'planned: AdvisorIntegrationTest'
     evidence: planned
+  note: Target and source package names, raw hashes, and identifiers stay local under outbound_metadata_allowlist.
 - id: REQ-IX-FR-004
   type: functional
   priority: Must
-  title: 验证模型输出
-  statement: 系统应校验模型响应的结构、必填字段、枚举、长度和证据引用，拒绝执行指令、未知操作字段、伪造证据引用和越界内容，并将响应标记为 INVALID。
-  fit_criterion: 无效 JSON、缺字段、非法风险级别、超长、伪造引用和执行指令样例均判为 INVALID，且不产生自动批准。
+  title: Validate model output
+  statement: The system shall validate the model response's structure, required fields, enums, lengths, and evidence references. It shall require both install_success_likelihood and
+    security_risk, reject unknown action fields, installation or approval instructions, guarantee language, fabricated evidence references, out-of-range content, and oversized output,
+    and mark the response INVALID. An INVALID response shall not produce auto-approval.
+  fit_criterion: Invalid JSON, a missing dimension, an illegal success-likelihood or risk enum, an unknown action field, an installation or approval instruction, a guarantee claim, an
+    oversized response, and a fabricated evidence reference are each classified INVALID and produce no auto-approval. A response with both dimensions and valid references is accepted
+    only after structural validation. Compatibility evidence references must resolve to transmitted allowlisted fields; local-only references in an outbound claim are rejected.
   source: V0.2 §4.2
   depends_on:
   - REQ-IX-FR-003
@@ -164,9 +559,19 @@ requirements:
 - id: REQ-IX-FR-005
   type: functional
   priority: Must
-  title: 计算审批结果
-  statement: 系统应仅依据生效策略版本和已验证建议，将请求判定为 ALLOW_AUTO、REQUIRE_REVIEW 或 BLOCK，并返回规则 ID 与理由；硬性禁止优先于任何建议或人工确认。
-  fit_criterion: 决策表每个分支均有用例；相同证据、建议和策略版本产生相同决定；硬性禁止始终 BLOCK 且后端调用为 0。
+  title: Compute approval decision
+  statement: The system shall determine ALLOW_AUTO, REQUIRE_REVIEW, or BLOCK from the effective policy version, evidence completeness, the local compatibility assessment, the validated
+    install_success_likelihood and security_risk, and the human approval state, returning the DR rule ID and reason. Only an active deterministic hard prohibition may produce BLOCK;
+    AI advice and human confirmation shall not override it. Favorable automatic continuation requires COMPLETE evidence, COMPATIBLE local compatibility, install_success_likelihood HIGH,
+    security_risk LOW, and AUTO_RULES_MET. Any unfavorable or uncertain dimension, compatibility UNKNOWN or INCOMPATIBLE, evidence RECOLLECT, AI failure, consent denial, or token-budget
+    failure produces REQUIRE_REVIEW. A first Continue in AWAIT_HUMAN creates approval bound to the current installation object and is followed by immediate revalidation; DR-09 then yields
+    EXECUTE_ONCE. A previously granted approval that fails revalidation yields DR-10 INVALIDATED and no submission. Retry is a separate fresh assessment and grants no submission right.
+  fit_criterion: Every DR-01 through DR-10 branch has a case; identical inputs and policy version produce the same decision. Hard prohibition plus success HIGH, risk LOW, and human Continue
+    yields BLOCK/BLOCKED with zero backend submissions. COMPLETE, COMPATIBLE, HIGH, LOW, and AUTO_RULES_MET yields ALLOW_AUTO/EXECUTE_ONCE with one submission. HIGH and LOW with AUTO_RULES_NOT_MET
+    yields REQUIRE_REVIEW/AWAIT_HUMAN. Success not HIGH or risk not LOW yields REQUIRE_REVIEW/AWAIT_HUMAN. Compatibility UNKNOWN or INCOMPATIBLE yields REQUIRE_REVIEW, never ALLOW_AUTO.
+    KEY_UNKNOWN or TRUNCATED yields RECOLLECT. First Continue creates a fresh binding and revalidates; successful revalidation yields DR-09 EXECUTE_ONCE; changed binding yields DR-10
+    INVALIDATED with zero submissions. Continue makes zero additional model calls. Preflight rejection yields zero dispatches; reported post-call overage yields one completed call; a
+    blocked third request yields zero additional dispatches.
   source: V0.2 §4.2
   depends_on:
   - REQ-IX-FR-004
@@ -181,9 +586,18 @@ requirements:
 - id: REQ-IX-FR-006
   type: functional
   priority: Must
-  title: 人工审核
-  statement: 系统应展示包名、版本、签名检查、重要权限（运行时危险权限、无障碍、设备管理及安装未知应用相关权限）、AI 建议、策略理由及两者分歧，允许用户批准或取消 REQUIRE_REVIEW 请求；RECOLLECT 状态下不得提供可提交的确认操作。
-  fit_criterion: 批准前后端调用为 0；取消后为 0；BLOCK 页面无继续安装操作；RECOLLECT 页面确认按钮禁用且后端 0；分歧显示为一致/升级/降级三态之一。
+  title: Human review
+  statement: The system shall display package name, version, signature check, important permissions (dangerous runtime permissions, accessibility, device administration, and install-unknown-apps
+    related permissions), install_success_likelihood, security_risk, local compatibility result, evidence completeness, AI advice, policy reasons, and any disagreement. For a REQUIRE_REVIEW
+    request, the first explicit Continue shall create an approval bound to the current installation object under INV-003 and shall then revalidate immediately before submission; no pre-existing
+    approval is required. Continue shall make zero additional model calls and may submit at most once if revalidation passes. Cancel shall make no submission and shall not reuse an approval.
+    In RECOLLECT, Continue is disabled and no submittable confirmation is offered. In BLOCK, no continue-install action is offered. Duplicate notification events or repeated Continue
+    clicks shall not create a second approval or submission. After recovery, an unsubmitted request remains AWAIT_HUMAN until the user acts; a submitted request with an unknown result
+    shall not be presented as not installed or revocable.
+  fit_criterion: Before Continue, backend submissions are 0. The first Continue creates an INV-003 binding, revalidates, and, if valid, yields DR-09 EXECUTE_ONCE with one submission
+    and zero additional model calls. Cancel yields zero submissions. BLOCK has no Continue action. RECOLLECT has disabled confirmation and zero backend calls. Duplicate Continue or notification
+    replay yields at most one submission. Changed binding yields DR-10 INVALIDATED and zero submissions. After recovery in AWAIT_HUMAN, no auto-approval or submission occurs; after recovery
+    with unknown submission outcome, RESULT_UNKNOWN is shown and no replay occurs. Disagreement is displayed as consistent, escalated, or downgraded.
   source: V0.2 §5.1
   depends_on:
   - REQ-IX-FR-005
@@ -197,9 +611,16 @@ requirements:
 - id: REQ-IX-FR-007
   type: functional
   priority: Must
-  title: 受控安装
-  statement: 系统应仅在 ALLOW_AUTO 或有效人工批准后，经唯一授权入口调用既有安装后端；提交前必须重新核对全部审批绑定字段，任一缺失或变化即禁止提交。
-  fit_criterion: 两类有效批准均可进入测试后端；BLOCK、待审核、失效、取消请求均不能进入；复验失败或缺任一绑定字段时后端调用为 0。
+  title: Controlled installation
+  statement: The system shall call the existing installation backend through the single authorized entry point only after ALLOW_AUTO or a valid human approval, and only for an in-scope
+    AutoDialog or AutoNotification path. Before submission it shall recheck all INV-003 binding fields; if any is missing, changed, or invalidated it shall forbid submission. AutoNotification
+    shall complete the assessment and decision before submission, shall handle delayed confirmation, process recovery, and duplicate events without creating a new submission right, and
+    shall not submit more than once per operation. If a prior submission outcome is unknown, automatic replay is forbidden and no new submission may occur until reconciliation resolves
+    the outcome. Hard prohibitions remain BLOCK.
+  fit_criterion: Both a valid ALLOW_AUTO and a valid first-Continue approval can reach the test backend; BLOCK, pending review, RECOLLECT, INVALIDATED, and cancelled requests cannot.
+    If revalidation fails or any binding field is missing or changed, backend submissions are 0. AutoNotification duplicate events and repeated clicks produce at most one submission.
+    Recovery before submission revalidates and requires user action; recovery after an unknown outcome produces RESULT_UNKNOWN and zero additional submissions or automatic replays. A
+    hard prohibition produces zero backend submissions even with human approval.
   source: V0.2 §4.2
   depends_on:
   - REQ-IX-FR-005
@@ -214,10 +635,13 @@ requirements:
 - id: REQ-IX-FR-008
   type: functional
   priority: Must
-  title: 反馈和取消
-  statement: 系统应展示审批与安装进度，允许在提交前取消；已提交后应显示平台实际状态（含 RESULT_UNKNOWN），不得把未知结果显示为未安装或可撤销。
-  fit_criterion: 模型等待/人工审核阶段取消后无提交；提交后取消不把未知结果标为未安装；状态与平台核对一致。
-  source: V0.2 §6 阶段五
+  title: Feedback and cancellation
+  statement: The system shall show approval and installation progress and allow cancellation before submission for both in-scope modes; after submission it shall show the platform's
+    actual status, including RESULT_UNKNOWN, and shall not present an unknown result as not installed or revocable. Delayed notification confirmation shall not submit before assessment
+    completes.
+  fit_criterion: Cancelling during model wait, notification delay, or human review results in no submission; cancelling after submission does not label an unknown result as not installed;
+    status matches the platform check; duplicate notification events produce at most one submission.
+  source: V0.2 §6 Phase 5
   depends_on:
   - REQ-IX-FR-001
   status: conceptual
@@ -230,9 +654,12 @@ requirements:
 - id: REQ-IX-FR-009
   type: functional
   priority: Must
-  title: 决策审计
-  statement: 系统应按 operation ID 与 attempt ID 保存证据摘要、APK 哈希、安装模式与后端、配置与策略版本、模型与 Prompt 版本、建议或失败类型、规则 ID、最终决定、人工操作、时间戳和安装结果；不得保存凭据。
-  fit_criterion: 正常、BLOCK、人工批准、模型失败四类记录均可还原决策依据；审计中无 token/凭据；记录 append-only。
+  title: Decision audit
+  statement: The system shall store, per operation ID and attempt ID, an evidence summary, APK hash, install mode and backend, config and policy versions, model and prompt versions,
+    install_success_likelihood, security_risk, local compatibility result, evidence completeness, advice or failure type, rule ID, final decision, human action, timestamps, attempt count,
+    provider-dispatch count, token outcome, and installation result; it shall not store credentials.
+  fit_criterion: Normal, BLOCK, human-approved, preflight-rejected, post-call-overage, and model-failure records can reconstruct the decision basis; attempts and provider dispatches
+    are distinguishable; audit contains no tokens or credentials; records are append-only.
   source: V0.2 §3.3
   depends_on:
   - REQ-IX-FR-005
@@ -247,9 +674,9 @@ requirements:
 - id: REQ-IX-FR-010
   type: functional
   priority: Should
-  title: 查询审计
-  statement: 用户应能在应用内按请求查看审批记录、最终规则、人工操作和安装结果，并导出为机器可读格式。
-  fit_criterion: 两个不同请求的记录互不混用；导出包含 FR-009 全部字段；无权限用户不可读。
+  title: Query audit
+  statement: "The user shall be able to view approval records in the app by request, including the final rule, human action, and installation result, and export them in a machine-readable format."
+  fit_criterion: "Records for two different requests are not mixed; export contains all FR-009 fields; unauthorized users cannot read them."
   source: V0.2 §3.3
   depends_on:
   - REQ-IX-FR-009
@@ -258,30 +685,30 @@ requirements:
   enforcing_component: AuditQuery UI
   verification:
     method: UI + export
-    test: 'planned: AuditQueryTest'
+    test: "planned: AuditQueryTest"
     evidence: planned
 - id: REQ-IX-FR-011
   type: functional
   priority: Must
-  title: 外发数据同意
-  statement: 首次向外部模型发送数据前，系统应展示接收方、字段清单、用途与保留方式并取得明确同意；拒绝或撤回后不得发起模型调用，不得自动批准，转入 REQUIRE_REVIEW（硬性禁止仍 BLOCK）；该路径不等于关闭 AI。
-  fit_criterion: 首次使用出现同意页；同意后请求仅含白名单字段；拒绝/撤回后模型调用为 0、决定为 REQUIRE_REVIEW；与 FR-012（AI 关闭=基线）分别有验收用例；同意与撤回写入审计。
-  source: V0.2 §9 + 隐私风险
+  title: Outbound data consent
+  statement: "Before the first transmission to an external model, the system shall display the recipient, the enumerated field list from outbound_metadata_allowlist, purpose, and retention method and obtain explicit consent; after refusal or withdrawal it shall make no model calls, shall not auto-approve, and shall route to REQUIRE_REVIEW (hard prohibitions remain BLOCK); this path is not the same as turning AI off."
+  fit_criterion: "The consent screen appears on first use; after consent, the request contains only allowlisted fields; after refusal or withdrawal, model calls are 0 and the decision is REQUIRE_REVIEW; separate acceptance cases exist for FR-012 (AI disabled equals baseline); consent and withdrawal are written to audit."
+  source: V0.2 §9 + privacy risk
   depends_on: []
   status: conceptual
   asr: false
   enforcing_component: ConsentGate
   verification:
     method: UI + counter
-    test: 'planned: ConsentGateTest'
+    test: "planned: ConsentGateTest"
     evidence: planned
 - id: REQ-IX-FR-012
   type: functional
   priority: Must
-  title: AI 开关语义
-  statement: AI 审批开关关闭时，系统应保持既有安装行为，不发起模型调用，并在审计中记录 AI_DISABLED；开关不得削弱既有签名、黑名单、权限与策略检查。
-  fit_criterion: 关闭后模型调用为 0、既有检查仍执行、审计含 AI_DISABLED；该路径与 FR-011 的拒绝同意路径分别测试；任何开关组合下既有检查通过率与基线一致。
-  source: OI-07（本版决议）
+  title: AI toggle semantics
+  statement: "When the AI approval switch is off, the system shall preserve existing installation behavior, make no model calls, and record AI_DISABLED in audit; the switch shall not weaken existing signature, blacklist, permission, or policy checks."
+  fit_criterion: "When off, model calls are 0, existing checks still run, and audit contains AI_DISABLED; this path and the FR-011 consent-declined path are tested separately; under any switch combination, the existing-check pass rate matches baseline."
+  source: OI-07 (this revision's decision)
   depends_on:
   - REQ-IX-FR-011
   status: conceptual
@@ -289,14 +716,15 @@ requirements:
   enforcing_component: Settings + ConsentGate
   verification:
     method: config matrix + negative
-    test: 'planned: ToggleSemanticsTest'
+    test: "planned: ToggleSemanticsTest"
     evidence: planned
 - id: REQ-IX-INV-001
   type: invariant
   priority: Must
-  title: AI 无直接特权执行能力
-  statement: AI 组件仅返回建议数据，不得持有或调用安装、卸载、Root、Shizuku 或任何安装后端能力。
-  fit_criterion: 静态检查：AI 适配器包不引用 InstallationGateway / AppInstallerRepository；动态：返回 install/approve 指令的模型桩触发后端 0 次。
+  title: AI has no direct privileged execution capability
+  statement: The AI component shall only return advisory data and shall not hold or call installation, uninstallation, Root, Shizuku, or any installation-backend capability.
+  fit_criterion: 'Static check: the AI adapter package does not reference InstallationGateway or AppInstallerRepository; dynamic: a model stub returning install or approve instructions
+    triggers 0 backend calls; both advisory dimensions remain advisory.'
   source: V0.2 INV-001
   depends_on: []
   status: conceptual
@@ -309,9 +737,10 @@ requirements:
 - id: REQ-IX-INV-002
   type: invariant
   priority: Must
-  title: 建议不覆盖确定性禁止
-  statement: AI 建议与人工确认均不得覆盖生效中的硬性禁止规则；签名异常、黑名单、禁止降级、test-only 等规则由确定性代码执行。
-  fit_criterion: AI 返回 LOW 且用户确认时，被禁止 APK 仍为 BLOCK；后端调用 0；禁用 AI 后同一规则仍 BLOCK。
+  title: Advice does not override deterministic prohibition
+  statement: Neither AI advice nor human confirmation shall override an active hard-prohibition rule; signature anomalies, blacklist, forbidden downgrade, test-only, and similar rules
+    are enforced by deterministic code. A high success likelihood or low risk assessment does not change a hard-prohibition result.
+  fit_criterion: When AI returns HIGH success and LOW risk and the user confirms, a prohibited APK remains BLOCK; backend calls are 0; with AI disabled the same rule still yields BLOCK.
   source: V0.2 INV-002
   depends_on: []
   status: conceptual
@@ -324,31 +753,37 @@ requirements:
 - id: REQ-IX-INV-003
   type: invariant
   priority: Must
-  title: 批准绑定安装对象
-  statement: 批准应绑定 operation ID、attempt ID、APK SHA-256、包名、目标用户、安装模式、安装后端、配置快照和策略版本；任一绑定项缺失或变化即失效，提交前必须复验。
-  fit_criterion: 逐项修改绑定字段，旧批准均被拒绝；证据读取与提交之间的替换尝试不能安装未批准字节；复验通过率 100%。
+  title: Approval binds the installation object
+  statement: An approval shall bind operation ID, attempt ID, APK SHA-256, package name, target user, install mode, installation backend, config snapshot, and policy version; if any
+    binding item is missing or changed the approval becomes invalid and shall be revalidated before submission. The first Continue in AWAIT_HUMAN creates this binding from the current
+    installation object.
+  fit_criterion: Changing any binding field invalidates the old approval; a replacement between evidence read and submission cannot install unapproved bytes; first Continue creates a
+    binding and revalidation pass rate is 100%.
   source: V0.2 INV-003
   depends_on:
   - REQ-IX-FR-002
   status: conceptual
   asr: true
-  asr_rationale: 决定审批状态模型、执行边界与提交前复验，是安全链的核心结构约束。
+  asr_rationale: Determines the approval state model, execution boundary, and pre-submission revalidation; it is a core structural constraint of the safety chain.
   enforcing_component: ApprovalStateStore
   verification:
     method: negative + TOCTOU
     test: 'planned: ApprovalBindingTest'
     evidence: planned
+  note: The target package name remains local and is retained in this binding; see outbound_metadata_allowlist.local_approval_binding.
 - id: REQ-IX-INV-004
   type: invariant
   priority: Must
-  title: 模型故障不静默批准
-  statement: 模型超时、断网、限流、服务错误、无效输出或不可用时，系统不得自动批准；有硬性禁止时保持 BLOCK，否则进入 REQUIRE_REVIEW。用户拒绝外发同意不属于模型故障，按 FR-011 处理（零调用、REQUIRE_REVIEW）。
-  fit_criterion: 每类故障注入后自动执行 0 次；硬性禁止仍 BLOCK；界面给出故障原因与人工入口。
+  title: Model failure does not silently approve
+  statement: On model timeout, network loss, rate limiting, service error, invalid output, preflight token rejection, or reported post-call overage, the system shall not auto-approve;
+    if a hard prohibition applies it remains BLOCK, otherwise it routes to REQUIRE_REVIEW. A user's refusal of outbound consent is not a model failure and is handled by FR-011.
+  fit_criterion: After injection of each failure type, automatic executions are 0; a hard prohibition remains BLOCK; preflight rejection records 0 provider dispatches; post-call overage
+    records 1 completed call; the UI shows the failure reason and a human entry point.
   source: V0.2 INV-004
   depends_on: []
   status: conceptual
   asr: true
-  asr_rationale: 塑造失败处理结构与降级路径，影响协调器、UI 和审计三处。
+  asr_rationale: Shapes the failure-handling structure and degradation path and affects the coordinator, UI, and audit.
   enforcing_component: ApprovalCoordinator
   verification:
     method: fault injection
@@ -357,9 +792,11 @@ requirements:
 - id: REQ-IX-INV-005
   type: invariant
   priority: Must
-  title: 重复事件最多一次提交
-  statement: 同一安装操作 ID 在重复事件、并发回调、进程恢复和用户重试下，最多产生一次自动提交；模型调用重试（attempt）不改变该约束。
-  fit_criterion: 同一 operation ID 并发 20 次执行事件，后端提交 ≤1；恢复重放不增加提交；用户重试只新增 attempt ID，不新增提交权。
+  title: At most one submission per repeated event
+  statement: For the same installation operation ID, repeated events, concurrent callbacks, notification replays, process recovery, and user retries shall produce at most one automatic
+    submission; model-call attempts do not change this constraint. Retry grants no new submission right.
+  fit_criterion: With 20 concurrent execution events for the same operation ID, backend submissions are at most 1; notification replay and recovery replay add no submission; a user retry
+    adds only an attempt ID and no new submission right.
   source: V0.2 INV-005
   depends_on:
   - REQ-IX-REL-002
@@ -373,14 +810,16 @@ requirements:
 - id: REQ-IX-INV-006
   type: invariant
   priority: Must
-  title: 策略判定独立于模型
-  statement: 策略判定必须独立于模型可用性：无模型时仍能确定性给出 BLOCK 或 REQUIRE_REVIEW；策略代码不得依赖模型 SDK 或网络。
-  fit_criterion: 断开模型/注入空适配器后策略单测全通过；策略包静态检查无模型/网络依赖；相同输入输出稳定。
-  source: 课程 deterministic cage + FR-005
+  title: Policy decision independent of model
+  statement: 'Policy decision-making must be independent of model availability: without a model it must still deterministically produce BLOCK or REQUIRE_REVIEW; policy code shall not
+    depend on a model SDK or network. Local compatibility assessment is also deterministic and model-independent.'
+  fit_criterion: With the model disconnected or an empty adapter injected, all policy unit tests pass; static checking finds no model or network dependency in the policy package; local
+    compatibility produces stable COMPATIBLE, INCOMPATIBLE, or UNKNOWN results without a model call.
+  source: 'Course requirement: deterministic cage + FR-005'
   depends_on: []
   status: conceptual
   asr: true
-  asr_rationale: 强制模型与策略分离，决定模块边界和可测试性，是 AI 笼子的结构基础。
+  asr_rationale: Forces model and policy separation, determines module boundaries and testability, and is the structural basis of the AI cage.
   enforcing_component: DeterministicPolicyEngine
   verification:
     method: static + unit
@@ -389,27 +828,31 @@ requirements:
 - id: REQ-IX-INV-007
   type: invariant
   priority: Must
-  title: AI 不降低确定性限制
-  statement: AI 建议不得降低确定性策略给出的限制：基础策略为 REQUIRE_REVIEW 或 BLOCK 时，AI 只能维持或提高限制；仅当基础策略为 ALLOW_AUTO 且 AUTO_RULES_MET 时，才允许自动批准。
-  fit_criterion: 基础策略 REVIEW + AI LOW + rules met → 仍为 REQUIRE_REVIEW；基础 ALLOW_AUTO + AI LOW + rules met → ALLOW_AUTO；基础 BLOCK + AI LOW + 人工批准 → 仍为 BLOCK；均无越级自动提交。
-  source: 旧 docs registry INV-005；V0.1 正文 INV-005；OI-04
+  title: AI does not lower deterministic restrictions
+  statement: 'AI advice shall not lower a restriction produced by deterministic policy: when the base policy is REQUIRE_REVIEW or BLOCK, AI may only maintain or raise the restriction;
+    auto-approval is allowed only when the base policy is ALLOW_AUTO and AUTO_RULES_MET, and success likelihood is HIGH while security risk is LOW.'
+  fit_criterion: Base policy REVIEW plus AI LOW risk remains REQUIRE_REVIEW; base ALLOW_AUTO plus success HIGH, risk LOW, and rules met becomes ALLOW_AUTO; base BLOCK plus human approval
+    remains BLOCK; no case auto-submits above its base policy.
+  source: Legacy docs registry INV-005; V0.1 body INV-005; OI-04
   depends_on:
   - REQ-IX-FR-005
   status: conceptual
   asr: true
-  asr_rationale: 决定 AI 与策略的优先级关系，自动批准只能在基础策略允许时成立，是安全链的结构约束。
+  asr_rationale: Determines the precedence between AI and policy; auto-approval is valid only when the base policy permits it, making this a safety-chain structural constraint.
   enforcing_component: DeterministicPolicyEngine
   verification:
     method: decision-table negative
     test: 'planned: NoDowngradeTest'
     evidence: planned
-  note: 新 INV-005 为幂等；旧 INV-005 的“不得降低审核级别”语义迁至本条。
+  note: The new INV-005 is idempotency; the old INV-005 'must not lower the review level' semantics moved to this requirement.
 - id: REQ-IX-SEC-001
   type: security
   priority: Must
-  title: 隔离模型权限
-  statement: 模型适配器应运行在最小权限边界内，仅能读取白名单证据字段并返回结构化建议，不得访问安装会话、特权服务或文件系统原始 APK。
-  fit_criterion: 权限/依赖静态检查通过；适配器无法读取 APK 原始字节（接口级断言）；攻击指令样例后端调用 0。
+  title: Isolate model permissions
+  statement: The model adapter shall run within a least-privilege boundary, may read only allowlisted evidence fields, and may return only a structured advisory recommendation containing
+    install_success_likelihood, security_risk, reasons, and evidence references; it shall not access installation sessions, privileged services, or raw APK files.
+  fit_criterion: Permission and dependency static checks pass; the adapter cannot read raw APK bytes; attack-instruction samples trigger 0 backend calls; both advisory dimensions remain
+    advisory.
   source: V0.2 INV-001
   depends_on: []
   status: conceptual
@@ -422,9 +865,9 @@ requirements:
 - id: REQ-IX-SEC-002
   type: security
   priority: Must
-  title: 保留硬性禁止规则
-  statement: 既有硬性禁止规则应由确定性代码在 AI 前后各执行一次，AI 建议和人工确认不得改变其结果。
-  fit_criterion: AI LOW + 人工确认下被禁止 APK 仍 BLOCK；AI 前后规则结果一致；后端 0。
+  title: Preserve hard prohibition rules
+  statement: Existing hard-prohibition rules shall be executed by deterministic code both before and after AI, and neither AI advice nor human confirmation may change their result.
+  fit_criterion: With AI HIGH success and LOW risk and human confirmation, a prohibited APK remains BLOCK; rule results before and after AI are identical; backend calls are 0.
   source: V0.2 INV-002
   depends_on: []
   status: conceptual
@@ -437,9 +880,9 @@ requirements:
 - id: REQ-IX-SEC-003
   type: security
   priority: Must
-  title: 审批记录防篡改与失效
-  statement: 审批记录应防篡改；绑定字段与 INV-003 一致，任一字段缺失或对象变化时立即失效，不得生成有效批准。
-  fit_criterion: 修改存储中的绑定位后复验失败；旧批准无法用于新对象；审计可检测记录篡改（DATA-001）。
+  title: Approval record tamper resistance and invalidation
+  statement: "Approval records shall be tamper-resistant; binding fields shall match INV-003, and any missing field or changed object shall invalidate the approval immediately and shall not produce a valid approval."
+  fit_criterion: "Modifying a stored binding field causes revalidation to fail; an old approval cannot be used for a new object; audit detects record tampering (DATA-001)."
   source: V0.2 INV-003
   depends_on:
   - REQ-IX-FR-002
@@ -448,15 +891,19 @@ requirements:
   enforcing_component: ApprovalStateStore
   verification:
     method: tamper + negative
-    test: 'planned: ApprovalTamperTest'
+    test: "planned: ApprovalTamperTest"
     evidence: planned
 - id: REQ-IX-SEC-004
   type: security
   priority: Must
-  title: 控制外发数据
-  statement: 外发数据应遵守同意与联网开关，仅发送白名单元数据；不得发送 APK 二进制、设备标识、账号、token 或日志中的凭据。
-  fit_criterion: 拒绝/断网时外发 0；请求体字段与白名单完全一致；日志扫描无 token/设备标识；抓包无 APK 字节。
-  source: V0.2 §9 + 隐私风险
+  title: Control outbound data
+  statement: Outbound data shall obey consent and the network switch and shall send only the metadata enumerated in outbound_metadata_allowlist; it shall not send APK binary, target
+    or source package names, raw APK or signer hashes, source UID, device identifiers, accounts, tokens, or credentials, and credentials shall not appear in logs. Compatibility shall
+    be sent only as derived signals; truncated fields are not complete; required fields are always present even when their value is UNKNOWN.
+  fit_criterion: Without consent or offline, outbound count is 0; evidence leaf paths in the request exactly match the allowlist and required fields are present; a full-request scan,
+    including the assembled prompt, finds no target package name, source package name, APK SHA-256, signer SHA-256, source UID, sourceDir, label, raw device identifier, ABI list, or
+    device API level; log scan finds no token or device identifier; packet capture contains no APK bytes.
+  source: V0.2 §9 + privacy risk
   depends_on:
   - REQ-IX-FR-002
   - REQ-IX-FR-011
@@ -464,34 +911,44 @@ requirements:
   asr: false
   enforcing_component: NetworkGate
   verification:
-    method: capture + log scan
+    method: capture + log scan + allowlist diff
     test: 'planned: OutboundWhitelistTest'
     evidence: planned
+  note: Outbound field definitions, local-only restrictions, consent behavior, and negative fit criteria are enumerated in outbound_metadata_allowlist. PMA-OUT-001 (target APK package
+    name local) is approved; the remaining allowlist items, including the source-package and raw-hash decisions, remain under review.
   source_links:
   - https://github.com/wxxsfxyzm/InstallerX-Revived/blob/main/app/src/main/java/com/rosan/installer/data/session/resolver/OkHttpNetworkResolver.kt
 - id: REQ-IX-SEC-005
   type: security
   priority: Must
-  title: 处理不可信文本
-  statement: APK 标签、来源字符串和其他包内文本在进入模型前应作为不可信数据处理：剥离 C0/C1 控制字符、NFKC 归一化、JSON 转义、单字段 ≤4KB、总输入 ≤32KB，并中和指令样式文本。
-  fit_criterion: ≥20 条注入样本（Latin/CJK/Unicode/JSON/超长）自动批准 0 次；净化后模型输入不含原恶意串；超长被截断并记录；系统无崩溃。
+  title: Handle untrusted text
+  statement: 'The system shall treat APK labels, source strings, compatibility-derived text, and other in-package text as untrusted before they enter the model: strip C0 and C1 control
+    characters, apply NFKC normalization, JSON-escape, cap each field at 4 KB and total input at 32 KB, and neutralize obvious instruction-style text. These controls reduce, but do not
+    guarantee elimination of, prompt-injection influence. The system shall not claim complete prompt-injection prevention; authorization remains deterministic, and no sanitized text
+    may create an approval or backend call. Truncation shall be recorded and treated as incomplete evidence.'
+  fit_criterion: At least 20 injection samples (Latin, CJK, Unicode, JSON, and oversized) produce zero auto-approvals and zero backend calls; affected outputs are INVALID or REQUIRE_REVIEW.
+    Oversized content is truncated and marked incomplete; the system does not crash. Documentation and comments do not claim complete prompt-injection prevention. The 32 KB input cap
+    does not replace the COST-001 preflight token decision; a request that cannot meet the token budget is not sent.
   source: V0.2 §3.1 Prompt Injection
   depends_on:
   - REQ-IX-FR-002
   status: conceptual
   asr: true
-  asr_rationale: 在外部模型前引入净化管线，决定证据流与接口契约，是注入防线的结构点。
+  asr_rationale: Introduces a sanitization pipeline before the external model, determines the evidence flow and interface contract, and is the structural injection defense point.
   enforcing_component: EvidenceSanitizer
   verification:
     method: adversarial corpus
     test: 'planned: SanitizerInjectionTest'
     evidence: planned
+  note: The 32 KB input byte cap does not guarantee the COST-001 token cap; the COST-001 pre-flight token budget decides whether a call is sent.
 - id: REQ-IX-REL-001
   type: robustness
   priority: Must
-  title: 失败安全降级
-  statement: 模型超时、断网、限流、服务错误及无效输出应降级为 REQUIRE_REVIEW；硬性禁止保持 BLOCK；不得静默自动批准。
-  fit_criterion: 五类故障注入自动执行 0；界面显示故障与下一步；硬性禁止仍 BLOCK。
+  title: Fail-safe degradation
+  statement: Model timeout, network loss, rate limiting, service error, invalid output, preflight token rejection, reported post-call overage, or a blocked third request shall degrade
+    to REQUIRE_REVIEW; a hard prohibition remains BLOCK; the system shall not silently auto-approve.
+  fit_criterion: Injection of the failure types produces 0 automatic executions; the UI shows the failure and next step; a hard prohibition remains BLOCK; preflight rejection has 0 provider
+    dispatches, post-call overage has 1 completed call, and a blocked third request has 0 additional dispatches.
   source: V0.2 INV-004
   depends_on:
   - REQ-IX-INV-004
@@ -505,15 +962,17 @@ requirements:
 - id: REQ-IX-REL-002
   type: robustness
   priority: Must
-  title: 持久化审批状态
-  statement: 系统应在关键状态转换（收到请求、证据完成、建议完成、决定、批准、提交前）持久化请求、绑定信息与决定；无法可靠写入时停止自动提交。
-  fit_criterion: 写入故障注入后无自动安装；重启后读到最后一个成功状态与请求 ID；事务边界测试通过。
+  title: Persist approval state
+  statement: The system shall persist the request, binding information, and decision at key transitions (request received, evidence complete, advice complete, decision, approval, delayed
+    notification confirmation, and pre-submission); if a reliable write is impossible it shall stop automatic submission.
+  fit_criterion: After write-failure injection there is no automatic installation; after restart the last successfully written state and request ID are readable; notification transitions
+    are persisted; transaction-boundary tests pass.
   source: V0.2 §5.1
   depends_on:
   - REQ-IX-FR-001
   status: conceptual
   asr: true
-  asr_rationale: 引入持久状态存储与事务边界，决定恢复协议和 Room 数据模型。
+  asr_rationale: Introduces persistent state storage and transaction boundaries, determining the recovery protocol and the Room data model.
   enforcing_component: ApprovalStateStore
   verification:
     method: restart + write-fault
@@ -524,16 +983,19 @@ requirements:
 - id: REQ-IX-REL-003
   type: robustness
   priority: Must
-  title: 处理中断恢复
-  statement: 进程重启后，未提交请求应重新验证并重新审批；已提交但结果未知的请求应核对平台状态；无法核实时标记 RESULT_UNKNOWN 并禁止自动重放。
-  fit_criterion: 在模型等待、待审核、批准未提交、提交后终止四类场景恢复：不复用过期批准、不重复提交、未知可识别。
+  title: Handle interruption recovery
+  statement: After a process restart, unsubmitted requests shall be revalidated and re-approved; submitted requests with an unknown result shall be reconciled with platform state; if
+    reconciliation is impossible they shall be marked RESULT_UNKNOWN and automatic replay is forbidden. A notification awaiting the user remains AWAIT_HUMAN and shall not be auto-approved
+    during recovery.
+  fit_criterion: 'Recovery in five scenarios (model wait, pending review, delayed notification, approved but unsubmitted, and terminated after submission): no reuse of an expired approval,
+    no duplicate submission, and the unknown result is identifiable.'
   source: V0.2 §3.2
   depends_on:
   - REQ-IX-REL-002
   - REQ-IX-SEC-003
   status: conceptual
   asr: true
-  asr_rationale: 新增崩溃恢复协议、幂等键与状态对账，影响存储、网关和 UI。
+  asr_rationale: Adds a crash-recovery protocol, idempotency keys, and state reconciliation, affecting storage, gateway, and UI.
   enforcing_component: ApprovalStateStore
   verification:
     method: crash recovery
@@ -542,10 +1004,12 @@ requirements:
 - id: REQ-IX-REL-004
   type: robustness
   priority: Must
-  title: 防止重复提交
-  statement: 系统应对同一安装操作 ID 的重复事件、连续点击、并发回调和恢复重放执行去重，保证最多一次自动提交；用户主动重试只新增 attempt ID，不新增提交权，且总调用受 COST-001 约束。
-  fit_criterion: 同一 operation ID 并发 20 次提交 ≤1；用户重试产生新 attempt ID、同 operation ID；第 3 次调用被阻止；去重窗口内无重复执行。
-  source: V0.2 §6 阶段六
+  title: Prevent duplicate submission
+  statement: The system shall deduplicate repeated events, repeated taps, duplicate notification events, concurrent callbacks, and recovery replay for the same operation ID, guaranteeing
+    at most one automatic submission; a user retry adds only an attempt ID, not a new submission right, and total attempts are bounded by COST-001.
+  fit_criterion: 20 concurrent submissions for the same operation ID result in at most 1; a user retry creates a new attempt ID under the same operation ID; the third attempt is blocked;
+    no duplicate execution occurs in the deduplication window; notification replay adds no submission.
+  source: V0.2 §6 Phase 6
   depends_on:
   - REQ-IX-REL-002
   status: conceptual
@@ -558,9 +1022,9 @@ requirements:
 - id: REQ-IX-PER-001
   type: performance
   priority: Should
-  title: 限制等待时间
-  statement: AI 审批的单次尝试预算为 15 秒：从请求进入 AWAITING_AI（证据完成且已同意）起，到决定写入持久状态止；单次模型调用超时 7 秒，不做自动重试；用户主动发起的第二次尝试单独计时。预算不含人工审核、排队与用户操作时间。
-  fit_criterion: 超时桩下 7 秒调用超时后 1 秒内出现 REQUIRE_REVIEW、15 秒内决定落库；调用计数为 1（无自动重试）；第二次用户触发单独计时；等待期间取消与页面交互可响应；无 ANR/主线程阻塞。
+  title: Limit waiting time
+  statement: "The budget for one AI approval attempt is 15 seconds: from the request entering AWAITING_AI (evidence complete and consent granted) until the decision is written to persistent state; one model call times out at 7 seconds and is not retried automatically; a second user-initiated attempt is timed separately. The budget excludes human review, queueing, and user interaction time."
+  fit_criterion: "With a timeout stub, REQUIRE_REVIEW appears within 1 second after the 7-second call timeout and the decision is persisted within 15 seconds; call count is 1 (no automatic retry); a second user-triggered attempt is timed separately; cancellation and UI interaction remain responsive during the wait; no ANR or main-thread blocking."
   source: V0.2 §6 Cost/Performance
   depends_on:
   - REQ-IX-REL-001
@@ -569,14 +1033,24 @@ requirements:
   enforcing_component: AIRiskAdvisor
   verification:
     method: timeout stub
-    test: 'planned: LatencyBudgetTest'
+    test: "planned: LatencyBudgetTest"
     evidence: planned
+  note: "The latency budget does not override the COST-001 hard token cap or the two-call limit."
 - id: REQ-IX-COST-001
   type: cost
   priority: Should
-  title: 控制模型调用
-  statement: 同一安装操作最多 2 次模型调用：第 1 次由系统自动发起，第 2 次仅由用户主动触发；不做自动重试。单次调用输入+输出 ≤2000 tokens（至少 95% 调用），硬上限 4000；超限或超次数按失败处理并转 REQUIRE_REVIEW。
-  fit_criterion: 成功请求调用数 1；超时不自动重试；用户可触发第 2 次；第 3 次被阻止并提示人工；token 统计与阈值报告齐全；超限转人工。
+  title: Control model calls
+  statement: 'For one installation operation, the system shall make at most two attempts: attempt 1 is system-initiated automatically, attempt 2 is user-initiated only, and automatic
+    retry is forbidden. Attempts and provider dispatches are counted separately. A preflight rejection consumes an attempt but sends zero provider dispatches; a sent request produces
+    exactly one dispatch; a blocked third attempt produces zero additional dispatches. A call''s total tokens are input tokens plus output tokens. At least 95% of calls in the approved
+    evaluation population shall use at most 2,000 total tokens; this is an aggregate evaluation target, not a per-call runtime limit. Every completed valid call has a hard cap of 4,000
+    total tokens, inclusive, enforced before transmission. A completed call above 4,000 tokens is a failed attempt: no auto-approval, route to REQUIRE_REVIEW, no automatic retry, and
+    hard-block rules remain BLOCK. The evaluation population is a fixed cohort per model and prompt version; a 30-call sample is proposed, not approved. Accounting shall report attempted
+    operations, attempts, provider dispatches, completed calls, exclusions, and token totals.'
+  fit_criterion: T <= 2000 passes at runtime and counts inside the 95% target; 2001 <= T <= 3999 is allowed and counts in the 5% tail; T = 4000 remains within the cap; T >= 4001 is a
+    runtime failure. Preflight rejection records 1 attempt and 0 provider dispatches; reported post-call overage records 1 completed call; a blocked third request records 0 additional
+    attempts and 0 additional dispatches. If more than 5% of calls in the approved cohort exceed 2000, the evaluation or release gate fails. The report states the cohort definition,
+    denominator, exclusions, and token accounting method.
   source: V0.2 §6 Cost/Performance
   depends_on:
   - REQ-IX-FR-003
@@ -584,36 +1058,114 @@ requirements:
   asr: false
   enforcing_component: AIRiskAdvisor
   verification:
-    method: counter
-    test: 'planned: CallBudgetTest'
+    method: unit + boundary + evaluation distribution
+    test: 'planned: CallBudgetTest; planned: TokenBudgetTest; planned: CostDistributionEvaluation'
     evidence: planned
+  note: Revision 5 defines the 95% value as an aggregate evaluation target and the 4,000-token value as an inclusive per-call hard cap enforced before spend. No request is sent when
+    the remaining budget cannot accommodate a valid structured response or the provider cannot enforce the output cap; exactly 4,000 total tokens for a completed valid call remains within
+    the cap. The measurement method and evaluation population remain pending Member A review.
+  cost_policy:
+    max_calls_per_operation: 2
+    call_triggers:
+    - attempt: 1
+      trigger: system_automatic
+    - attempt: 2
+      trigger: user_initiated_only
+    automatic_retry: false
+    token_unit: input_plus_output_total
+    aggregate_target:
+      threshold_percent: 95
+      max_total_tokens: 2000
+      population: Fixed evaluation population per model and prompt version, as proposed below.
+      on_miss: evaluation_or_release_gate_failure_not_runtime_failure
+      status: proposed_pending_member_a_review
+    hard_cap:
+      max_total_tokens: 4000
+      enforcement: before_send
+      preflight_rule: If counted input tokens exceed 4000, or the remaining budget cannot accommodate a valid structured response, or the provider cannot enforce the output cap, send
+        zero provider calls.
+      output_limit_rule: Set the provider output-token limit to 4000 minus counted input tokens; exactly 4000 total tokens for a completed valid call is within the cap.
+      on_violation: failed_attempt_no_auto_approval_require_review
+      automatic_retry: false
+      hard_block_precedence: true
+    boundary_outcomes:
+    - range: '2000'
+      runtime: allowed
+      evaluation: counts_inside_95_percent_target
+    - range: 2001-3999
+      runtime: allowed_but_counts_in_5_percent_tail
+      evaluation: not_a_runtime_failure
+    - range: '4000'
+      runtime: allowed_at_hard_cap_for_completed_valid_call
+      evaluation: counts_in_5_percent_tail
+    - range: 4001+
+      runtime: failed_attempt_require_review_no_auto_retry
+      evaluation: also_counts_as_a_miss_but_runtime_failure_dominates
+    token_counting:
+      accounting: provider_reported_input_plus_output
+      enforcement: preflight_local_tokenizer
+      counts_cached_or_hidden_reasoning_if_provider_reports: true
+      status: proposed_pending_member_a_review
+      double_count_rule: Count provider input plus output once; cached and reasoning subtotals already included in those totals must not be added again.
+    evaluation_population:
+      proposed_sample_size: 30
+      fixed_cohort_per_model_and_prompt_version: true
+      counts_both_attempts: true
+      reports_attempts_dispatches_calls_and_exclusions: true
+      status: proposed_pending_member_a_review
+      denominator: Count every dispatched evaluation call across both attempts, including post-call overages. Preflight rejections are reported separately. Missing usage prevents an
+        evaluation pass. Require a nonempty denominator and at least 95% at or below 2000 tokens.
+    pending_member_a_review:
+    - id: PMA-COST-001
+      proposal: Interpret 'over limit' in COST-001 as above 4,000 tokens, not above 2,000; 2,001-4,000 is allowed but contributes to the 5% tail.
+      rationale: The 95% wording describes an aggregate target; treating 2,001 as a runtime failure would contradict that allowance.
+    - id: PMA-COST-002
+      proposal: Count input plus output tokens using provider-reported usage for accounting and a pre-flight local tokenizer for enforcement.
+      rationale: Pre-flight counting is required to enforce the cap before spend; provider usage is the transparent record for the evaluation population.
+    - id: PMA-COST-003
+      proposal: Use a fixed evaluation fixture set, replayed per model and prompt version per release, with the minimum call count defined by Member A.
+      rationale: Makes the 95% target reproducible and comparable across prompt and model changes.
+    - id: PMA-COST-004
+      proposal: Require a provider output-token limit, or an equivalent provider-side cap, for enforcement before spend.
+      rationale: A post-hoc usage check alone cannot prevent excess spend.
+    attempt_policy:
+      max_attempts_per_operation: 2
+      attempt_1: system_automatic
+      attempt_2: user_initiated_only
+      preflight_rejection_consumes_attempt: true
+      provider_dispatch_on_preflight_rejection: 0
+      provider_dispatch_when_sent: 1
+      provider_dispatch_on_blocked_third: 0
+      automatic_retry: false
 - id: REQ-IX-MOD-001
   type: quality
   subtype: modifiability
   priority: Should
-  title: 替换模型实现
-  statement: 模型供应商与调用配置应通过统一适配接口封装；策略与 UI 不得依赖供应商响应细节。
-  fit_criterion: 固定响应适配器替换在线模型后，策略与审批测试无需修改业务规则即可通过；适配器契约测试通过。
+  title: Replace model implementation
+  statement: "Model provider and call configuration shall be encapsulated behind a unified adapter interface; policy and UI shall not depend on provider response details."
+  fit_criterion: "After replacing the online model with a fixed-response adapter, policy and approval tests pass without changing business rules; adapter contract tests pass."
   source: V0.2 §6 Modifiability
   depends_on:
   - REQ-IX-FR-003
   - REQ-IX-FR-004
   status: conceptual
   asr: true
-  asr_rationale: 定义外部依赖边界与测试替身，影响模块接口和依赖注入。
+  asr_rationale: "Defines the external dependency boundary and test doubles, affecting module interfaces and dependency injection."
   enforcing_component: AIRiskAdvisor
   verification:
     method: adapter swap
-    test: 'planned: AdapterContractTest'
+    test: "planned: AdapterContractTest"
     evidence: planned
 - id: REQ-IX-COMP-001
   type: quality
   subtype: compatibility
   priority: Must
-  title: 保留既有约束
-  statement: AI 扩展应复用既有 APK 分析与安装能力，保持基线中既有策略、权限检查、通知、历史及两套 UI 的受影响行为可回归。
-  fit_criterion: 记录基线提交或归档哈希；列出的回归场景（安装/更新/降级/签名不符/黑名单）全部通过；未支持路径不显示“受 AI 审批保护”。
-  source: V0.2 §2.1；§3.4
+  title: Preserve existing constraints
+  statement: The AI extension shall reuse existing APK analysis and installation capabilities and keep baseline policy, permission checks, notifications, history, and the affected behavior
+    of both UI families regressible. Local compatibility assessment shall not change baseline installation rules.
+  fit_criterion: Record the baseline commit or archive hash; listed regression scenarios (install, update, downgrade, signature mismatch, blacklist) all pass; unsupported paths do not
+    display 'protected by AI approval'; local compatibility adds no privileged capability.
+  source: V0.2 §2.1; §3.4
   depends_on: []
   status: conceptual
   asr: false
@@ -626,10 +1178,15 @@ requirements:
   type: quality
   subtype: ai_quality
   priority: Should
-  title: 评估建议质量
-  statement: 小组应建立人工标注的正常、异常、缺失证据和恶意文本用例集，人工评估理由是否真实、相关且不过度推断，并与结构有效性分开报告；例：APK 声明 READ_CONTACTS 可支持“申请读取联系人权限”，不能支持“已上传联系人”。
-  fit_criterion: ≥20 例、每例 3 次；结构有效率 ≥95%（自动）；人工有据率 ≥90%、相关性 ≥90%；报告含原始输出/分母/评分人；结果不得用于自动授权。
-  source: V0.2 §9 AI 输出质量
+  title: Evaluate advice quality
+  statement: The team shall build a human-labeled set of normal, abnormal, missing-evidence, compatibility-uncertain, and malicious-text cases. Human evaluation shall assess install_success_likelihood
+    and security_risk separately, and shall assess whether reasons are truthful, relevant, and not over-inferred. The report shall separate structural validity from semantic quality,
+    identify the denominator and scorers, and shall not use evaluation results to authorize any installation. The success-likelihood agreement threshold and calibration requirement are
+    pending review.
+  fit_criterion: At least 20 cases, each run 3 times; structural validity is at least 95% (automatic); human groundedness is at least 90% and relevance is at least 90% for each dimension;
+    install_success_likelihood agreement with the human label is at least 90% pending review; the report includes raw outputs, per-dimension denominators, and scorers; no result is used
+    for automatic authorization. Cases include compatibility UNKNOWN and INCOMPATIBLE, AI failure, and malicious text; a guarantee or trial-install claim is recorded as a failure.
+  source: V0.2 §9 AI output quality
   depends_on:
   - REQ-IX-FR-004
   status: conceptual
@@ -643,10 +1200,12 @@ requirements:
   type: quality
   subtype: explainability
   priority: Should
-  title: 建议可解释
-  statement: 每条被接受的 AI 理由必须引用至少一个存在的证据字段；自动检查只验证引用存在性与字段名合法性，不判断语义真实性；无引用或伪造引用判为 INVALID。
-  fit_criterion: 标注集上 100% 被接受理由引用存在字段；0 条伪造引用；自动测试不依赖人工语义判断；语义支持由 AIQ-001 单独评估。
-  source: V0.2 §9 AI 输出质量
+  title: Advice is explainable
+  statement: Every accepted AI reason must cite at least one existing evidence field for the dimension it supports; the automatic check verifies only reference existence and field-name
+    validity, not semantic truth; a missing or fabricated reference is INVALID.
+  fit_criterion: On the labeled set, 100% of accepted reasons cite existing fields for the stated dimension; there are 0 fabricated references; automated tests do not depend on human
+    semantic judgment; semantic support is evaluated separately by AIQ-001.
+  source: V0.2 §9 AI output quality
   depends_on:
   - REQ-IX-FR-004
   status: conceptual
@@ -660,10 +1219,13 @@ requirements:
   type: governance
   subtype: verification_process
   priority: Must
-  title: 离线与在线验证
-  statement: 每条 Must 需求应关联测试或可执行检查；每条 invariant 至少一项负向测试；应分别保留固定响应测试与真实模型集成证据。
-  fit_criterion: 需求→验证映射无空缺；移除保护后对应负向测试失败；真实模型记录环境、模型与 Prompt 版本。
-  source: V0.2 §6 阶段六
+  title: Offline and online verification
+  statement: Every Must requirement shall be associated with a test or executable check; every invariant shall have at least one negative test; fixed-response tests and real-model integration
+    evidence shall be retained separately. The suite shall cover both advisory dimensions, compatibility, notification recovery, duplicate events, Continue and Retry, and preflight-versus-post-call
+    token outcomes.
+  fit_criterion: The requirement-to-verification mapping has no gaps; removing the protection makes the corresponding negative test fail; real-model records include environment, model,
+    and prompt version.
+  source: V0.2 §6 Phase 6
   depends_on: []
   status: conceptual
   asr: false
@@ -676,10 +1238,10 @@ requirements:
   type: governance
   subtype: traceability
   priority: Must
-  title: 需求追踪与人工评审
-  statement: 需求应保留唯一 ID、来源、优先级、验收标准、依赖与状态；依赖图无环；需求、架构、测试变更可追踪并经小组评审。
-  fit_criterion: YAML 可解析、ID 唯一、无悬空依赖、无环；评审记录可关联版本与理由。
-  source: V0.2 §6 阶段二
+  title: Requirements traceability and human review
+  statement: "Requirements shall retain a unique ID, source, priority, acceptance criterion, dependencies, and status; the dependency graph shall be acyclic; requirement, architecture, and test changes shall be traceable and reviewed by the team."
+  fit_criterion: "YAML parses, IDs are unique, there are no dangling dependencies and no cycles; review records can be linked to version and reason."
+  source: V0.2 §6 Phase 2
   depends_on: []
   status: conceptual
   asr: false
@@ -692,10 +1254,10 @@ requirements:
   type: governance
   subtype: agent_governance
   priority: Must
-  title: Coding Agent 治理
-  statement: 小组应保存 Plan、Build、Verify 活动与人工审查记录；代码生成前审批计划，安全关键改动关联人工批准与 ADR。
-  fit_criterion: 抽查 AI 组件改动和授权改动各 1 项。每项关联计划批准、生成记录、验证结果、人工审查四项可定位记录；两项合计缺失记录数为 0。
-  source: V0.2 §6 阶段四
+  title: Coding Agent governance
+  statement: "The team shall retain Plan, Build, and Verify activities and human review records; plans shall be approved before code generation, and safety-critical changes shall be linked to human approval and an ADR."
+  fit_criterion: "Sample one AI-component change and one authorization change. Each has four locatable records: plan approval, generation record, verification result, and human review; total missing records across both is 0."
+  source: V0.2 §6 Phase 4
   depends_on:
   - REQ-IX-GOV-001
   status: conceptual
@@ -703,17 +1265,24 @@ requirements:
   enforcing_component: Process records
   verification:
     method: process audit
-    test: 'planned: review log'
+    test: "planned: review log"
     evidence: planned
 - id: REQ-IX-SCOPE-001
   type: governance
   subtype: scope
   priority: Must
-  title: v1 范围
-  statement: v1 仅覆盖 InstallerActivity 发起、InstallMode.AutoDialog、Authorizer.None（系统 PackageInstaller）演示后端的单 APK 安装；其他应用发起的 session（含 ActionHandler 自动批准）、模块、批量/分包、卸载/解包/网络 URL、Root/Shizuku
-    全覆盖、恶意软件检测、多 Agent、云平台均不在本版。
-  fit_criterion: 入口清单评审通过；范围外路径 AI 调用 0 次且行为不变；session 旁路写入威胁模型与 future work；非目标在文档中列出。
-  source: V0.2 §2 + 组长边界
+  title: v1 scope
+  statement: v1 covers single-APK installation initiated by InstallerActivity with InstallMode.AutoDialog (Must) or InstallMode.AutoNotification (Should), using Authorizer.None (system
+    PackageInstaller) as the demonstration backend. AutoDialog is the primary v1 flow; AutoNotification reuses the same assessment and decision path and is delivered only to the extent
+    its Should scope is accepted. Other app-initiated sessions (including ActionHandler auto-approval), InstallMode.Notification, modules, batch or split installation, uninstall, unarchive,
+    network URL, full Root or Shizuku coverage, malware detection, multi-agent designs, and cloud platforms are out of scope. The ActionHandler session bypass remains a known bypass
+    and is not fixed in v1; the team shall not claim that this path is protected by AI approval.
+  fit_criterion: 'An install entry-point inventory records, with source links, every path that can submit an install and whether it is in scope: InstallerActivity AutoDialog, InstallerActivity
+    AutoNotification, and out-of-scope ActionHandler and InstallMode.Notification paths. AutoDialog in-scope submissions produce one operation ID and at most two attempts; AutoNotification
+    uses the same assessment path when enabled. Out-of-scope paths make zero model calls and behave as baseline. The inventory cites InstallerViewModel.kt:598, ProgressHandler.kt:51-69,
+    ActionHandler.kt:340-355, and ActionHandler.kt:1020. The threat model records the session bypass, and non-goals are documented. If AutoNotification is not delivered, no acceptance
+    claim is made for it.'
+  source: V0.2 §2 + team lead scope boundary
   depends_on: []
   status: conceptual
   asr: false
@@ -722,23 +1291,27 @@ requirements:
     method: scope inventory
     test: 'planned: entry-point audit'
     evidence: planned
-  note: session 旁路为已知绕过，不在 v1 修复；不得宣称该路径受 AI 审批保护。
+  note: The session bypass is a known bypass and is not fixed in v1; the team shall not claim that this path is protected by AI approval.
   source_links:
   - https://github.com/wxxsfxyzm/InstallerX-Revived/blob/main/app/src/main/java/com/rosan/installer/data/session/handler/ActionHandler.kt
   - https://github.com/wxxsfxyzm/InstallerX-Revived/blob/main/app/src/main/java/com/rosan/installer/ui/page/main/installer/InstallerViewModel.kt
+  - https://github.com/wxxsfxyzm/CS5351-Project/blob/fcdd2348/app/src/main/java/com/rosan/installer/data/session/handler/ProgressHandler.kt#L51
+  - https://github.com/wxxsfxyzm/CS5351-Project/blob/fcdd2348/app/src/main/java/com/rosan/installer/ui/page/main/installer/InstallerViewModel.kt#L598
 - id: REQ-IX-ARCH-001
   type: architectural_constraint
   priority: Must
-  title: 单一授权收口
-  statement: 对 SCOPE-001 指定的单个本地 APK、InstallMode.AutoDialog、Authorizer.None 路径，每次安装提交前必须经 ApprovalCoordinator → InstallationGateway 唯一收口；该路径的安装后端接口不得被 AI、UI 或策略直接调用。范围外路径不要求收口，但不得调用
-    AI 组件。
-  fit_criterion: 范围内正向测试经 Gateway；范围外路径 AI 调用 0；静态检查仅约束范围内后端注入；动态 spy 绕过 Coordinator 的调用为 0；架构评审记录收口图。
-  source: V0.2 §4.2 + 基线架构
+  title: Single authorization choke point
+  statement: For the single local APK path specified by SCOPE-001, including both AutoDialog and AutoNotification, every installation submission shall pass through the single ApprovalCoordinator
+    -> InstallationGateway choke point; the installation backend interface on this path shall not be called directly by AI, UI, or policy. Out-of-scope paths need not use the choke point
+    but shall not call the AI component.
+  fit_criterion: In-scope positive tests for both modes pass through the Gateway; out-of-scope paths make 0 AI calls; static checks constrain backend injection only within scope; dynamic
+    spying detects 0 calls that bypass the Coordinator; the architecture review records the choke-point diagram with both modes.
+  source: V0.2 §4.2 + baseline architecture
   depends_on:
   - REQ-IX-FR-007
   status: conceptual
   asr: true
-  asr_rationale: 定义组件边界与调用契约，影响所有安装入口和依赖注入结构。
+  asr_rationale: Defines component boundaries and call contracts, affecting all installation entry points and the dependency-injection structure.
   enforcing_component: InstallationGateway
   verification:
     method: static + dynamic spy
@@ -750,10 +1323,12 @@ requirements:
   type: architectural_constraint
   subtype: ui_consistency
   priority: Should
-  title: 双 UI 一致性
-  statement: 新增的审核、同意与审计界面应同时适配 Material 3 与 Miuix 两套 UI；两套均能编译并完成同一流程，或由维护者批准并记录豁免。
-  fit_criterion: 两套 UI 的截图/测试各一份；编译通过；豁免需链接评审记录。
-  source: AGENTS.md + 基线双 UI
+  title: Dual UI consistency
+  statement: New review, consent, notification, and audit screens shall support both Material 3 and Miuix; both shall compile and complete the same flow, or the maintainer shall approve
+    and record an exemption.
+  fit_criterion: One screenshot or test per UI family; compilation passes; notification review and Continue/Cancel behavior match across both families; an exemption links to the review
+    record.
+  source: AGENTS.md + baseline dual UI
   depends_on:
   - REQ-IX-FR-006
   status: conceptual
@@ -771,10 +1346,12 @@ requirements:
   type: data_constraint
   subtype: audit_integrity
   priority: Must
-  title: 审计数据完整性
-  statement: 审计记录应 append-only、带哈希链、可导出且仅本机保存；保留期限与删除入口在 OI-06 冻结前不得自动删除。
-  fit_criterion: 篡改任一条记录可被检测；导出包含全部字段且可重放决策；无凭据；删除需显式操作并留痕。
-  source: V0.2 §3.3 + 课程 data_constraint
+  title: Audit data integrity
+  statement: Audit records shall be append-only, hash-chained, exportable, and stored only on the device; until the retention period and deletion entry point are frozen in OI-06, no
+    automatic deletion shall occur.
+  fit_criterion: Tampering with any record is detectable; export contains all FR-009 fields, including both advisory dimensions, compatibility, completeness, attempts, provider dispatches,
+    and token outcome; export can replay the decision; there are no credentials; deletion requires an explicit operation and leaves a trace.
+  source: V0.2 §3.3 + course data_constraint
   depends_on:
   - REQ-IX-FR-009
   status: conceptual
@@ -784,3 +1361,17 @@ requirements:
     method: tamper test
     test: 'planned: AuditIntegrityTest'
     evidence: planned
+mode_priorities:
+  AutoDialog: Must
+  AutoNotification: Should
+advisory_axes:
+  install_success_likelihood:
+  - HIGH
+  - MEDIUM
+  - LOW
+  - UNKNOWN
+  security_risk:
+  - LOW
+  - MEDIUM
+  - HIGH
+  - UNKNOWN
