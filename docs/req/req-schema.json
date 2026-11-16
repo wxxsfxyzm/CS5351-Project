@@ -13,7 +13,9 @@
     "prioritization",
     "requirements",
     "decision_rules",
-    "outbound_metadata_allowlist"
+    "outbound_metadata_allowlist",
+    "mode_priorities",
+    "advisory_axes"
   ],
   "properties": {
     "document": {
@@ -88,6 +90,12 @@
     },
     "outbound_metadata_allowlist": {
       "$ref": "#/$defs/outboundAllowlist"
+    },
+    "mode_priorities": {
+      "$ref": "#/$defs/mode_priorities"
+    },
+    "advisory_axes": {
+      "$ref": "#/$defs/advisory_axes"
     }
   },
   "additionalProperties": false,
@@ -224,6 +232,9 @@
         },
         "cost_policy": {
           "$ref": "#/$defs/costPolicy"
+        },
+        "completeness": {
+          "$ref": "#/$defs/evidence_completeness"
         }
       },
       "additionalProperties": false,
@@ -250,7 +261,8 @@
         "human",
         "decision",
         "disposition",
-        "reason_code"
+        "reason_code",
+        "compatibility"
       ],
       "properties": {
         "id": {
@@ -292,6 +304,12 @@
         "reason_code": {
           "type": "string",
           "pattern": "\\S"
+        },
+        "compatibility": {
+          "enum": [
+            "ANY",
+            "COMPATIBLE"
+          ]
         }
       },
       "additionalProperties": false
@@ -310,11 +328,18 @@
         "local_approval_binding",
         "negative_fit_criteria",
         "approved_decisions",
-        "pending_member_a_review"
+        "pending_member_a_review",
+        "completeness",
+        "derived_compatibility_signals"
       ],
       "properties": {
         "status": {
-          "const": "proposed_pending_member_a_review"
+          "type": "string",
+          "enum": [
+            "proposed_pending_member_a_review",
+            "approved",
+            "not_applicable"
+          ]
         },
         "applies_to": {
           "type": "string",
@@ -371,6 +396,17 @@
           "minItems": 1,
           "items": {
             "$ref": "#/$defs/pendingReviewItem"
+          }
+        },
+        "completeness": {
+          "$ref": "#/$defs/evidence_completeness"
+        },
+        "derived_compatibility_signals": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
           }
         }
       },
@@ -630,13 +666,20 @@
           "uniqueItems": true
         },
         "status": {
-          "const": "approved"
+          "type": "string",
+          "enum": [
+            "approved",
+            "pending_member_a_review",
+            "rejected"
+          ]
         },
         "approved_by": {
-          "const": "Member A"
+          "type": "string",
+          "minLength": 1
         },
         "confirmed_by": {
-          "const": "Member B"
+          "type": "string",
+          "minLength": 1
         },
         "rationale": {
           "type": "string",
@@ -680,7 +723,8 @@
         "boundary_outcomes",
         "token_counting",
         "evaluation_population",
-        "pending_member_a_review"
+        "pending_member_a_review",
+        "attempt_policy"
       ],
       "properties": {
         "max_calls_per_operation": {
@@ -725,6 +769,9 @@
           "items": {
             "$ref": "#/$defs/pendingReviewItem"
           }
+        },
+        "attempt_policy": {
+          "$ref": "#/$defs/dispatch_policy"
         }
       },
       "additionalProperties": false
@@ -775,7 +822,12 @@
           "const": "evaluation_or_release_gate_failure_not_runtime_failure"
         },
         "status": {
-          "const": "proposed_pending_member_a_review"
+          "type": "string",
+          "enum": [
+            "proposed_pending_member_a_review",
+            "approved",
+            "not_applicable"
+          ]
         }
       },
       "additionalProperties": false
@@ -843,62 +895,193 @@
     },
     "costTokenCounting": {
       "type": "object",
+      "additionalProperties": false,
       "required": [
-        "method",
-        "includes",
-        "pending_questions"
-      ],
-      "properties": {
-        "method": {
-          "type": "string",
-          "pattern": "\\S"
-        },
-        "includes": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "pattern": "\\S"
-          },
-          "minItems": 1,
-          "uniqueItems": true
-        },
-        "pending_questions": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "pattern": "\\S"
-          },
-          "minItems": 1
-        }
-      },
-      "additionalProperties": false
-    },
-    "costEvaluationPopulation": {
-      "type": "object",
-      "required": [
-        "proposed",
+        "accounting",
+        "enforcement",
+        "counts_cached_or_hidden_reasoning_if_provider_reports",
         "status",
-        "pending_questions"
+        "double_count_rule"
       ],
       "properties": {
-        "proposed": {
+        "accounting": {
           "type": "string",
-          "pattern": "\\S"
+          "minLength": 1
+        },
+        "enforcement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "counts_cached_or_hidden_reasoning_if_provider_reports": {
+          "type": "boolean"
         },
         "status": {
           "type": "string",
-          "pattern": "\\S"
+          "minLength": 1
         },
-        "pending_questions": {
+        "double_count_rule": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "costEvaluationPopulation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposed_sample_size",
+        "fixed_cohort_per_model_and_prompt_version",
+        "counts_both_attempts",
+        "reports_attempts_dispatches_calls_and_exclusions",
+        "status",
+        "denominator"
+      ],
+      "properties": {
+        "proposed_sample_size": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "fixed_cohort_per_model_and_prompt_version": {
+          "type": "boolean"
+        },
+        "counts_both_attempts": {
+          "type": "boolean"
+        },
+        "reports_attempts_dispatches_calls_and_exclusions": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "denominator": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "mode_priorities": {
+      "type": "object",
+      "required": [
+        "AutoDialog",
+        "AutoNotification"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "AutoDialog": {
+          "type": "string",
+          "enum": [
+            "Must"
+          ]
+        },
+        "AutoNotification": {
+          "type": "string",
+          "enum": [
+            "Should"
+          ]
+        }
+      }
+    },
+    "advisory_axes": {
+      "type": "object",
+      "required": [
+        "install_success_likelihood",
+        "security_risk"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "install_success_likelihood": {
           "type": "array",
           "items": {
-            "type": "string",
-            "pattern": "\\S"
+            "type": "string"
           },
-          "minItems": 1
+          "enum": [
+            [
+              "HIGH",
+              "MEDIUM",
+              "LOW",
+              "UNKNOWN"
+            ]
+          ]
+        },
+        "security_risk": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "enum": [
+            [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "UNKNOWN"
+            ]
+          ]
         }
-      },
-      "additionalProperties": false
+      }
+    },
+    "evidence_completeness": {
+      "type": "object",
+      "required": [
+        "required_fields_always_present",
+        "unknown_encoding",
+        "truncated_is_complete",
+        "states"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "required_fields_always_present": {
+          "type": "boolean"
+        },
+        "unknown_encoding": {
+          "type": "string"
+        },
+        "truncated_is_complete": {
+          "const": false
+        },
+        "states": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "dispatch_policy": {
+      "type": "object",
+      "required": [
+        "max_attempts_per_operation",
+        "automatic_retry",
+        "provider_dispatch_on_preflight_rejection",
+        "provider_dispatch_when_sent"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "max_attempts_per_operation": {
+          "const": 2
+        },
+        "attempt_1": {
+          "type": "string"
+        },
+        "attempt_2": {
+          "type": "string"
+        },
+        "preflight_rejection_consumes_attempt": {
+          "type": "boolean"
+        },
+        "provider_dispatch_on_preflight_rejection": {
+          "const": 0
+        },
+        "provider_dispatch_when_sent": {
+          "const": 1
+        },
+        "provider_dispatch_on_blocked_third": {
+          "const": 0
+        },
+        "automatic_retry": {
+          "const": false
+        }
+      }
     }
   }
 }
