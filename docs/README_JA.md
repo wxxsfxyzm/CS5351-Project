@@ -1,6 +1,6 @@
 # InstallerX Revived (Community Edition)
 
-[English](README.md) | [简体中文](README_CN.md) | [Español](README_ES.md) | **日本語** | [Deutsch](README_DE.md)
+[English](../README.md) | [简体中文](README_CN.md) | [Español](README_ES.md) | **日本語** | [Deutsch](README_DE.md)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![安定版](https://img.shields.io/github/v/release/wxxsfxyzm/InstallerX?label=安定版)](https://github.com/wxxsfxyzm/InstallerX/releases/latest)

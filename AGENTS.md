@@ -18,7 +18,7 @@ For substantial features, invasive refactors, or behavior changes that span seve
 
 ## Read these first when relevant
 
-* `docs/README.md` — product scope, supported install flows, user-facing feature boundaries.
+* `README.md` — product scope, supported install flows, user-facing feature boundaries.
 * `CONTRIBUTING.md` — translation policy, build prerequisites, contribution expectations.
 * `.github/workflows/pr-check.yml` — the default CI build matrix used for pull requests.
 * `settings.gradle.kts`, `app/build.gradle.kts`, and
@@ -47,7 +47,7 @@ Several product behaviors are intentionally flow-specific. Do **not** assume a f
 * Preserve the runtime network-access boundary. The unified APK may declare network permissions, but network requests must remain disabled when the in-app network setting is off.
 * Prefer the repository’s existing **native API** paths and abstractions. Do not introduce shell-command implementations as a shortcut unless the maintainer explicitly requests it.
 * Treat flow-specific behavior as flow-specific. A capability that exists for dialog installation is not automatically valid for notification or automatic installation.
-* When changing behavior that is described in `docs/README.md`, update it or call out the documentation impact in the handoff.
+* When changing behavior that is described in `README.md`, update it or call out the documentation impact in the handoff.
 
 ---
 

@@ -1,6 +1,6 @@
 # InstallerX Revived (Community Edition)
 
-**English** | [简体中文](README_CN.md) | [Español](README_ES.md) | [日本語](README_JA.md) | [Deutsch](README_DE.md)
+**English** | [简体中文](docs/README_CN.md) | [Español](docs/README_ES.md) | [日本語](docs/README_JA.md) | [Deutsch](docs/README_DE.md)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Latest Release](https://img.shields.io/github/v/release/wxxsfxyzm/InstallerX?label=Stable)](https://github.com/wxxsfxyzm/InstallerX/releases/latest)
@@ -96,7 +96,7 @@ For a PR-style test build with a separate application id:
 
 Use [GitHub Issues](https://github.com/wxxsfxyzm/InstallerX-Revived/issues) for reproducible bugs and concrete feature requests. Good suggestions are welcome. Use [GitHub Discussions](https://github.com/wxxsfxyzm/InstallerX-Revived/discussions) or the [Telegram channel](https://t.me/installerx_revived) for general questions and compatibility discussion.
 
-Before opening an issue, please read [CONTRIBUTING.md](../CONTRIBUTING.md) for the required logs and reproduction details.
+Before opening an issue, please read [CONTRIBUTING.md](CONTRIBUTING.md) for the required logs and reproduction details.
 
 ### I cannot lock InstallerX as the default installer
 
