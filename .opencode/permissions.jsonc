@@ -1,0 +1,269 @@
+// CS5351 project-level permission model (machine-readable, D3).
+//
+// Format: OpenCode v1 configuration (team agreement: OpenCode v1).
+// Human-readable version: docs/architecture/permission-model.md
+//
+// Enforcement: OpenCode does not auto-load this file. Start every
+// session with:
+//
+//   OPENCODE_CONFIG=.opencode/permissions.jsonc opencode
+//
+// Rule semantics: within each tool, the LAST matching pattern wins,
+// so broad rules come first and narrow exceptions follow. `*`
+// matches any characters, including `/`.
+//
+// Guard rules:
+//   G1  Default deny: reads and edits are denied unless whitelisted.
+//   G2  Credentials, keystores, and local properties are never read.
+//   G3  Agents never edit their own permissions or rules
+//       (.opencode/, .agent/), CODEOWNERS, or release workflows.
+//   G4  Governance documents are editable only by the plan agent,
+//       and only after per-edit human approval (ask).
+//   G5  No push, merge, or history rewrite; commits need approval.
+//   G6  No subagents, skills, or paths outside the project.
+//
+// Agents must not edit this file. Changes require human review.
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // Always-on context in addition to AGENTS.md (auto-loaded).
+  // Prompt.md is injected so its approval gates apply even if the
+  // human forgets to reference it in the first message.
+  "instructions": ["Prompt.md", ".opencode/rules.md", ".agent/rules.md"],
+
+  // No MCP servers are enabled. See docs/code-governance/mcp-tool-manifest.md.
+  "mcp": {},
+
+  // Fail-closed defaults for any agent without its own rules,
+  // including built-in subagents.
+  "permission": {
+    "read": {
+      "*": "deny"
+    },
+    "edit": {
+      "*": "deny"
+    },
+    "bash": {
+      "*": "deny"
+    },
+    "task": "deny",
+    "skill": "deny",
+    "webfetch": "deny",
+    "websearch": "deny",
+    "external_directory": "deny",
+    "doom_loop": "ask"
+  },
+
+  "agent": {
+    // Plan: reads context, writes execution plans, and drafts
+    // architecture or governance documents with approval.
+    "plan": {
+      "description": "Plans work and drafts governance documents; no source edits.",
+      "mode": "primary",
+      "permission": {
+        "read": {
+          "*": "deny",
+          "AGENTS.md": "allow",
+          "Prompt.md": "allow",
+          "README.md": "allow",
+          "CONTRIBUTING.md": "allow",
+          "architecture-blueprint.md": "allow",
+          "docs/*": "allow",
+          "app/*": "allow",
+          "app-process/*": "allow",
+          "hidden-api/*": "allow",
+          "build-plugins/*": "allow",
+          "baselineprofile/*": "allow",
+          "src/*": "allow",
+          "test/*": "allow",
+          "prompts/*": "allow",
+          "gradle/*": "allow",
+          "settings.gradle.kts": "allow",
+          "build.gradle.kts": "allow",
+          "gradle.properties": "allow",
+          ".github/*": "allow",
+          ".opencode/*": "allow",
+          ".agent/*": "allow",
+          "*local.properties": "deny",
+          "*keystore.properties": "deny",
+          "*keystore/*": "deny",
+          "*.jks": "deny",
+          "*.keystore": "deny",
+          "*.env": "deny",
+          "*.env.*": "deny"
+        },
+        "edit": {
+          "*": "deny",
+          "docs/plans/*": "allow",
+          "architecture-blueprint.md": "ask",
+          "docs/req/*": "ask",
+          "docs/architecture/*": "ask",
+          "docs/code-governance/*": "ask",
+          "docs/ai-use-log.yaml": "allow",
+          ".opencode/*": "deny",
+          ".agent/*": "deny"
+        },
+        "bash": {
+          "*": "deny",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "git log*": "allow",
+          "git show*": "allow"
+        },
+        "task": "deny",
+        "skill": "deny",
+        "webfetch": "deny",
+        "websearch": "deny",
+        "external_directory": "deny"
+      }
+    },
+
+    // Build: implements an approved plan inside source and test paths.
+    "build": {
+      "description": "Implements approved plans in source and test paths.",
+      "mode": "primary",
+      "permission": {
+        "read": {
+          "*": "deny",
+          "AGENTS.md": "allow",
+          "Prompt.md": "allow",
+          "README.md": "allow",
+          "CONTRIBUTING.md": "allow",
+          "architecture-blueprint.md": "allow",
+          "docs/*": "allow",
+          "app/*": "allow",
+          "app-process/*": "allow",
+          "hidden-api/*": "allow",
+          "build-plugins/*": "allow",
+          "baselineprofile/*": "allow",
+          "src/*": "allow",
+          "test/*": "allow",
+          "prompts/*": "allow",
+          "gradle/*": "allow",
+          "settings.gradle.kts": "allow",
+          "build.gradle.kts": "allow",
+          "gradle.properties": "allow",
+          ".github/*": "allow",
+          ".opencode/*": "allow",
+          ".agent/*": "allow",
+          "*local.properties": "deny",
+          "*keystore.properties": "deny",
+          "*keystore/*": "deny",
+          "*.jks": "deny",
+          "*.keystore": "deny",
+          "*.env": "deny",
+          "*.env.*": "deny"
+        },
+        "edit": {
+          "*": "deny",
+          "app/src/*": "allow",
+          "app-process/src/*": "allow",
+          "hidden-api/src/*": "allow",
+          "src/*": "allow",
+          "test/*": "allow",
+          "docs/ai-use-log.yaml": "allow",
+          "app/build.gradle.kts": "ask",
+          "app-process/build.gradle.kts": "ask",
+          "hidden-api/build.gradle.kts": "ask",
+          "gradle/libs.versions.toml": "ask",
+          "settings.gradle.kts": "ask",
+          ".opencode/*": "deny",
+          ".agent/*": "deny"
+        },
+        "bash": {
+          "*": "ask",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "git log*": "allow",
+          "git show*": "allow",
+          "./gradlew assemble*": "allow",
+          "./gradlew test*": "allow",
+          "./gradlew lint*": "allow",
+          "git commit*": "ask",
+          "git push*": "deny",
+          "git merge*": "deny",
+          "git rebase*": "deny",
+          "git reset --hard*": "deny",
+          "gh pr merge*": "deny",
+          "rm -rf*": "deny"
+        },
+        "task": "deny",
+        "skill": "deny",
+        "webfetch": "deny",
+        "websearch": "deny",
+        "external_directory": "deny"
+      }
+    },
+
+    // Verify: runs checks and drafts review and bug records; no source edits.
+    "verify": {
+      "description": "Runs verification and drafts review records; no source edits.",
+      "mode": "primary",
+      "permission": {
+        "read": {
+          "*": "deny",
+          "AGENTS.md": "allow",
+          "Prompt.md": "allow",
+          "README.md": "allow",
+          "CONTRIBUTING.md": "allow",
+          "architecture-blueprint.md": "allow",
+          "docs/*": "allow",
+          "app/*": "allow",
+          "app-process/*": "allow",
+          "hidden-api/*": "allow",
+          "build-plugins/*": "allow",
+          "baselineprofile/*": "allow",
+          "src/*": "allow",
+          "test/*": "allow",
+          "prompts/*": "allow",
+          "gradle/*": "allow",
+          "settings.gradle.kts": "allow",
+          "build.gradle.kts": "allow",
+          "gradle.properties": "allow",
+          ".github/*": "allow",
+          ".opencode/*": "allow",
+          ".agent/*": "allow",
+          "*local.properties": "deny",
+          "*keystore.properties": "deny",
+          "*keystore/*": "deny",
+          "*.jks": "deny",
+          "*.keystore": "deny",
+          "*.env": "deny",
+          "*.env.*": "deny"
+        },
+        "edit": {
+          "*": "deny",
+          "docs/review-memo.md": "allow",
+          "docs/bug-diary.md": "allow",
+          "docs/debt-register.md": "allow",
+          "docs/ai-use-log.yaml": "allow",
+          ".opencode/*": "deny",
+          ".agent/*": "deny"
+        },
+        "bash": {
+          "*": "ask",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "git log*": "allow",
+          "git show*": "allow",
+          "./gradlew assemble*": "allow",
+          "./gradlew test*": "allow",
+          "./gradlew lint*": "allow",
+          "./gradlew check*": "allow",
+          "git commit*": "deny",
+          "git push*": "deny",
+          "git merge*": "deny",
+          "git rebase*": "deny",
+          "git reset --hard*": "deny",
+          "gh pr merge*": "deny",
+          "rm -rf*": "deny"
+        },
+        "task": "deny",
+        "skill": "deny",
+        "webfetch": "deny",
+        "websearch": "deny",
+        "external_directory": "deny"
+      }
+    }
+  }
+}

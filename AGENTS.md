@@ -1,472 +1,167 @@
 # AGENTS.md
 
-## Purpose
 
-This file defines repository-specific instructions for coding agents working on **InstallerX Revived**.
-
-Use it to decide:
-
-* where a change belongs,
-* which constraints must be preserved,
-* what to verify before claiming a task is complete.
-
-Task-specific maintainer instructions take precedence over this file. When the request is narrow, make the smallest coherent change that satisfies it.
-
-For substantial features, invasive refactors, or behavior changes that span several files, sketch a short implementation plan before editing. Keep the plan aligned with the actual implementation as the work proceeds.
-
----
-
-## Read these first when relevant
-
-* `README.md` — product scope, supported install flows, user-facing feature boundaries.
-* `CONTRIBUTING.md` — translation policy, build prerequisites, contribution expectations.
-* `.github/workflows/pr-check.yml` — the default CI build matrix used for pull requests.
-* `settings.gradle.kts`, `app/build.gradle.kts`, and
-  `gradle/libs.versions.toml` — before touching Gradle, repositories, flavors, versions, or dependencies.
-
-Do not duplicate or contradict those files casually. Update this file only for stable, repository-wide rules that agents should repeatedly follow.
-
----
-
-## Repository overview
-
-InstallerX Revived is a community-maintained Android installer with:
-
-* dialog, notification, and automatic installation flows,
-* support for APK, APKS, APKM, XAPK, APKs inside ZIP files, and batch APK installation,
-* profile-driven install options and install flags,
-* privileged workflows involving Root, Shizuku, Dhizuku, `app_process`, system package manager mode, and hidden APIs,
-* switchable UI families based on Material 3 Expressive and Miuix.
-
-Several product behaviors are intentionally flow-specific. Do **not** assume a feature supported in dialog installation is also valid for notification or automatic installation unless the existing code and docs already establish that.
-
----
-
-## Critical project constraints
-
-* Preserve the runtime network-access boundary. The unified APK may declare network permissions, but network requests must remain disabled when the in-app network setting is off.
-* Prefer the repository’s existing **native API** paths and abstractions. Do not introduce shell-command implementations as a shortcut unless the maintainer explicitly requests it.
-* Treat flow-specific behavior as flow-specific. A capability that exists for dialog installation is not automatically valid for notification or automatic installation.
-* When changing behavior that is described in `README.md`, update it or call out the documentation impact in the handoff.
-
----
-
-## Project layout
-
-### Top-level areas
-
-* `app/` — main Android application.
-* `app-process/` — privileged helper process bridge used by Root/Shizuku-style workflows.
-* `hidden-api/` — hidden API declarations/helpers consumed by the app.
-* `build-plugins/` — shared Gradle convention plugins.
-* `baselineprofile/` — Android baseline profile generation.
-* `docs/` — localized project README files and user-facing repository documentation.
-* `.github/workflows/` — CI and release automation.
-
-Do not assume every top-level directory is an included Gradle module. Confirm active modules in
-`settings.gradle.kts` before making module-level assumptions.
-
-### Main Kotlin package map
-
-Under `app/src/main/java/com/rosan/installer/`:
-
-* `core/` — shared low-level app infrastructure.
-* `data/` — persistence, concrete providers, repositories, and mappers.
-* `di/` — Koin modules and initialization wiring.
-* `domain/` — domain models, repository contracts, providers, use cases, and business rules.
-* `framework/` — Android/platform-facing integration code.
-* `ui/` — screens, widgets, navigation, themes, and UI-specific models.
-* `util/` — utility helpers.
-
-Preserve this separation. Do not move behavior into a convenient but wrong layer just to finish faster.
-
----
-
-## Build prerequisites
-
-### Toolchain
-
-* Use the repository Gradle Wrapper: `./gradlew ...`.
-* The project requires **JDK 25**.
-* Kotlin/JVM toolchains and Android compile settings are centrally defined; do not downgrade or loosen them unless the task explicitly requires it.
-
-### GitHub Packages authentication
-
-The project resolves snapshot `miuix` artifacts from GitHub Packages.
-
-For local builds, credentials are expected outside the repository, typically in the global Gradle properties file:
-
-```properties
-gpr.user=YOUR_GITHUB_USERNAME
-gpr.key=YOUR_PERSONAL_ACCESS_TOKEN
-```
-
-The token needs `read:packages` access. CI may instead use `GITHUB_ACTOR` and `GITHUB_TOKEN`.
-
-Never commit credentials, inline them into tracked files, or weaken the existing credential handling.
-
----
-
-## Default verification
-
-### Standard smoke build
-
-For changes that do not affect variant-specific behavior, prefer the faster single-variant smoke build:
-
-```bash
-./gradlew assembleUnstableDebug
-```
-
-Use the PR-equivalent build when the change can reasonably affect app compilation, resources, dependency wiring, or variant-sensitive behavior:
-
-```bash
-./gradlew assemblePreviewDebug
-```
-
-For local agent-run verification, do not pass a custom `APP_ID` unless the maintainer explicitly asks for an alternate application ID.
-
-### Report verification honestly
-
-When summarizing work:
-
-* state which commands were run,
-* state whether they passed,
-* say explicitly when verification was not run or could not be completed.
-
-Do not imply a build or test passed unless it actually did.
-
----
-
-## Gradle, variants, and dependency rules
-
-### Flavors and build levels
-
-The app currently uses one flavor dimension:
-
-* level:
-
-    * `Unstable`
-    * `Preview`
-    * `Stable`
-
-Important build behavior includes:
-
-* build-level-specific `BUILD_LEVEL`,
-* git-hash version suffixes for unstable/preview outputs,
-* an optional `VERSION_NAME` Gradle override for release automation.
-
-Do not flatten, rename, or silently bypass flavor logic. If behavior differs by variant, make that relationship explicit.
-
-### Dependencies
-
-* Prefer `gradle/libs.versions.toml` for dependency and plugin version changes.
-* Follow the existing version catalog naming style.
-* Do not scatter raw dependency coordinates or versions across module build files without a strong reason.
-* Respect the current centralized repository setup and `RepositoriesMode.FAIL_ON_PROJECT_REPOS`.
-* The GitHub Packages `miuix` repository is intentionally configured in `settings.gradle.kts`; do not duplicate it in subprojects.
-
-### Signing and release flow
-
-* Release and debug signing behavior is handled centrally in `app/build.gradle.kts`.
-* Local builds may fall back to the debug keystore when custom signing material is absent.
-* Stable release packaging is automated in `.github/workflows/manual-stable-release.yml`.
-
-Do not alter signing fallback, artifact naming, release workflow commands, version generation, or stable-release logic unless the maintainer explicitly asks for that.
-
----
-
-## Architecture conventions
-
-### Dependency injection
-
-Use the existing Koin structure in `app/src/main/java/com/rosan/installer/di/`.
-
-Relevant modules already include areas such as:
-
-* core,
-* device,
-* engine,
-* initialization,
-* installer sessions,
-* privileged behavior,
-* serialization,
-* settings,
-* view models.
-
-When introducing a new injectable dependency:
-
-* place it in the most relevant existing module,
-* avoid ad-hoc global singletons,
-* keep initialization wiring explicit.
-
-### Application initialization
-
-`App.kt` performs important global startup work, including:
-
-* crash handling initialization,
-* hidden API exemptions on supported Android versions,
-* Monet setup for older platform versions,
-* conditional logging setup,
-* Koin bootstrap,
-
-Treat the order and presence of this startup logic as sensitive. Do not reorder or remove initialization steps unless the task requires it and the consequences are understood.
-
-### Domain and data boundaries
-
-Keep business rules and platform/data access separate:
-
-* domain models and use cases should not become Android UI utilities,
-* data repositories/providers should not grow presentation logic,
-* UI code should not bypass established repository/use-case boundaries when a domain path already exists.
-
-Prefer extending the existing pattern used by the nearest comparable feature.
-
----
-
-## Settings-related changes
-
-Settings in this repository are layered and should stay that way.
-
-### Typical settings layout
-
-Domain side:
-
-* `domain/settings/model/`
-* `domain/settings/provider/`
-* `domain/settings/repository/`
-* `domain/settings/usecase/`
-* `domain/settings/util/`
-
-Data side:
-
-* `data/settings/local/`
-* `data/settings/mapper/`
-* `data/settings/provider/`
-* `data/settings/repository/`
-
-### Checklist for adding or changing a setting
-
-When a setting is persisted or exposed through app state, verify whether the change needs:
-
-1. a domain model or state update,
-2. provider/repository contract changes,
-3. data-layer storage or mapping updates,
-4. DI wiring updates,
-5. UI state/action/view-model changes where that feature is presented,
-6. both Material 3 and Miuix screen updates when both UI families expose the same setting,
-7. English and Simplified Chinese string updates.
-
-Do not implement only the visible switch while leaving persistence, mapping, or downstream behavior inconsistent.
-
----
-
-## UI conventions
-
-### Material 3 Expressive and Miuix are separate UI families
-
-The repository keeps page implementations under distinct paths such as:
-
-* `ui/page/main/`
-* `ui/page/miuix/`
-
-Respect that split.
-
-Do not:
-
-* leak Miuix-only components into Material 3 screens without intent,
-* rebuild Material 3 screens with Miuix assumptions,
-* change shared logic while checking only one UI family.
-
-When a feature exists in both design systems, preserve semantic consistency while allowing implementation details to remain native to each UI family.
-
-### Reusable UI components
-
-For common widgets and shared components:
-
-* keep dependencies as narrow as the existing component boundary allows,
-* do not hardcode behavior that should be supplied by the caller,
-* avoid locking reusable components to one screen-specific style or workflow,
-* prefer composable APIs that remain extensible rather than baking product decisions into generic widgets.
-
-Follow nearby component patterns before inventing a new style.
-
----
-
-## Text, translation, and wording
-
-### Translation policy
-
-Per repository contribution policy:
-
-* English and Simplified Chinese strings are maintained by developers.
-* Other languages should go through Weblate rather than direct translation PRs.
-
-### When changing user-visible strings
-
-* Update English and Simplified Chinese together when the changed text belongs to both maintained locales.
-* Preserve established product terminology unless the task is explicitly a wording cleanup.
-* Keep safety caveats and compatibility warnings precise. Do not soften them just to make copy shorter.
-* When text distinguishes concepts such as global authorization, profile authorization, install initiator, requester, or system limitations, keep those distinctions intact.
-
----
-
-## Privileged and installation behavior
-
-This codebase interacts with highly sensitive platform behavior, including:
-
-* app installation flows,
-* install flags and profile inheritance,
-* user/all-user installation handling,
-* Root, Shizuku, Dhizuku, and hidden API paths,
-* ROM-specific compatibility workarounds,
-* attempts to bypass OEM interception only where the project already supports that behavior.
-
-### Rules for sensitive changes
-
-Before changing privileged or install behavior:
-
-1. identify the exact flow being modified: dialog, notification, automatic, profile, or system integration,
-2. check whether the feature is already documented as flow-specific,
-3. preserve permission boundaries and do not imply capabilities the current authorizer cannot provide,
-4. avoid widening behavior from one privileged backend to another without explicit evidence,
-5. keep ROM compatibility behavior explicit instead of hiding it behind vague generic logic.
-
-If a change affects data safety, install success, system-API fallbacks, or ROM-specific behavior, explain the tradeoff clearly in the final summary.
-
----
-
-## Source and API discipline
-
-* Prefer native APIs and the repository’s existing abstractions over ad-hoc shell-command workflows.
-* Reuse existing platform wrappers, providers, and repositories before adding parallel paths.
-* Avoid introducing reflection, hidden API access, or privileged shortcuts where an existing maintained path already exists.
-* When adding compatibility logic, keep version checks and backend checks local and readable.
-
----
-
-## CI and workflow boundaries
-
-The workflow directory contains purpose-specific automation such as:
-
-* pull request build checks,
-* preview/dev automation,
-* release automation,
-* CodeQL or other maintenance workflows.
-
-When editing workflows:
-
-* change only the workflow relevant to the request,
-* preserve least-privilege token permissions unless explicitly required,
-* keep package-auth requirements intact,
-* do not conflate PR validation with release packaging.
-
-Release automation deserves extra caution because it may involve version inputs, signing material, artifact renaming, and draft release creation.
-
----
-
-## Recommended agent workflow
-
-For implementation tasks, follow this order:
-
-1. Restate the concrete behavior being changed.
-2. Locate the smallest relevant area of the repository.
-3. Find the nearest existing pattern and extend it.
-4. Update all affected layers, not only the most visible file.
-5. Run the narrowest meaningful verification, defaulting to the CI-equivalent smoke build when compilation impact is plausible.
-6. Summarize:
-
-    * what changed,
-    * why this shape was chosen,
-    * what was verified,
-    * what remains unverified.
-
-Prefer targeted, reviewable edits over sweeping refactors.
-
----
-
-## Commit message and submission discipline
-
-Do not create commits, push branches, or open pull requests unless the maintainer explicitly asks for that.
-
-Before preparing a commit message:
-
-* inspect `git status` and the relevant diff,
-* decide whether the change is one coherent change or multiple independent changes,
-* include only files related to the requested task,
-* do not include user-owned unrelated changes, generated artifacts, credentials, local IDE files, or build outputs.
-
-Write commit messages in the repository's Conventional Commits style.
-
-Subject format is mandatory:
-
-```text
-type: short lowercase description
-type(scope): short lowercase description
-```
-
-Use only these top-level types unless the maintainer explicitly asks for another one:
-
-* `fix:` — bug fixes, behavior corrections, compatibility fixes, UI defects, build fixes.
-* `feat:` — new user-facing or maintainer-facing capabilities.
-* `refactor:` — code restructuring without intended behavior changes.
-* `docs:` — documentation-only changes.
-* `i18n:` — translation-only updates, especially Weblate-style changes.
-* `fix(deps):` — dependency update commits.
-
-Subject rules:
-
-* keep the subject at or below 72 characters,
-* use lowercase after the type prefix unless naming a proper noun, API, class, or UI brand,
-* use imperative mood after the prefix,
-* describe behavior or developer intent rather than listing files,
-* include a concise body for most non-trivial commits, especially when the change has multiple behavior points, important intent, or risk,
-* use a one-line message only for trivial, self-evident changes,
-* use bullets only for genuinely separate changes, risks, or dependency groups,
-* avoid generic wording such as "Refined", "Enhanced", "Improved", or "Updated",
-* do not invent issue numbers, user impact, names, emails, or identifiers,
-* do not add AI signatures, `Co-authored-by`, or generated-by trailers unless explicitly requested.
-
-Examples that match repository style:
-
-* `fix: restore config scopes on undo`
-* `fix: fix Miuix sheet dismissal behavior`
-* `feat: add smart authorizer fallback settings`
-* `refactor: define explicit parameters for ShizukuUserServiceRecycler`
-* `docs: document agent submission and repo layout`
-
-For dependency changes:
-
-* explicitly list package, library, plugin, or tool names,
-* include version changes in `from -> to` form when available,
-* mention scope when inferable, such as runtime, build plugin, Gradle, Maven, npm, or pnpm,
-* if the change is primarily dependency updates, start the subject with `fix(deps):`,
-* do not collapse unrelated dependency updates into vague wording like "update dependencies" or "bump deps".
-
-If verification was not run or did not pass, do not write the commit or handoff as though it was verified.
-
----
-
-## Common mistakes to avoid
-
-* Editing one UI family and forgetting the parallel Material 3 or Miuix surface.
-* Adding a setting toggle without updating persistence or state propagation.
-* Adding repositories to module Gradle files despite centralized repository management.
-* Hardcoding dependency versions outside the version catalog.
-* Modifying release/signing/version automation during unrelated work.
-* Treating dialog-only install behavior as universally available.
-* Weakening or deleting compatibility warnings from strings without understanding why they exist.
-* Reordering app initialization code as a “cleanup.”
-* Claiming a build passed when no verification was run.
-
----
-
-## Maintainer-facing handoff format
-
-When finishing a task, give a compact handoff that includes:
-
-* **Changed:** files or areas updated.
-* **Behavior:** what users or maintainers should expect now.
-* **Verification:** commands run and result.
-* **Notes:** migration concerns, unverified scenarios, or follow-up risks only when genuinely relevant.
-
-Keep the report factual and specific.
+## CS5351 Project Governance
+
+This repository extends InstallerX Revived for the
+CS5351 Software Engineering project.
+
+The existing InstallerX engineering constraints remain
+applicable. The following rules govern AI-assisted work.
+
+### Workflow
+
+1. Read the relevant requirements and approved constraints.
+2. Inspect existing behavior before proposing changes.
+3. Present a plan, affected artifacts, and verification strategy.
+4. Obtain explicit human approval before implementation.
+5. Execute only the approved scope.
+6. Verify results and report failures honestly.
+
+Implementation plans and relevant tests must be approved
+before coding. Silence is not approval.
+
+### Authority
+
+- Approved requirements, invariants, and ADRs constrain work.
+- Draft documents are proposals, not approved baselines.
+- AI advice cannot authorize installation or bypass
+  deterministic security policies.
+- Changes to approved constraints require human review.
+- Agents must not self-approve or merge their own changes.
+
+### Traceability and Evidence
+
+- Link substantive changes to requirements and ADRs.
+- Preserve complete, authentic agent session transcripts.
+- Record significant human interventions and decisions.
+- Update the AI-use log for relevant agent-assisted work.
+- Never fabricate approvals, verification, or evidence.
+
+### Repository Operations
+
+- Use task branches and Pull Requests; do not push to main.
+- Do not commit, push, or create PRs without authorization.
+- Do not bypass CI, branch protection, or permission controls.
+- Stop and request approval when scope or safety constraints
+  would be violated.
+
+## Build Target
+
+InstallerX Revived (Android, Kotlin) extended with an AI
+component that gives advisory install-risk recommendations.
+Deterministic code makes every install decision; AI output
+never authorizes an install.
+
+- Smoke build: `./gradlew assembleUnstableDebug`.
+- PR-equivalent build: `./gradlew assemblePreviewDebug`.
+- Toolchain and variant rules:
+  `docs/code-governance/installerx-baseline.md`.
+
+## Code Baseline
+
+- Baseline: upstream InstallerX Revived at commit `816ea541`,
+  the last upstream commit before CS5351 work began.
+- New work extends the baseline and must not replace it.
+- Active Gradle modules: `:app`, `:app-process`, `:hidden-api`,
+  `:baselineprofile` (see `settings.gradle.kts`).
+
+## Reading Order
+
+1. `AGENTS.md` (this file).
+2. `Prompt.md` — session workflow and approval gates.
+3. `architecture-blueprint.md` — master constraint document.
+4. `docs/req/requirements.yaml` — requirements and fit criteria.
+5. `docs/architecture/` — ADRs, `invariants.md`,
+   `permission-model.md`, then other artifacts as relevant.
+6. `docs/code-governance/structural-constraints.md` and
+   `verification-constraints.md`.
+7. `docs/code-governance/installerx-baseline.md` — before any
+   Android implementation, build, dependency, commit, or PR work.
+
+Read steps 4–7 to the depth the current task needs. Do not
+infer the current project phase or approval status from the
+existence of a file.
+
+## Agent Tooling and Roles
+
+- Coding-agent sessions use OpenCode v1 (team agreement). Start
+  every session with
+  `OPENCODE_CONFIG=.opencode/permissions.jsonc opencode`; without
+  it the project permissions are not loaded.
+- Roles: `plan` (plans and governance drafts), `build` (source and
+  tests), `verify` (checks and QA records). Tools per role:
+  `docs/code-governance/mcp-tool-manifest.md`.
+- Session workflow and approval gates: `Prompt.md`. OpenCode
+  injects `Prompt.md`, `.opencode/rules.md`, and `.agent/rules.md`
+  through `instructions`; the first message must still reference
+  `@Prompt.md` (format in `Prompt.md`, step 0).
+
+## Access Scope
+
+`docs/architecture/permission-model.md` defines per-role access and
+mirrors `.opencode/permissions.jsonc`. Until it is approved, these
+defaults apply:
+
+- **Readable:** the read whitelist in the permission model; never
+  credentials, keystores, or local Gradle properties.
+- **Modifiable:** only the paths inside the approved task scope.
+- **Human approval required:** `AGENTS.md`, `Prompt.md`,
+  `architecture-blueprint.md`, `docs/req/`, `docs/architecture/`,
+  `docs/code-governance/`, `.opencode/permissions.jsonc`,
+  `.agent/rules.md`, `.github/workflows/`.
+- **Frozen (agents must not edit):** `.opencode/rules.md`
+  (human-only), `.github/CODEOWNERS`, signing configuration,
+  and release workflows such as `manual-stable-release.yml`.
+
+## Module Organization
+
+- InstallerX package layering (`core`, `data`, `di`, `domain`,
+  `framework`, `ui`) is described in the baseline document.
+- Each architectural element maps to exactly one module; see
+  `docs/code-governance/structural-constraints.md`.
+- Placement of the AI component and policy engine, and the
+  mapping to the course `src/` and `test/` layout, are decided
+  in `docs/architecture/adr/`. Do not create modules before that
+  decision is approved.
+
+## Integration Contracts
+
+- The AI component returns advisory data only. It must not hold
+  or call installer, Root, Shizuku, Dhizuku, or other privileged
+  backend capabilities.
+- Only the deterministic policy path may decide an install or
+  invoke an installer backend.
+- Policy code must not depend on model SDKs or network access.
+- Approved interface definitions live in the ADRs and
+  `docs/architecture/trace-matrix.md`. Where they are not yet
+  approved, stop and ask rather than invent a contract.
+
+## Verification Requirements
+
+- Follow `docs/code-governance/verification-constraints.md`:
+  structural, regression, and behavioral tiers.
+- Every fit criterion has at least one test; every invariant has
+  at least one negative test that fails when it is violated.
+- Every test references the requirement or invariant it verifies.
+- Each round re-runs all prior test suites with zero
+  regressions.
+- Tests for a change are approved before implementation begins.
+- Report the commands run and their results; never claim
+  unverified results.
+
+## Critical Constraints
+
+These InstallerX safety boundaries apply to every task:
+
+- Network requests must stay disabled when the in-app network
+  setting is off.
+- Prefer existing native API paths; do not add shell-command
+  shortcuts unless a maintainer explicitly requests them.
+- Dialog, notification, and automatic install flows are
+  distinct; do not assume a capability carries across flows.
+- Do not widen privileged behavior between Root, Shizuku,
+  Dhizuku, or `app_process` backends without explicit evidence.
+- Never commit credentials or weaken credential handling.
+- Do not alter signing, versioning, or release workflows during
+  unrelated work.

@@ -1,0 +1,143 @@
+# CS5351 AI-use log. Mandatory; keep up to date.
+#
+# Add one entry per agent-assisted change. A pull request that
+# changes code or prompts without a new or updated entry is blocked
+# by the AI-use log gate.
+#
+# One shared file for the whole team. Rules:
+#   - Append new entries at the end; never edit or delete another
+#     member's entries.
+#   - IDs are AI-<github-handle>-NNNN. Each member numbers their own
+#     entries from 0001, sequentially, and never reuses a number.
+#
+# Entry fields:
+#   id               AI-<github-handle>-NNNN
+#   date             YYYY-MM-DD
+#   tool             agent tool and version
+#   model            model ID, if known
+#   role             plan | build | verify | other
+#   operator         human who supervised the session
+#   task             one-line description
+#   requirements     related requirement, invariant, or ADR IDs
+#   artifacts        files created or changed
+#   human_decisions  approvals, rejections, and redirections
+#   verification     checks run and their results
+#   evidence         transcript, plan, or pull request references
+#   notes            optional
+
+schema_version: 1
+
+entries:
+  - id: AI-wxxsfxyzm-0001
+    date: 2026-11-16
+    tool: Claude Code
+    model: claude-opus-5-5
+    role: other
+    operator: wxxsfxyzm (project lead)
+    task: Split AGENTS.md into a short entry file plus an on-demand InstallerX baseline.
+    requirements: []
+    artifacts:
+      - AGENTS.md
+      - docs/code-governance/installerx-baseline.md
+    human_decisions:
+      - Lead approved the restructure plan before editing.
+    verification:
+      - diff confirmed the baseline file matches the original AGENTS.md lines 62 to end.
+      - All paths referenced from AGENTS.md exist.
+    evidence:
+      - transcripts/transcriptA-wxxsfxyzm.md
+    notes: Agent setup work done in Claude Code before OpenCode governance was in place.
+
+  - id: AI-wxxsfxyzm-0002
+    date: 2026-11-16
+    tool: Claude Code
+    model: claude-opus-5-5
+    role: other
+    operator: wxxsfxyzm (project lead)
+    task: Add the D3-required sections to AGENTS.md.
+    requirements: []
+    artifacts:
+      - AGENTS.md
+    human_decisions:
+      - Lead asked the agent to check AGENTS.md against the course project specification.
+      - Lead approved filling the D3 gaps while requirements remain in progress.
+      - Lead confirmed baseline commit 816ea541 and the frozen path list.
+    verification:
+      - All referenced paths exist; commit 816ea541 resolves.
+    evidence:
+      - transcripts/transcriptA-wxxsfxyzm.md
+
+  - id: AI-wxxsfxyzm-0003
+    date: 2026-11-16
+    tool: Claude Code
+    model: claude-opus-5-5
+    role: other
+    operator: wxxsfxyzm (project lead)
+    task: Draft the agent governance files for OpenCode v1 sessions.
+    requirements: []
+    artifacts:
+      - .opencode/permissions.jsonc
+      - .agent/rules.md
+      - Prompt.md
+      - AGENTS.md
+      - docs/architecture/permission-model.md
+      - docs/code-governance/mcp-tool-manifest.md
+      - docs/code-governance/structural-constraints.md
+      - docs/code-governance/verification-constraints.md
+      - docs/ai-use-log.yaml
+    human_decisions:
+      - Lead chose OpenCode v1 by team agreement, without pinning an exact version.
+      - Lead accepted the plan, build, and verify roles.
+      - Lead approved the plan and asked the agent to proceed while requirements are deferred.
+      - Agent applied its proposed defaults, not explicitly confirmed by the lead - plan role writes docs/plans/; build role git commit requires approval.
+    verification:
+      - OpenCode 1.19.5 loaded .opencode/permissions.jsonc through OPENCODE_CONFIG; debug agent output showed project rules ordered after built-in rules for plan, build, and verify.
+      - Confirmed from the OpenCode 1.19.5 binary that read and edit permissions match worktree-relative paths.
+      - In-session smoke test (denied reads, edits, push) not yet run.
+    evidence:
+      - transcripts/transcriptA-wxxsfxyzm.md
+    notes: .opencode/rules.md is human-only and was not written by the agent.
+
+  - id: AI-wxxsfxyzm-0004
+    date: 2026-11-16
+    tool: Claude Code
+    model: claude-opus-5-5
+    role: other
+    operator: wxxsfxyzm (project lead)
+    task: Inject Prompt.md through OpenCode instructions and define the first-message format.
+    requirements: []
+    artifacts:
+      - .opencode/permissions.jsonc
+      - Prompt.md
+      - AGENTS.md
+      - docs/architecture/permission-model.md
+      - docs/ai-use-log.yaml
+    human_decisions:
+      - Lead asked whether OpenCode loads Prompt.md automatically.
+      - Lead approved combining instructions injection with an explicit @Prompt.md first message.
+    verification:
+      - Confirmed from the OpenCode 1.19.5 binary that only AGENTS.md (CLAUDE.md fallback) is auto-loaded.
+      - opencode debug config resolved the updated instructions list.
+    evidence:
+      - transcripts/transcriptA-wxxsfxyzm.md
+
+  - id: AI-wxxsfxyzm-0005
+    date: 2026-11-16
+    tool: Claude Code
+    model: claude-opus-5-5
+    role: other
+    operator: wxxsfxyzm (project lead)
+    task: Export this setup session as transcript A and draft intervention annotations.
+    requirements: []
+    artifacts:
+      - transcripts/transcriptA-wxxsfxyzm.md
+      - docs/ai-use-log.yaml
+    human_decisions:
+      - Lead first proposed not exporting the setup session, then decided to include it as transcript A.
+      - Lead asked the agent to write the lead's corrections into the transcript.
+    verification:
+      - Export scan found no tokens, API keys, or private keys; the operator email was redacted.
+      - All 18 human-message annotation slots filled; one harness notice relabelled as a system notice.
+    evidence:
+      - transcripts/transcriptA-wxxsfxyzm.md
+    notes: Annotations were drafted by the agent and are pending the lead's review. The transcript ends at the lead's request to add annotations.
