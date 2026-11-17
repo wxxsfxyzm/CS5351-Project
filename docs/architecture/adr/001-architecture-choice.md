@@ -158,7 +158,7 @@ If rejected and Option B is chosen instead:
   Miuix page are presentation; REQ-IX-ARCH-001 forbids UI-direct backend
   calls, and a UI-hosted policy cannot be tested without Android.
 
-Cross-listed in `option-ledger.md` (Batch 4).
+Cross-listed in `option-ledger.md` (OL-03, OL-04, OL-07, OL-08).
 
 ---
 

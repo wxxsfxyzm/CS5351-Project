@@ -174,3 +174,57 @@ entries:
     notes: OpenCode generated the proposal in chat without editing docs/req. Codex corrected
       the schema and rule predicates, validated in a temporary copy, and applied the
       patch locally. PR review of rev.6 is outstanding.
+
+  - id: AI-memberC-0001
+    date: '2026-11-17'
+    tool: OpenCode v1
+    model: custom-foundry/CS5351/DeepSeek-V4-Flash
+    role: plan
+    operator: Member C (Software Architect)
+    task: Populate the D2 architecture artifacts and record architecture decisions, invariants, runtime policy, traceability, and risks.
+    requirements:
+    - REQ-IX-ARCH-001
+    - REQ-IX-INV-001
+    - REQ-IX-INV-002
+    - REQ-IX-INV-003
+    - REQ-IX-INV-004
+    - REQ-IX-INV-005
+    - REQ-IX-INV-006
+    - REQ-IX-INV-007
+    - REQ-IX-SEC-003
+    - REQ-IX-SEC-004
+    - REQ-IX-SEC-005
+    - REQ-IX-REL-002
+    - REQ-IX-REL-003
+    - REQ-IX-MOD-001
+    - REQ-IX-DATA-001
+    artifacts:
+    - architecture-blueprint.md
+    - docs/plans/2026-11-17-d2-architecture-population.md
+    - docs/architecture/evaluation-table.md
+    - docs/architecture/adr/001-architecture-choice.md
+    - docs/architecture/adr/002-later-important-arch-decisions.md
+    - docs/architecture/invariants.md
+    - docs/architecture/runtime-policy-catalog.md
+    - docs/architecture/memory-design.md
+    - docs/architecture/trace-matrix.md
+    - docs/architecture/option-ledger.md
+    - docs/architecture/risk-list.md
+    - docs/architecture/evaluation-logbook.md
+    - docs/architecture/permission-model.md
+    human_decisions:
+    - Member C approved the gap-analysis plan at Gate A and redefined Batch 1 to cover evaluation-table, both ADRs, permission-model, and runtime-policy-catalog; blueprint moved to a later batch.
+    - Member C approved English content with [M]/[O] markers retained.
+    - Member C approved renaming the three [Optional] files via git mv to bare course names.
+    - Member C approved recording ADR-001 as a proposal (Option A recommended) requiring a team decision.
+    - Member C approved marking outbound_metadata_allowlist and COST-001 values provisional pending Member A review.
+    verification:
+    - Read-only Python coverage check against docs/req/requirements.yaml reported 41/41 requirements mapped, 0 dangling IDs, 0 priority or component mismatches, 7/7 invariants covered, 9/9 ASRs in the sub-matrix (RESULT PASS).
+    - Scanned all new D2 files for unknown REQ-IX IDs (0 found) and CJK characters in English content (0 found).
+    - git status confirmed 0 files changed under app/.
+    - No Gradle build was run; no source code changed, so a build was not required.
+    - No runtime, model, or Android tests were run; every test named in the artifacts is planned, not executed.
+    evidence:
+    - docs/plans/2026-11-17-d2-architecture-population.md
+    - docs/architecture/evaluation-logbook.md
+    notes: Architecture documents only. No source under app/ was modified. ADR-001 remains a proposal awaiting team acceptance; requirements rev.6 remains a draft.

@@ -146,7 +146,7 @@ policy specified in the D2 artifact named; an entry with status
   `planned: ChokePointTest`.
 - **Requirements:** REQ-IX-INV-003, REQ-IX-SEC-003, REQ-IX-DATA-001,
   REQ-IX-FR-007, REQ-IX-FR-009.
-- **Specified in:** `memory-design.md` (Batch 3),
+- **Specified in:** `memory-design.md` §2, §4, §6,
   `runtime-policy-catalog.md` (DR-10), `evaluation-table.md` QA-05.
 
 ---

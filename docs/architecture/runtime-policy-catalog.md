@@ -40,6 +40,26 @@ and no human action can override an active hard prohibition
 Source: `requirements.yaml` `decision_rules`. The rule bodies are not
 paraphrased; only the columns are reordered for reading.
 
+### 1.1 Rule to baseline-mechanism mapping
+
+Every rule must be computable from state the baseline already produces,
+or from state the new elements add without changing baseline meaning.
+`runtime-policy-catalog.md` §7 lists the mechanisms; this table maps the
+rules onto them.
+
+| Rule | Triggering fact | Baseline or new source | Notes |
+|---|---|---|---|
+| DR-01 | active hard prohibition | §7.1 signature block, §7.2 platform/user restriction, §7.3 blacklist/shared-user-ID | Dominates all other rules. Cannot be overridden by advice or human action. |
+| DR-10 | revalidation fails after approval | new `ApprovalStateStore` binding vs current object (ADR-002.7) | No baseline equivalent; the binding record is new. |
+| DR-03 | evidence unreadable, key unknown, or truncated | new `InstallEvidenceCollector` completeness state | Baseline analysis failure surfaces as `InstallAnalysedFailed`; it does not classify completeness. |
+| DR-02 | consent declined or withdrawn | new `ConsentGate` | Distinct from AI-disabled (FR-012). |
+| DR-04 | contradictory local facts | new `InstallEvidenceCollector` + deterministic comparison | No baseline equivalent. |
+| DR-05 | complete, compatible, HIGH/LOW, auto rules met | new `DeterministicPolicyEngine` over §7 checks plus advisory result | Auto-approval only when base policy allows (INV-007). |
+| DR-06 | complete, compatible, HIGH/LOW, auto rules not met | new `DeterministicPolicyEngine` | Baseline would require user action; the engine routes to review. |
+| DR-07 | complete, any valid advice, not hard block | new `DeterministicPolicyEngine` | Covers unfavorable or uncertain dimensions. |
+| DR-08 | invalid, unavailable, budget rejected, overage, blocked third | new `ApprovalCoordinator` + `AIRiskAdvisor` failure classification (F-01 … F-09) | No auto-approval on any failure. |
+| DR-09 | valid approval and revalidation passed | new `ApprovalStateStore` + `ApprovalCoordinator` recheck before `InstallationGateway` | Human Continue creates the binding (INV-003). |
+
 Provisional note: the `decision_rules` array is part of the rev.6 draft
 awaiting group approval. This table must be regenerated if those rules
 change.
@@ -138,37 +158,118 @@ those checks.
 
 ## 6. Counter semantics
 
-- **Attempt:** one model-analysis attempt for an operation. At most two
-  per operation; attempt 1 is system-initiated, attempt 2 is
-  user-initiated only (REQ-IX-COST-001, provisional). A preflight
-  rejection still consumes an attempt.
-- **Provider dispatch:** 0 when rejected before transmission, exactly 1
-  when a request is sent. A post-call overage is 1 completed call.
-- **Backend submission:** at most 1 cumulative per operation ID
-  (REQ-IX-INV-005, REQ-IX-REL-004). A retry adds only an attempt ID.
-- **Additional vs cumulative:** "additional" counters are caused by the
-  named action; "cumulative" counters are totals for the same operation
-  ID.
+Counters are defined so that the same operation can be audited without
+ambiguity (REQ-IX-FR-009). The attempt and dispatch counts below are
+provisional, pending Member A review of COST-001.
+
+### 6.1 Attempts
+
+- One **attempt** is one model-analysis attempt for an operation.
+- At most **2 attempts per operation** (provisional): attempt 1 is
+  system-initiated automatically, attempt 2 is user-initiated only.
+- Automatic retry is forbidden. A timeout does not trigger a second
+  call.
+- A **preflight rejection consumes an attempt** but sends 0 provider
+  dispatches.
+- A user retry keeps the operation ID and adds only an attempt ID; it
+  grants no submission right.
+
+### 6.2 Provider dispatches
+
+- **0** dispatches when rejected before transmission (preflight token
+  rejection, network disabled).
+- **exactly 1** dispatch when a request is sent.
+- A **post-call overage** (reported total > 4000) is **1 completed
+  call** and is not re-sent.
+- A **blocked third request** produces **0 additional dispatches**
+  because the operation budget is exhausted.
+
+### 6.3 Backend submissions
+
+- At most **1 cumulative submission per operation ID**
+  (REQ-IX-INV-005, REQ-IX-REL-004).
+- A retry adds only an attempt ID and no submission.
+- A duplicate notification event or repeated Continue click shares the
+  same operation and produces at most one submission.
+
+### 6.4 Additional vs cumulative
+
+"Additional" counters are caused by the named action. "Cumulative"
+counters are totals for the same operation ID. A decision table case
+states which kind it uses.
 
 ---
 
 ## 7. Existing baseline mechanisms this catalog depends on
 
 These are the current deterministic checks the catalog preserves, not
-new rules:
-
-- `ProcessInstallationUseCase.checkBlockedByProfile()`
-  (`app/src/main/java/com/rosan/installer/domain/engine/usecase/ProcessInstallationUseCase.kt:200-249`)
-  — throws `BLOCKED_BY_PROFILE_SIGNATURE_MISMATCH` and
-  `BLOCKED_BY_PROFILE_SIGNATURE_UNKNOWN`.
-- `data/engine/policy/PlatformInstallPolicyChecker.kt` — platform
-  sideload policy.
-- Blacklist and shared-user-ID lists passed to
-  `AppInstallerRepository.doInstallWork`
-  (`domain/engine/repository/AppInstallerRepository.kt:34`).
-
-REQ-IX-INV-002 and REQ-IX-SEC-002 map onto these mechanisms. This
+new rules. DR-01 (`HARD_BLOCK`) is satisfied by any one of them. This
 catalog does not propose a parallel rule engine.
+
+Paths are relative to `app/src/main/java/com/rosan/installer/`.
+
+### 7.1 Signature prohibition
+
+- `domain/engine/usecase/ProcessInstallationUseCase.kt:200-249` —
+  `checkBlockedByProfile()` throws
+  `BLOCKED_BY_PROFILE_SIGNATURE_MISMATCH` when signature mismatch is not
+  allowed, and `BLOCKED_BY_PROFILE_SIGNATURE_UNKNOWN` when the signature
+  cannot be verified and unknown signatures are not allowed. Both are
+  gated by `config.allowSigMismatch` / `config.allowSigUnknown` and
+  `BooleanSetting.CheckAppSignature`.
+- Signing-block policy: `SigningBlockCertificateStatus.isBlockedByUnknownPolicy()`.
+- Cross-reference: `InstallErrorType.BLOCKED_BY_PROFILE_SIGNATURE_MISMATCH`
+  and `..._SIGNATURE_UNKNOWN`
+  (`domain/engine/model/error/InstallErrorType.kt:136-137`).
+
+### 7.2 Platform install policy
+
+- `data/engine/policy/PlatformInstallPolicyChecker.kt:30-175` — invoked
+  from `AppInstallerRepositoryImpl.doInstallWork`
+  (`data/engine/repository/AppInstallerRepositoryImpl.kt:84-97`) when
+  `respectPlatformInstallPolicy` is effective.
+- `checkUserRestrictions()` (`:139-160`) throws `USER_RESTRICTED` for
+  `DISALLOW_INSTALL_APPS`,
+  `DISALLOW_INSTALL_UNKNOWN_SOURCES`, and
+  `DISALLOW_INSTALL_UNKNOWN_SOURCES_GLOBALLY`.
+- `checkUnknownSourceAllowed()` throws `MISSING_INSTALL_PERMISSION`
+  (`InstallErrorType.kt:133`).
+
+### 7.3 Blacklist and shared-user-ID prohibition
+
+- The blacklist and shared-user-ID lists are read in
+  `ProcessInstallationUseCase.installApp`
+  (`domain/engine/usecase/ProcessInstallationUseCase.kt:288-298`) and
+  passed through `installWithResolvedAuthorizer` (`:327-413`) to
+  `AppInstallerRepository.doInstallWork`
+  (`domain/engine/repository/AppInstallerRepository.kt:34-44`).
+- Enforced in `IBinderAppInstallerRepoImpl.kt:244-267`: throws
+  `BLACKLISTED_PACKAGE` (`InstallErrorType.kt:132`) unless
+  `config.bypassBlacklistInstallSetByUser` is set.
+- Note for the blueprint: the `Authorizer.None` implementation
+  (`NoneAppInstallerRepoImpl.kt`) does **not** re-check the blacklist
+  lists itself; the `None` path reaches `doInstallWork` through the same
+  `ProcessInstallationUseCase` gate, so the check above still applies.
+  This behaviour is preserved, not changed.
+
+### 7.4 Error routing
+
+- `ActionHandler.startProcessingJob` (`data/session/handler/ActionHandler.kt:189-230`)
+  maps failures to progress states. A `MISSING_INSTALL_PERMISSION` on
+  `Action.Install` becomes `InstallWaitingUnknownSource`; other install
+  failures become `InstallFailed`. This is the baseline precedent F-01 …
+  F-09 must follow.
+
+### 7.5 What the AI layer must not add
+
+- It must not add a second prohibition engine. DR-01 is evaluated from
+  the results of §7.1–§7.3.
+- It must not change the meaning of `BLACKLISTED_PACKAGE`,
+  `BLOCKED_BY_PROFILE*`, `USER_RESTRICTED`, or
+  `MISSING_INSTALL_PERMISSION`.
+- It must not make the blacklist bypassable by favorable advice. The
+  existing user bypass `bypassBlacklistInstallSetByUser` remains a user
+  setting of the baseline, not an AI capability.
 
 ---
 

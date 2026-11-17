@@ -214,6 +214,39 @@ Each row is a scenario target, not a measured result.
 
 ---
 
+## 7.1 Non-ASR quality attributes
+
+These requirements are not flagged `asr: true`, but each shapes an
+architectural element or a test obligation. "Pending realization" means
+the code that would satisfy it does not exist yet, so no measurement is
+possible. `Planned target` is the threshold or behaviour from the
+registry; `Evidence` names the planned test; `Risk pointer` links to
+`risk-list.md`.
+
+| ID | Attribute | Requirement | Planned target | Current assessment | Evidence | Risk pointer |
+|---|---|---|---|---|---|---|
+| NQA-01 | Robustness | REQ-IX-REL-001 | every listed model failure degrades to `REQUIRE_REVIEW`; hard block preserved; 0 silent auto-approvals | pending realization | `planned: FailureModeTest` | RK-S-04, RK-T-07 |
+| NQA-02 | Robustness | REQ-IX-REL-002 | durable write at each of the 7 transitions; write failure stops automatic submission | pending realization | `planned: StatePersistenceTest` | RK-T-04 |
+| NQA-03 | Robustness | REQ-IX-REL-004 | 20 concurrent submissions → at most 1; retry adds attempt only; third attempt blocked | pending realization | `planned: DedupTest` | RK-T-05 |
+| NQA-04 | Performance | REQ-IX-PER-001 | `REQUIRE_REVIEW` ≤1 s after a 7 s timeout; decision persisted ≤15 s; 1 call, no auto-retry; no ANR | pending realization | `planned: LatencyBudgetTest` | RK-T-07 |
+| NQA-05 | Cost | REQ-IX-COST-001 (provisional) | ≤2 attempts/op; ≤1 dispatch per sent attempt; 4 000-token inclusive hard cap before send; 95% ≤2 000 in the fixed cohort | pending realization | `planned: CallBudgetTest`, `planned: TokenBudgetTest`, `planned: CostDistributionEvaluation` | RK-C-02 |
+| NQA-06 | Modifiability | REQ-IX-MOD-001 (**ASR**) | swapping the provider for a fixed-response adapter leaves policy and approval tests unchanged | pending realization | `planned: AdapterContractTest` | RK-T-08 |
+| NQA-07 | AI quality | REQ-IX-AIQ-001 (provisional) | ≥20 cases × 3 runs; structural validity ≥95%; groundedness ≥90%, relevance ≥90% per dimension | pending realization | `planned: AIQualityEvaluation` | RK-S-01, RK-S-03 |
+| NQA-08 | Explainability | REQ-IX-QUAL-001 | 100% of accepted reasons cite an existing evidence field; 0 fabricated references | pending realization | `planned: ExplanationGroundingTest` | RK-S-03 |
+| NQA-09 | Compatibility | REQ-IX-COMP-001 | install, update, downgrade, signature-mismatch, blacklist scenarios pass at baseline rate | pending realization | `planned: BaselineRegressionTest` | RK-C-01, RK-C-03 |
+| NQA-10 | Security | REQ-IX-SEC-004 | 0 outbound when consent or network forbids; leaf paths equal the allowlist; no local-only identifier in the full prompt | pending realization | `planned: OutboundWhitelistTest` | RK-S-02, RK-S-07 |
+| NQA-11 | Data integrity | REQ-IX-DATA-001 | append-only, hash-chained; export replays the decision; no credentials | pending realization | `planned: AuditIntegrityTest` | RK-S-05, RK-S-06 |
+| NQA-12 | UI consistency | REQ-IX-ARCH-002 | both M3 and Miuix compile and complete the review flow, or an approved exemption exists | pending realization | `planned: DualUiSmokeTest` | RK-C-03 |
+
+NQA-06 restates REQ-IX-MOD-001, which is an ASR; it is repeated here so
+the MOD row is visible beside the other quality attributes. Its driver
+treatment is in §2 (D4).
+
+No row in this table may be read as a result. The project has no
+implementation of any element named in this document.
+
+---
+
 ## 8. Provisional and unresolved items
 
 - `outbound_metadata_allowlist` contents and `COST-001` numeric caps are
@@ -232,6 +265,11 @@ Each row is a scenario target, not a measured result.
 - Drivers and evaluations: REQ-IX-ARCH-001, REQ-IX-INV-003,
   REQ-IX-INV-004, REQ-IX-INV-006, REQ-IX-INV-007, REQ-IX-SEC-005,
   REQ-IX-REL-002, REQ-IX-REL-003, REQ-IX-MOD-001.
+- Non-ASR quality attributes (§7.1): REQ-IX-REL-001, REQ-IX-REL-004,
+  REQ-IX-PER-001, REQ-IX-COST-001, REQ-IX-AIQ-001, REQ-IX-QUAL-001,
+  REQ-IX-COMP-001, REQ-IX-SEC-004, REQ-IX-DATA-001, REQ-IX-ARCH-002.
 - Selected design: `adr/001-architecture-choice.md`.
 - Deferred decisions: `adr/002-later-important-arch-decisions.md`.
-- Rejected candidates: `option-ledger.md` (Batch 4).
+- Rejected candidates: `option-ledger.md`.
+- Risk pointers: `risk-list.md`.
+- Evaluation history: `evaluation-logbook.md`.

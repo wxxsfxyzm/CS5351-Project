@@ -5,12 +5,16 @@ Status: proposed by agent, pending human review.
 > **Scope note.** Sections 1–8 of this document govern *coding-agent
 > access* to the repository and are the human-readable form of
 > `.opencode/permissions.jsonc`. They do not describe the AI
-> component's runtime privilege boundary. The runtime boundary for the
-> shipped AI component is in §9 below, and is also specified in
-> `architecture-blueprint.md` §7 and ADR-001. The naming overlap between
-> "agent permission model" and "AI runtime permission model" is recorded
-> as an open question in `docs/plans/2026-11-17-d2-architecture-population.md`
-> §8 (Q1).
+> component's runtime privilege boundary. The runtime AI-adapter
+> least-privilege isolation model is specified in
+> `architecture-blueprint.md` §7 (*Runtime AI-adapter least-privilege
+> isolation*), with the concrete forbidden-dependency list and
+> enforcement points in §9 below. The two audiences are different: §1–§8
+> constrain what a coding agent may read, edit, and run; §9 and
+> `architecture-blueprint.md` §7 constrain what the shipped app may do at
+> runtime. The naming overlap between "agent permission model" and "AI
+> runtime permission model" is recorded as an open question in
+> `docs/plans/2026-11-17-d2-architecture-population.md` §8 (Q1).
 
 This document is the human-readable form of
 `.opencode/permissions.jsonc`. The two must stay identical in
