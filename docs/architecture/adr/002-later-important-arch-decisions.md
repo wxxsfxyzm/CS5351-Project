@@ -4,7 +4,7 @@
 **Date:** 2026-11-17.
 **Owner:** Member C (Software Architect).
 **Baseline:** extends InstallerX Revived `816ea541`.
-**Depends on:** `adr/001-architecture-choice.md` (proposal).
+**Depends on:** `adr/001-architecture-choice.md` (accepted — Option B).
 
 This file is an index of decisions that ADR-001 defers. Entries 2.1–2.5
 were planned in

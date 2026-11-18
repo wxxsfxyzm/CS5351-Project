@@ -150,8 +150,8 @@ when it is.
   pass; static check finds no model or network dependency in the policy
   package).
 - **Implementation links:** `permission-model.md` §9.2 (policy forbidden
-  dependencies) and §9.3; `adr/001-architecture-choice.md` Option A
-  module boundary.
+  dependencies) and §9.3; `adr/001-architecture-choice.md` §6
+  (check-based enforcement under the accepted Option B).
 - **Status:** conceptual.
 
 ### REQ-IX-INV-007 — AI does not lower deterministic restrictions

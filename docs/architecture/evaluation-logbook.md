@@ -69,8 +69,9 @@ observed; unverified claims are marked `not run`.
   INV-001/006/007 structurally. Candidate B (guarded hybrid with a
   deterministic policy gate) passes all four drivers. Candidate C
   (model-blind) is the reference, not a product candidate.
-- **Disposition:** accepted; Candidate B selected as a proposal in
-  ADR-001.
+- **Disposition:** accepted; Candidate B selected in ADR-001 (initially
+  recorded as a proposal, accepted as Option B on 2026-11-17 — see
+  EV-008).
 - **Evidence:** `evaluation-table.md` §2–§5;
   `adr/001-architecture-choice.md` §3.
 
@@ -129,6 +130,30 @@ observed; unverified claims are marked `not run`.
 
 ---
 
+### EV-008 — 2026-11-17 — ADR-001 accepted: Option B selected over Option A
+
+- **Activity:** Team lead review of ADR-001's module question.
+- **Inputs:** `adr/001-architecture-choice.md` §2–§4; active modules in
+  `settings.gradle.kts`; `docs/code-governance/structural-constraints.md`
+  §1–§2.
+- **Finding:** The architect recommended Option A (new Gradle module) for
+  build-time enforcement of REQ-IX-INV-001 and REQ-IX-INV-006. The team
+  lead selected Option B (in-tree packages in the existing `app` module)
+  instead, weighing limited Android infrastructure experience, a tight
+  schedule, and a preference for a working testable integration over new
+  build complexity. The authority separation itself is unchanged; only
+  the enforcement mechanism changes from compile-time to
+  interface + review + static check + focused tests.
+- **Disposition:** accepted and propagated. ADR-001 status is now
+  `accepted`; the blueprint §7.1 and §9, invariants INV-006 link,
+  permission-model §9.3, risk RK-T-08, and ADR-002 dependency line were
+  updated. Option A is recorded as rejected in `option-ledger.md`
+  (OL-03a); Option B is recorded as accepted (OL-03).
+- **Evidence:** `adr/001-architecture-choice.md` §3, §3.1, §5, §6;
+  `option-ledger.md` OL-03/OL-03a.
+
+---
+
 ## 3. Verification status at close of D2 population
 
 | Check | Result |
@@ -144,7 +169,8 @@ observed; unverified claims are marked `not run`.
 
 ## 4. Open items carried forward
 
-1. ADR-001 requires a team decision before any module is created.
+1. ADR-001 is accepted (Option B, no new module); concrete package roots
+   are still open (ADR-001 §8).
 2. ADR-002.1–002.5 are not started.
 3. Requirements rev.6 is still a draft; the matrix must be regenerated on
    change.

@@ -204,9 +204,10 @@ adapter implementation, or any network client
 
 ### 9.3 Enforcement
 
-- **Structural.** Module dependency direction (ADR-001 Option A, if
-  accepted) fails the build when an advisory element imports a forbidden
-  type. Under Option B, a lint or test rule replaces the module boundary.
+- **Structural.** ADR-001 is accepted on Option B, so the compiler does
+  not enforce the boundary. A static import check walks the advisory and
+  policy packages and fails on a forbidden import; code review and KDoc
+  traceability tags cover the rest (`adr/001-architecture-choice.md` §6).
 - **Static check.** A test asserts the advisory package's import graph
   contains no forbidden type (`planned: AdvisorIsolationTest`).
 - **Static check.** A test asserts the policy package references no model

@@ -43,33 +43,53 @@ here is not thereby forbidden; it is currently not selected.
 - **Reversibility:** not reversible without re-opening the requirements.
 - **Recorded in:** `adr/002-later-important-arch-decisions.md` ADR-002.6.
 
-### OL-03 — In-tree packages instead of a new Gradle module (ADR-001 Option B)
+### OL-03 — In-tree packages in the existing `app` module (ADR-001 Option B)
 
-- **Status:** deferred — evaluated alternative.
-- **Description:** Place the AI component and policy gate in new packages
-  under `app/src/main/java/.../ai/` rather than a separate module.
-- **Why not selected:** REQ-IX-INV-006 is a structural constraint; only a
-  module boundary fails the build automatically when a forbidden
-  dependency appears. Under Option B, enforcement depends on lint or
-  review.
-- **When it becomes acceptable:** if the team judges the extra module and
-  build cost too high and accepts a lint/test rule as the enforcement
-  mechanism, with that rule written before INV-006 is claimed.
-- **Reversibility:** high — packages can be extracted into a module
-  later.
-- **Recorded in:** `adr/001-architecture-choice.md` §2–§4.
+- **Status:** **accepted** (2026-11-17, team lead review; ADR-001).
+- **Description:** Place the AI components and the policy gate in new
+  packages inside `app`, following the existing `domain`, `data`, `di`,
+  and `ui` layering, rather than in a separate Gradle module.
+- **Why selected:** limited team experience with Android build
+  infrastructure, a tight schedule, and a priority on a working, testable
+  integration over new infrastructure. Option B has the lowest wiring
+  cost, the shortest build, and the highest reversibility.
+- **Accepted cost:** REQ-IX-INV-001 and REQ-IX-INV-006 are enforced by a
+  static import check, code review, focused negative tests, and KDoc
+  tags, not by the compiler (`adr/001-architecture-choice.md` §6).
+- **Reversibility:** high — the packages can be extracted into a module
+  later if check-based enforcement proves insufficient.
+- **Recorded in:** `adr/001-architecture-choice.md` §3, §5, §6.
+
+### OL-03a — New standalone Gradle module for AI component and policy (ADR-001 Option A)
+
+- **Status:** **rejected** (was the architect's recommendation; rejected by
+  team lead review on 2026-11-17).
+- **Description:** Put the advisory components and the deterministic gate
+  in a new Gradle module depended on by `app`.
+- **Why not selected:** it is the strongest enforcement mechanism (a
+  forbidden import fails compilation), but it adds module setup, build
+  wiring, registry change, cross-boundary Koin registration, and a
+  pure/Android split. Under the team's stated constraints, that cost is
+  not justified.
+- **When it becomes worth revisiting:** if the check-based enforcement of
+  INV-001 or INV-006 proves insufficient in practice, or if the advisory
+  code needs a genuinely different dependency graph.
+- **Reversibility:** moderate — a module can be folded back into `app`.
+- **Recorded in:** `adr/001-architecture-choice.md` §2, §3.1, §4.
 
 ### OL-04 — Separate process for the AI component
 
-- **Status:** rejected (folded into OL-03/ADR-001 Option A).
+- **Status:** rejected.
 - **Description:** Run the AI adapter in its own process with IPC to the
   app.
-- **Rejected because:** it isolates by process, but a module boundary
-  already enforces the required dependency direction; the process adds
-  IPC complexity, lifecycle handling, and a new failure mode without
-  changing the authority relationship.
+- **Rejected because:** a module boundary (Option A) would have isolated
+  the dependency direction more cheaply, and the selected in-tree layout
+  (Option B) isolates by contract and check; a separate process adds IPC
+  complexity, lifecycle handling, and a new failure mode without changing
+  the authority relationship — directly against the "no extra
+  infrastructure" priority.
 - **Reversibility:** moderate.
-- **Recorded in:** `adr/001-architecture-choice.md` §6.
+- **Recorded in:** `adr/001-architecture-choice.md` §7.
 
 ### OL-05 — File-based approval store instead of Room
 
@@ -150,7 +170,8 @@ here is not thereby forbidden; it is currently not selected.
 |---|---|---|---|
 | OL-01 | Autonomous multi-agent | rejected | D1, INV-001 |
 | OL-02 | Advisory policy | rejected | D1, INV-002/007 |
-| OL-03 | In-tree packages | deferred | D1 enforcement |
+| OL-03 | In-tree packages | **accepted** | D1 enforcement |
+| OL-03a | New Gradle module | rejected | D1 enforcement |
 | OL-04 | Separate process | rejected | D4 |
 | OL-05 | File-based store | deferred | D2 |
 | OL-06 | Reuse network setting | deferred | D4 |

@@ -14,9 +14,9 @@ Course marker D2.1 — master constraint document.
 
 This document is the primary architectural constraint for the project.
 It names the architectural elements, their authority, and their
-boundaries. It does not name packages or Gradle modules: that decision
-belongs to `adr/001-architecture-choice.md`, which is still a proposal
-(`docs/code-governance/structural-constraints.md` §1).
+boundaries. The module layout is fixed by
+`adr/001-architecture-choice.md`, which is **accepted**: all elements live
+in the existing `app` module, and no new Gradle module is created.
 
 Nothing in this document is implemented. Every test named is planned.
 
@@ -303,9 +303,13 @@ list are in `permission-model.md` §9; this section states the model.
    `ActionHandler`.
 4. **No policy capability.** Advisory elements cannot change a policy
    input or a decision.
-5. **Least privilege by construction.** Under ADR-001 Option A, module
-   dependency direction fails the build on a forbidden import. Under
-   Option B, a lint or test rule replaces the module boundary.
+5. **Least privilege by contract and check.** ADR-001 selects Option B:
+   the advisory and policy elements live in the existing `app` module, so
+   the compiler does not enforce the boundary. A mandatory static import
+   check, code review, focused negative tests, and KDoc traceability tags
+   replace the module boundary (`adr/001-architecture-choice.md` §6). If
+   those checks are absent, the corresponding invariant is not claimed as
+   enforced.
 
 ### 7.2 Enforcement
 
@@ -362,15 +366,35 @@ Full detail is in `memory-design.md`. Summary:
 
 ## 9. Module organization
 
-- Each architectural element maps to exactly one module or package
+ADR-001 is **accepted**: the AI component lives inside the existing `app`
+module. **No new Gradle module is created**; the active modules remain
+`:app`, `:app-process`, `:hidden-api`, `:baselineprofile`
+(`settings.gradle.kts`).
+
+- Each architectural element maps to exactly one package
   (`docs/code-governance/structural-constraints.md` §1).
 - Element names in this document match the names in the ADRs and the
   requirements registry.
-- **Package and Gradle-module assignment is deferred to ADR-001.** Until
-  ADR-001 is accepted, no module is created and this document names no
-  final package path.
-- New injectable elements are registered in an existing Koin module under
-  `di/`.
+- New packages follow the established baseline layering:
+  - `domain` — contracts and pure logic: `InstallEvidenceCollector`,
+    `EvidenceSanitizer`, `AIOutputValidator`, `DeterministicPolicyEngine`
+    (pure Kotlin, no model SDK, no network), `ApprovalCoordinator`,
+    `HumanReviewHandler`, `ConsentGate`, `NetworkGate`, and the interfaces
+    for `AIRiskAdvisor`, `InstallationGateway`, `ApprovalStateStore`,
+    `DecisionAuditRecorder`.
+  - `data` — implementations behind those interfaces: the model adapter,
+    the gateway wrapping `AppInstallerRepository`, and the Room/DataStore
+    persistence of approval state and audit.
+  - `di` — registrations in existing Koin modules under `di/`; no new
+    module.
+  - `ui` — `AuditQuery UI`, review and consent screens, and
+    `InstallerSession UI` changes in both `ui/page/main` and
+    `ui/page/miuix`.
+- Exact package roots are recorded in ADR-001 §8 as open questions and
+  fixed in the first build plan.
+- The authority separation is enforced by interfaces, code review, a
+  static import check, and focused tests, not by a module boundary
+  (`adr/001-architecture-choice.md` §6; `permission-model.md` §9).
 - Every new public class or function carries a KDoc tag naming the ADR
   and, where relevant, the invariant it implements.
 
@@ -395,7 +419,8 @@ Full detail is in `memory-design.md`. Summary:
 
 ## 11. Open questions
 
-1. Final Gradle module and package names (ADR-001 team decision).
+1. Exact package roots inside `app` (ADR-001 is accepted on Option B;
+   the concrete package names are fixed in the first build plan).
 2. Whether the runtime AI-adapter isolation needs a separate artifact, or
    §7 plus `permission-model.md` §9 is enough (plan Q1).
 3. Approval/audit table shape on top of the Room database (ADR-002.3).

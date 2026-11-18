@@ -42,7 +42,7 @@ keeping the same content commitments.
 | # | Decision | Effect on this plan |
 |---|---|---|
 | D1 | Rename the three `[Optional]*` files via `git mv` to bare course names; keep `[Optional]` as an in-body heading marker. | Batch 4. |
-| D2 | ADR-001 records Option A (new standalone Gradle module) as recommended **proposal**; Option B (in-tree packages) as evaluated alternative; `Status: proposed — requires team decision`. | Batch 1. |
+| D2 | ADR-001 recorded Option A (new standalone Gradle module) as the recommended **proposal**, Option B (in-tree packages) as the alternative. **Superseded 2026-11-17:** team lead review accepted **Option B**; ADR-001 status is now `accepted`. | Batch 1, revised after review (EV-008). |
 | D3 | All new D2 content in English; retain inherited `[M]` and `[O]` markers. | All batches. |
 | D4 | Mark `outbound_metadata_allowlist` and `COST-001` numeric values as **provisional, pending Member A review**. | Blueprint, catalog, option ledger. |
 | D5 | Keep `permission-model.md` as agent-access governance, add top note, specify runtime AI-adapter isolation in blueprint, flag naming overlap. | Batch 1. |
@@ -199,8 +199,8 @@ recovery; §9 module organization; §10 traceability index; §11 open
 questions.
 
 ### 5.2 `adr/001-architecture-choice.md` (Batch 1)
-Context; Options A/B with criteria; Decision = proposal A,
-`Status: proposed — requires team decision`; Consequences;
+Context; Options A/B with criteria; Decision = **Option B accepted**
+(amended 2026-11-17 from the initial Option A proposal); Consequences;
 Alternatives; "extends 816ea541, supersedes none".
 
 ### 5.3 `adr/002-later-important-arch-decisions.md` (Batch 1)
@@ -295,8 +295,9 @@ changes. Report each command and result.
 ## 8. Risks and Open Questions
 
 **Risks**
-- R1: ADR-001 is a proposal; blueprint must not hard-code package
-  paths before acceptance (`structural-constraints.md` §1).
+- R1: ADR-001 is now accepted on Option B; concrete package roots remain
+  open and are fixed in the first build plan (`structural-constraints.md`
+  §1 still requires one element = one package).
 - R2: rev.6 is `draft_for_group_review`; PMA-* items pending.
 - R3: `[Optional]` rename could break external links; re-verify before
   `git mv`.

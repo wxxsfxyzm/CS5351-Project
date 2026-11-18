@@ -155,9 +155,11 @@ Candidate B.
 ## 5. Selected architecture
 
 **Candidate B — guarded hybrid with a deterministic policy gate** is
-selected. Recorded as a proposal in
-`adr/001-architecture-choice.md`; it requires team acceptance before
-module creation.
+selected and **accepted** in `adr/001-architecture-choice.md`. The
+implementation lives inside the existing `app` module (Option B, no new
+Gradle module). The structural claims below are enforced by interfaces,
+code review, a static import check, and focused tests rather than by a
+module boundary.
 
 Justification against the drivers:
 
@@ -252,8 +254,10 @@ implementation of any element named in this document.
 - `outbound_metadata_allowlist` contents and `COST-001` numeric caps are
   provisional, pending Member A review (PMA-OUT-002 … PMA-OUT-006,
   PMA-COST-001 … PMA-COST-004).
-- Package and Gradle-module assignment is deferred to ADR-001
-  acceptance (`structural-constraints.md` §1).
+- ADR-001 is accepted on Option B: elements live in the existing `app`
+  module. Concrete package roots are open and fixed in the first build
+  plan (`structural-constraints.md` §1 still requires one element = one
+  package).
 - `evaluation-table.md` is used here as an architecture QA table. If the
   course intends this file to hold model-evaluation results, the mapping
   must be revisited.
