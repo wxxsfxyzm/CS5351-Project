@@ -20,8 +20,7 @@ class StrictAiOutputValidatorTest {
 
     private fun parse(json: String) = validator.parse(json, "test-model", "v1", paths)
 
-    private fun invalidOf(json: String): AssessmentResult.Invalid =
-        assertIs<AssessmentResult.Invalid>(parse(json))
+    private fun invalidOf(json: String): AssessmentResult.Invalid = assertIs<AssessmentResult.Invalid>(parse(json))
 
     private val validJson = """
         {
@@ -32,8 +31,7 @@ class StrictAiOutputValidatorTest {
         }
     """.trimIndent()
 
-    private fun withLikelihood(value: String) =
-        validJson.replace("\"HIGH\"", "\"$value\"")
+    private fun withLikelihood(value: String) = validJson.replace("\"HIGH\"", "\"$value\"")
 
     /** Verifies: REQ-IX-FR-004 (happy path maps every fixed field). */
     @Test

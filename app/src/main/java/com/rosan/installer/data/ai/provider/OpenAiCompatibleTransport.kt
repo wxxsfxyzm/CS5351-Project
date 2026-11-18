@@ -33,14 +33,18 @@ internal object OpenAiCompatiblePayload {
         put(
             "messages",
             buildJsonArray {
-                add(buildJsonObject {
-                    put("role", "system")
-                    put("content", systemPrompt)
-                })
-                add(buildJsonObject {
-                    put("role", "user")
-                    put("content", userPrompt)
-                })
+                add(
+                    buildJsonObject {
+                        put("role", "system")
+                        put("content", systemPrompt)
+                    },
+                )
+                add(
+                    buildJsonObject {
+                        put("role", "user")
+                        put("content", userPrompt)
+                    },
+                )
             },
         )
     }.let { json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(), it) }

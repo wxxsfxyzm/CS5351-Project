@@ -79,8 +79,7 @@ class AiRequestBuilder(
         )
     }
 
-    private fun localIdentifiers(evidence: InstallEvidence): List<String> =
-        listOfNotNull(evidence.targetPackageName)
+    private fun localIdentifiers(evidence: InstallEvidence): List<String> = listOfNotNull(evidence.targetPackageName)
 
     private fun userPrompt(
         payloadText: String,

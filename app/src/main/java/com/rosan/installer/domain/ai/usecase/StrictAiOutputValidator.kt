@@ -130,12 +130,11 @@ class StrictAiOutputValidator(
     }
 
     /** Absent key → [AssessmentResult.Missing]; present but wrong → [AssessmentResult.Invalid]. */
-    private fun missingOrIllegal(obj: JsonObject, key: String): AssessmentResult =
-        if (key !in obj) {
-            AssessmentResult.Missing(key)
-        } else {
-            AssessmentResult.Invalid("$key has an illegal value: ${obj[key]}", field = key)
-        }
+    private fun missingOrIllegal(obj: JsonObject, key: String): AssessmentResult = if (key !in obj) {
+        AssessmentResult.Missing(key)
+    } else {
+        AssessmentResult.Invalid("$key has an illegal value: ${obj[key]}", field = key)
+    }
 
     private inline fun <reified T : Enum<T>> parseEnum(obj: JsonObject, key: String): T? {
         val raw = (obj[key] as? JsonPrimitive)?.contentOrNull ?: return null
@@ -193,8 +192,14 @@ class StrictAiOutputValidator(
         )
 
         private val GUARANTEE_MARKERS = listOf(
-            "guarantee", "guaranteed", "100%", "absolute certainty", "definitely safe",
-            "completely safe", "risk-free", "zero risk",
+            "guarantee",
+            "guaranteed",
+            "100%",
+            "absolute certainty",
+            "definitely safe",
+            "completely safe",
+            "risk-free",
+            "zero risk",
         )
     }
 }

@@ -54,9 +54,11 @@ class OkHttpAiTransport(
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) : OpenAiCompatibleTransport {
 
-    private val client: OkHttpClient = (baseClient?.newBuilder()
-        ?: OkHttpClient.Builder()
-            .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS))
+    private val client: OkHttpClient = (
+        baseClient?.newBuilder()
+            ?: OkHttpClient.Builder()
+                .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        )
         .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
         .build()
 
@@ -166,8 +168,13 @@ class OkHttpAiTransport(
         private const val MAX_ERROR_SCAN_BYTES = 8 * 1024
 
         private val TOKEN_LIMIT_MARKERS = listOf(
-            "context_length", "too_large", "too_many_tokens", "max_tokens",
-            "token_limit", "request_too_large", "string_above_max_length",
+            "context_length",
+            "too_large",
+            "too_many_tokens",
+            "max_tokens",
+            "token_limit",
+            "request_too_large",
+            "string_above_max_length",
         )
 
         /** Model-call budget from `runtime-policy-catalog.md` F-01. */

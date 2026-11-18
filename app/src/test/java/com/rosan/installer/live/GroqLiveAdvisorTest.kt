@@ -2,6 +2,7 @@
 // Copyright (C) 2025-2026 InstallerX Revived contributors
 package com.rosan.installer.live
 
+import com.rosan.installer.data.ai.advisory.DefaultAiRiskAdvisor
 import com.rosan.installer.data.ai.provider.GroqAiModelClient
 import com.rosan.installer.data.ai.provider.OkHttpAiTransport
 import com.rosan.installer.domain.ai.fixture.EvidenceFixtures
@@ -10,7 +11,6 @@ import com.rosan.installer.domain.ai.model.AssessmentResult
 import com.rosan.installer.domain.ai.model.FailureCode
 import com.rosan.installer.domain.ai.repository.AiNetworkGate
 import com.rosan.installer.domain.ai.usecase.AiRequestBuilder
-import com.rosan.installer.data.ai.advisory.DefaultAiRiskAdvisor
 import com.rosan.installer.domain.ai.usecase.RequestInstallRiskAssessmentUseCase
 import com.rosan.installer.domain.ai.usecase.StrictAiOutputValidator
 import kotlin.test.Test

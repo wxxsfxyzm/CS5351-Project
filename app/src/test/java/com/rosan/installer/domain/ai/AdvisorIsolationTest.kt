@@ -66,13 +66,12 @@ class AdvisorIsolationTest {
         error("could not locate app/src/main/java from ${System.getProperty("user.dir")}")
     }
 
-    private fun importsOf(file: File): List<String> =
-        file.readLines()
-            .asSequence()
-            .map { it.trim() }
-            .filter { it.startsWith("import ") }
-            .map { it.removePrefix("import ").removeSuffix(";").trim() }
-            .toList()
+    private fun importsOf(file: File): List<String> = file.readLines()
+        .asSequence()
+        .map { it.trim() }
+        .filter { it.startsWith("import ") }
+        .map { it.removePrefix("import ").removeSuffix(";").trim() }
+        .toList()
 
     /** Verifies: REQ-IX-INV-001, REQ-IX-SEC-001 (no backend or privileged import). */
     @Test
