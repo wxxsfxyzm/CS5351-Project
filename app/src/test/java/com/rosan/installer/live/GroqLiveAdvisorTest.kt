@@ -145,8 +145,8 @@ class GroqLiveAdvisorTest {
             transport = OkHttpAiTransport(apiKeyProvider = { apiKey }, egressAllowed = { true }),
         )
         val advisor = DefaultAiRiskAdvisor(client, gate(), StrictAiOutputValidator())
-        val structured = AiRequestBuilder().build(EvidenceFixtures.normalUpdate)
-        val result = runBlocking { advisor.assess(structured.request) }
+        val prepared = AiRequestBuilder().build(EvidenceFixtures.normalUpdate)
+        val result = runBlocking { advisor.assessRequest(prepared.request, prepared.transmittedPaths) }
 
         println("[live] result=$result")
         // The advisor interface exposes only the result; a dispatched request

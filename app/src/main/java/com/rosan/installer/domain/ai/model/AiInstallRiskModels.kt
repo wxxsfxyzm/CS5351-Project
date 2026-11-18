@@ -108,6 +108,21 @@ sealed interface AdvisorOutcome {
     data class Failure(val failure: AiAdvisorFailure) : AdvisorOutcome
 }
 
+/**
+ * Implements: ADR-001; ADR-002.2
+ * Enforces: REQ-IX-FR-002, REQ-IX-SEC-004
+ *
+ * A request ready to send, plus **what it discloses**. Produced by
+ * `AiRequestBuilder`; carries the transmitted leaf paths so the advisor never
+ * has to re-parse the payload to know what the model was given.
+ */
+data class PreparedAiRequest(
+    val request: AiInstallRiskRequest,
+    val completeness: EvidenceCompleteness,
+    /** Dotted `evidence.*` leaf paths present in the outbound payload. */
+    val transmittedPaths: Set<String>,
+)
+
 /** `runtime-policy-catalog.md` section 3 code for this failure. */
 val AiAdvisorFailure.code: FailureCode
     get() = when (this) {

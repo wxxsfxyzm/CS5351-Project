@@ -71,8 +71,8 @@ class RequestInstallRiskAssessmentUseCase(
      * transmission (network disabled) consumes no dispatch (F-02).
      */
     suspend fun invoke(evidence: InstallEvidence, installedVersionCode: Long? = null): Status {
-        val structured = builder.build(evidence, installedVersionCode)
-        val outcome = advisor.assess(structured.request)
+        val prepared = builder.build(evidence, installedVersionCode)
+        val outcome = advisor.assessRequest(prepared.request, prepared.transmittedPaths)
 
         val assessment = (outcome as? AdvisorOutcome.Ok)
             ?.result
@@ -101,9 +101,9 @@ class RequestInstallRiskAssessmentUseCase(
         return Status(
             assessment = assessment,
             failure = failure,
-            completeness = structured.completeness,
+            completeness = prepared.completeness,
             providerDispatches = if (blockedBeforeSending) 0 else 1,
-            transmittedPaths = structured.transmittedPaths,
+            transmittedPaths = prepared.transmittedPaths,
         )
     }
 

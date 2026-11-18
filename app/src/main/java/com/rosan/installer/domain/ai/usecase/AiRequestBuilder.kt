@@ -5,6 +5,7 @@ package com.rosan.installer.domain.ai.usecase
 import com.rosan.installer.domain.ai.model.AiInstallRiskRequest
 import com.rosan.installer.domain.ai.model.EvidenceCompleteness
 import com.rosan.installer.domain.ai.model.InstallEvidence
+import com.rosan.installer.domain.ai.model.PreparedAiRequest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -29,14 +30,7 @@ class AiRequestBuilder(
     private val sanitizer: EvidenceSanitizer = EvidenceSanitizer(),
     private val json: Json = Json,
 ) {
-    data class StructuredRequest(
-        val request: AiInstallRiskRequest,
-        val completeness: EvidenceCompleteness,
-        /** Exact leaf paths transmitted; used by `OutboundWhitelistTest`. */
-        val transmittedPaths: Set<String>,
-    )
-
-    fun build(evidence: InstallEvidence, installedVersionCode: Long? = null): StructuredRequest {
+    fun build(evidence: InstallEvidence, installedVersionCode: Long? = null): PreparedAiRequest {
         val versionNameSanitized = sanitizer.sanitizeField(evidence.versionName)
         val versionName = sanitizer.redactLocalIdentifiers(
             versionNameSanitized.text,
@@ -71,7 +65,7 @@ class AiRequestBuilder(
         )
         val payloadText = json.encodeToString(JsonObject.serializer(), payload)
 
-        return StructuredRequest(
+        return PreparedAiRequest(
             request = AiInstallRiskRequest(
                 modelId = DEFAULT_MODEL_ID,
                 promptVersion = PROMPT_VERSION,
