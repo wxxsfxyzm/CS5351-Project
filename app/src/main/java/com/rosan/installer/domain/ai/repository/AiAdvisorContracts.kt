@@ -1,18 +1,18 @@
-// SPDX-License-Identifier: GPL-3.0-only
+﻿// SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2025-2026 InstallerX Revived contributors
 package com.rosan.installer.domain.ai.repository
 
 import com.rosan.installer.domain.ai.model.AdvisorOutcome
-import com.rosan.installer.domain.ai.model.AssessmentResult
 import com.rosan.installer.domain.ai.model.AiInstallRiskRequest
+import com.rosan.installer.domain.ai.model.AssessmentResult
 
 /**
  * Implements: ADR-001; ADR-002.2
- * Enforces: REQ-IX-MOD-001, REQ-IX-INV-001, REQ-IX-SEC-001
+ * Enforces: REQ-IX-MOD-001, REQ-IX-INV-001, REQ-IX-QUAL-001, REQ-IX-SEC-001
  *
  * The advisory boundary. Implementations may reach the model service and
  * nothing else: no installer backend, no privileged provider, no session
- * repository, no `ActionHandler` (`permission-model.md` §9.2).
+ * repository, no `ActionHandler` (`permission-model.md` section 9.2).
  *
  * The return type cannot express an install decision, so a model response
  * cannot approve anything (REQ-IX-INV-001).
@@ -21,8 +21,18 @@ interface AIRiskAdvisor {
     /**
      * Performs at most **one** provider dispatch for [request]. No
      * automatic retry (REQ-IX-COST-001).
+     *
+     * @param knownEvidencePaths the `evidence.*` paths [request] actually
+     *   carries, as reported by `AiRequestBuilder`. The implementation
+     *   rejects a citation outside this set as fabricated
+     *   (REQ-IX-QUAL-001). It is a parameter rather than something the
+     *   implementation derives, so the advisor never needs to re-parse the
+     *   payload it was handed.
      */
-    suspend fun assess(request: AiInstallRiskRequest): AdvisorOutcome
+    suspend fun assessRequest(
+        request: AiInstallRiskRequest,
+        knownEvidencePaths: Set<String>,
+    ): AdvisorOutcome
 }
 
 /**
@@ -50,7 +60,8 @@ interface AiModelClient {
  *
  * Egress gate. Never call the model when this returns `false`
  * (`AGENTS.md`: network requests stay disabled when the in-app setting
- * is off).
+ * is off). An implementation must fail closed: an unreadable preference
+ * means "not allowed", never "allowed by default".
  */
 interface AiNetworkGate {
     suspend fun isEgressAllowed(): Boolean

@@ -14,8 +14,6 @@ import com.rosan.installer.domain.ai.repository.AiNetworkGate
 import com.rosan.installer.domain.ai.repository.AiOutputValidator
 import com.rosan.installer.domain.ai.usecase.AiRequestBuilder
 import kotlinx.coroutines.CancellationException
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
 
 /**
  * Implements: ADR-001; ADR-002.2; ADR-002.5
@@ -61,20 +59,29 @@ class DefaultAiRiskAdvisor(
         val result: AdvisorOutcome get() = outcome.result
     }
 
-    override suspend fun assess(request: AiInstallRiskRequest): AdvisorOutcome = assessDetailed(request).result
+    override suspend fun assessRequest(
+        request: AiInstallRiskRequest,
+        knownEvidencePaths: Set<String>,
+    ): AdvisorOutcome = assessDetailed(request, knownEvidencePaths).result
 
     /**
-     * Same as [assess] but also returns the dispatch counter the audit needs
-     * (`runtime-policy-catalog.md` section 6.2).
+     * Same as [assessRequest] but also returns the dispatch counter the audit
+     * needs (`runtime-policy-catalog.md` section 6.2).
      */
-    suspend fun assessDetailed(request: AiInstallRiskRequest): Outcome {
-        val allowed = runCatching { networkGate.isEgressAllowed() }
-            .getOrElse {
-                return Outcome(
-                    AdvisorOutcome.Failure(AiAdvisorFailure.NetworkDisabled(it.message ?: "gate error")),
-                    providerDispatches = 0,
-                )
-            }
+    suspend fun assessDetailed(
+        request: AiInstallRiskRequest,
+        knownEvidencePaths: Set<String>,
+    ): Outcome {
+        val allowed = try {
+            networkGate.isEgressAllowed()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (t: Throwable) {
+            return Outcome(
+                AdvisorOutcome.Failure(AiAdvisorFailure.NetworkDisabled(t.message ?: "gate error")),
+                providerDispatches = 0,
+            )
+        }
         if (!allowed) {
             return Outcome(
                 AdvisorOutcome.Failure(AiAdvisorFailure.NetworkDisabled("network egress is disabled")),
@@ -103,10 +110,7 @@ class DefaultAiRiskAdvisor(
             rawResponse = raw,
             modelId = modelClient.modelId,
             promptVersion = request.promptVersion,
-            // Ground citations against what this request actually carried, not
-            // the whole allowlist: citing a field the model never received is
-            // a fabricated reference (REQ-IX-QUAL-001).
-            knownEvidencePaths = transmittedPathsOf(request),
+            knownEvidencePaths = knownEvidencePaths,
         )
         return Outcome(AdvisorOutcome.Ok(parsed), providerDispatches = 1)
     }
@@ -117,21 +121,10 @@ class DefaultAiRiskAdvisor(
      * carried alongside the advisory result rather than folded into it.
      */
     suspend fun assess(evidence: InstallEvidence, builder: AiRequestBuilder): Assessed {
-        val structured = builder.build(evidence)
-        return Assessed(assessDetailed(structured.request), structured.completeness)
+        val prepared = builder.build(evidence)
+        return Assessed(
+            assessDetailed(prepared.request, prepared.transmittedPaths),
+            prepared.completeness,
+        )
     }
-
-    /**
-     * The `evidence.*` paths present in the payload this request carries.
-     *
-     * Derived from the request itself rather than the allowlist, so the set
-     * shrinks when evidence is missing and a citation cannot name a field
-     * that was never sent. An unreadable payload falls back to the allowlist
-     * and the parser rejects the whole reply instead (F-05).
-     */
-    private fun transmittedPathsOf(request: AiInstallRiskRequest): Set<String> =
-        runCatching {
-            val payload = Json.parseToJsonElement(request.evidencePayloadJson).jsonObject
-            payload.keys.mapTo(linkedSetOf()) { "evidence.$it" }
-        }.getOrElse { AiRequestBuilder.ALLOWLISTED_LEAF_PATHS }
 }
