@@ -1,0 +1,56 @@
+﻿// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2025-2026 InstallerX Revived contributors
+package com.rosan.installer.di
+
+import com.rosan.installer.BuildConfig
+import com.rosan.installer.data.ai.gate.AppSettingsNetworkGate
+import com.rosan.installer.data.ai.provider.GroqAiModelClient
+import com.rosan.installer.data.ai.provider.OkHttpAiTransport
+import com.rosan.installer.domain.ai.repository.AIRiskAdvisor
+import com.rosan.installer.domain.ai.repository.AiModelClient
+import com.rosan.installer.domain.ai.repository.AiNetworkGate
+import com.rosan.installer.domain.ai.repository.AiOutputValidator
+import com.rosan.installer.domain.ai.usecase.AiRequestBuilder
+import com.rosan.installer.domain.ai.usecase.DefaultAiRiskAdvisor
+import com.rosan.installer.domain.ai.usecase.EvidenceSanitizer
+import com.rosan.installer.domain.ai.usecase.RequestInstallRiskAssessmentUseCase
+import com.rosan.installer.domain.ai.usecase.StrictAiOutputValidator
+import org.koin.core.module.dsl.singleOf
+import org.koin.dsl.module
+
+/**
+ * Implements: ADR-001; ADR-002.2; ADR-002.5
+ * Enforces: REQ-IX-ARCH-001, REQ-IX-INV-001, REQ-IX-MOD-001
+ *
+ * Koin registrations for the advisory elements, kept in one existing-style
+ * `di/` module (`structural-constraints.md` section 2). All singletons so no
+ * duplicate advisor or gate can be created (risk RK-T-05).
+ *
+ * The API key is read from `BuildConfig.GROQ_API_KEY` when the build injects
+ * it, otherwise from the process environment `GROQ_API_KEY`. It is never
+ * logged; an absent key only disables the live call and never weakens a
+ * deterministic check.
+ */
+val aiModule = module {
+    single { EvidenceSanitizer() }
+    singleOf(::AiRequestBuilder)
+    single<AiOutputValidator> { StrictAiOutputValidator() }
+    single<AiNetworkGate> { AppSettingsNetworkGate(appSettingsRepository = get()) }
+
+    single<AiModelClient> {
+        val apiKey: () -> String? = {
+            BuildConfig.GROQ_API_KEY.takeIf { it.isNotBlank() }
+                ?: System.getenv(GroqAiModelClient.ENV_API_KEY)
+        }
+        GroqAiModelClient(
+            transport = OkHttpAiTransport(
+                apiKeyProvider = apiKey,
+                egressAllowed = { get<AiNetworkGate>().isEgressAllowed() },
+            ),
+        )
+    }
+
+    singleOf(::DefaultAiRiskAdvisor)
+    single<AIRiskAdvisor> { get<DefaultAiRiskAdvisor>() }
+    singleOf(::RequestInstallRiskAssessmentUseCase)
+}
