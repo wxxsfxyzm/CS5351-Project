@@ -2,6 +2,7 @@
 // Copyright (C) 2025-2026 InstallerX Revived contributors
 package com.rosan.installer.domain.ai.usecase
 
+import com.rosan.installer.data.ai.advisory.DefaultAiRiskAdvisor
 import com.rosan.installer.domain.ai.model.AiAdvisorFailure
 import com.rosan.installer.domain.ai.model.AiInstallRiskRequest
 import com.rosan.installer.domain.ai.model.FailureCode
@@ -10,15 +11,14 @@ import com.rosan.installer.domain.ai.model.InstallRelation
 import com.rosan.installer.domain.ai.model.InstalledSignatureMatch
 import com.rosan.installer.domain.ai.model.LocalCompatibility
 import com.rosan.installer.domain.ai.model.SignatureVerificationStatus
-import com.rosan.installer.data.ai.advisory.DefaultAiRiskAdvisor
 import com.rosan.installer.domain.ai.repository.AiModelClient
 import com.rosan.installer.domain.ai.repository.AiNetworkGate
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.test.runTest
 
 /**
  * Verifies: REQ-IX-INV-004, REQ-IX-REL-001
@@ -152,9 +152,11 @@ class AdvisorFailureReportingTest {
     /** F-05: model returned JSON with a missing required field. */
     @Test
     fun missingField_reportsInvalidOutputNamingTheField() = runTest {
-        val status = useCase(Client {
-            """{"install_success_likelihood":"HIGH","reasons":["r"],"evidence_refs":["evidence.target_sdk"]}"""
-        }).invoke(evidence)
+        val status = useCase(
+            Client {
+                """{"install_success_likelihood":"HIGH","reasons":["r"],"evidence_refs":["evidence.target_sdk"]}"""
+            },
+        ).invoke(evidence)
         assertNotUsable(status)
         assertEquals(FailureCode.INVALID_OUTPUT, status.failure?.code)
         assertTrue(status.failure?.detail?.contains("security_risk") == true)
@@ -171,10 +173,12 @@ class AdvisorFailureReportingTest {
     /** REQ-IX-INV-001: an action field is a failure, not an instruction to obey. */
     @Test
     fun actionField_reportsInvalidOutput() = runTest {
-        val status = useCase(Client {
-            """{"install_success_likelihood":"HIGH","security_risk":"LOW","action":"install_now",
+        val status = useCase(
+            Client {
+                """{"install_success_likelihood":"HIGH","security_risk":"LOW","action":"install_now",
                 "reasons":["r"],"evidence_refs":["evidence.target_sdk"]}"""
-        }).invoke(evidence)
+            },
+        ).invoke(evidence)
         assertNotUsable(status)
         assertEquals(FailureCode.INVALID_OUTPUT, status.failure?.code)
     }

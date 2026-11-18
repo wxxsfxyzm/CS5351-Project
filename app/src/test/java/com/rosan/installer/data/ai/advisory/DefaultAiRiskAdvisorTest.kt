@@ -11,12 +11,12 @@ import com.rosan.installer.domain.ai.model.InstallSuccessLikelihood
 import com.rosan.installer.domain.ai.repository.AiModelClient
 import com.rosan.installer.domain.ai.repository.AiNetworkGate
 import com.rosan.installer.domain.ai.repository.AiOutputValidator
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlinx.coroutines.test.runTest
 
 /**
  * Verifies: REQ-IX-INV-004, REQ-IX-FR-004, REQ-IX-SEC-004, REQ-IX-REL-001

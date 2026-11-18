@@ -81,7 +81,12 @@ enum class SignatureVerificationStatus { VERIFIED, FAILED, SIGNING_BLOCK_ONLY, U
  * `installed_signature_match` allowlist enum.
  */
 enum class InstalledSignatureMatch {
-    NOT_INSTALLED, MATCH, MISMATCH, ROTATION_COMPATIBLE, CANDIDATE_ROTATION_UNCONFIRMED, UNKNOWN_ERROR
+    NOT_INSTALLED,
+    MATCH,
+    MISMATCH,
+    ROTATION_COMPATIBLE,
+    CANDIDATE_ROTATION_UNCONFIRMED,
+    UNKNOWN_ERROR,
 }
 
 /**

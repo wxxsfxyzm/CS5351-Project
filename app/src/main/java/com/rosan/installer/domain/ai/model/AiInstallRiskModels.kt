@@ -37,8 +37,7 @@ sealed class AiAdvisorFailure(message: String) : Throwable(message.substringBefo
     class Timeout(cause: String) : AiAdvisorFailure(cause)
     class RateLimited(val retryAfterSeconds: Long?) : AiAdvisorFailure("rate limited")
     class ServiceError(val statusCode: Int, cause: String) : AiAdvisorFailure(cause)
-    class OutputOversize(val bytes: Int, val capBytes: Int) :
-        AiAdvisorFailure("response exceeds $capBytes bytes")
+    class OutputOversize(val bytes: Int, val capBytes: Int) : AiAdvisorFailure("response exceeds $capBytes bytes")
 
     /**
      * The provider accepted the request but produced no usable text:

@@ -2,6 +2,7 @@
 // Copyright (C) 2025-2026 InstallerX Revived contributors
 package com.rosan.installer.domain.ai.usecase
 
+import com.rosan.installer.data.ai.advisory.DefaultAiRiskAdvisor
 import com.rosan.installer.domain.ai.fixture.EvidenceFixtures
 import com.rosan.installer.domain.ai.model.AdvisorOutcome
 import com.rosan.installer.domain.ai.model.AssessmentResult
@@ -9,19 +10,18 @@ import com.rosan.installer.domain.ai.model.EvidenceCompleteness
 import com.rosan.installer.domain.ai.model.FailureCode
 import com.rosan.installer.domain.ai.model.InstallSuccessLikelihood
 import com.rosan.installer.domain.ai.model.SecurityRisk
-import com.rosan.installer.data.ai.advisory.DefaultAiRiskAdvisor
 import com.rosan.installer.domain.ai.repository.AiModelClient
 import com.rosan.installer.domain.ai.repository.AiNetworkGate
-import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * Verifies: REQ-IX-FR-003, REQ-IX-FR-004, REQ-IX-SEC-004, REQ-IX-INV-004
@@ -129,9 +129,12 @@ class AdvisorScenarioTest {
         assertEquals("COMPATIBLE", payload["abi_compatibility"]!!.jsonPrimitive.content)
         assertEquals("UPDATE", payload["install_relation"]!!.jsonPrimitive.content)
         assertEquals("MATCH", payload["installed_signature_match"]!!.jsonPrimitive.content)
-        assertEquals(3, payload["declared_permissions"]!!.let { Json.parseToJsonElement(it.toString()) }.let {
-            (it as kotlinx.serialization.json.JsonArray).size
-        })
+        assertEquals(
+            3,
+            payload["declared_permissions"]!!.let { Json.parseToJsonElement(it.toString()) }.let {
+                (it as kotlinx.serialization.json.JsonArray).size
+            },
+        )
         assertTrue(client.sentUserPrompt!!.contains("Evidence completeness: COMPLETE"))
     }
 
