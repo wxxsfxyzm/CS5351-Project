@@ -52,6 +52,11 @@ Only `docs/plans/2026-11-18-pr6-rev7-approval-guard.md` is added. The rev.7 requ
 
 For documentation-only changes without code implementation, state N/A where appropriate.
 
+- **Implementation plan approved before coding: N/A.** No code, test, Gradle file, or module is included in this PR, and this plan authorizes none. The requirement edits it describes continue to wait for a separate approval.
+- **Tests approved before implementation: N/A.** `docs/plans/validate_pr6_rev7.py` is planned in §5 but not written; a test that does not exist cannot be approved or run.
+- **Approval evidence: N/A for code, yes for the plan itself.** No code approval exists to cite. The evidence for this document is the PR itself plus the two session transcripts named above.
+- **Security and architecture checks: N/A.** No request path, network call, permission, or trust boundary is touched by a Markdown file.
+
 **Stop point:** rev.7 steps 1–9 modify governed requirement artifacts and require a human to approve §3, §5 and §6 of the plan, then re-approve each `docs/req/` edit. Silence is not approval.
 
 ## 5. Verification
