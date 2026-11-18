@@ -37,16 +37,28 @@ import okhttp3.Response
  *
  * **Bounded.** One exchange, a hard read timeout, and a response-size cap;
  * no automatic retry (REQ-IX-COST-001).
+ *
+ * **Shared stack.** When a base [OkHttpClient] is supplied (the app's
+ * existing one from `di/NetworkModule.kt`), it is reused through
+ * `newBuilder()` with only the model-call timeouts overridden, so the
+ * advisory path adds no second HTTP stack and no new framework.
  */
 class OkHttpAiTransport(
     private val baseUrl: String = GroqAiModelClient.BASE_URL,
     private val modelId: String = GroqAiModelClient.DEFAULT_MODEL,
     private val apiKeyProvider: () -> String?,
     private val egressAllowed: suspend () -> Boolean = { true },
-    private val client: OkHttpClient = defaultClient(),
+    baseClient: OkHttpClient? = null,
+    readTimeoutSeconds: Long = READ_TIMEOUT_SECONDS,
     private val maxResponseBytes: Int = MAX_RESPONSE_BYTES,
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) : OpenAiCompatibleTransport {
+
+    private val client: OkHttpClient = (baseClient?.newBuilder()
+        ?: OkHttpClient.Builder()
+            .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS))
+        .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
+        .build()
 
     override suspend fun post(path: String, body: String): String = withContext(Dispatchers.IO) {
         if (!egressAllowed()) {
@@ -162,12 +174,5 @@ class OkHttpAiTransport(
         const val READ_TIMEOUT_SECONDS = 7L
 
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
-
-        private fun defaultClient(): OkHttpClient = OkHttpClient.Builder()
-            .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .writeTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .followRedirects(false)
-            .build()
     }
 }

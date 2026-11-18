@@ -9,6 +9,7 @@ import com.rosan.installer.domain.ai.model.EvidenceCompleteness
 import com.rosan.installer.domain.ai.model.FailureCode
 import com.rosan.installer.domain.ai.model.InstallSuccessLikelihood
 import com.rosan.installer.domain.ai.model.SecurityRisk
+import com.rosan.installer.data.ai.advisory.DefaultAiRiskAdvisor
 import com.rosan.installer.domain.ai.repository.AiModelClient
 import com.rosan.installer.domain.ai.repository.AiNetworkGate
 import kotlinx.coroutines.test.runTest
