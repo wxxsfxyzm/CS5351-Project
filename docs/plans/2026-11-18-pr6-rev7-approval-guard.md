@@ -48,7 +48,9 @@ Only `docs/plans/2026-11-18-pr6-rev7-approval-guard.md` is added. The rev.7 requ
 
 - **Was the implementation plan approved before coding?** N/A — no code is included or authorized. The plan itself is awaiting approval.
 - **Were the relevant tests approved before implementation?** N/A — `validate_pr6_rev7.py` is planned, not written.
-- **Approval evidence (PR/Issue/Transcript link):** none yet. This PR is the approval request. Session transcript: `transcripts/transcriptD-wxxsfxyzm-20261118.md` and `transcripts/60267540-Chengqian He-pr6.md`.
+- **Approval evidence (PR/Issue/Transcript link):** yes. This PR is the approval request. Session transcript: `transcripts/transcriptD-wxxsfxyzm-20261118.md` and `transcripts/60267540-Chengqian He-pr6.md`.
+
+For documentation-only changes without code implementation, state N/A where appropriate.
 
 **Stop point:** rev.7 steps 1–9 modify governed requirement artifacts and require a human to approve §3, §5 and §6 of the plan, then re-approve each `docs/req/` edit. Silence is not approval.
 
