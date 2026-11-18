@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-only
+﻿// SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2025-2026 InstallerX Revived contributors
 package com.rosan.installer.domain.ai.usecase
 
@@ -10,6 +10,7 @@ import com.rosan.installer.domain.ai.model.InstallRelation
 import com.rosan.installer.domain.ai.model.InstalledSignatureMatch
 import com.rosan.installer.domain.ai.model.LocalCompatibility
 import com.rosan.installer.domain.ai.model.SignatureVerificationStatus
+import com.rosan.installer.data.ai.advisory.DefaultAiRiskAdvisor
 import com.rosan.installer.domain.ai.repository.AiModelClient
 import com.rosan.installer.domain.ai.repository.AiNetworkGate
 import kotlinx.coroutines.test.runTest

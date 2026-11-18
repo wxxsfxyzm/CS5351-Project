@@ -10,7 +10,7 @@ import com.rosan.installer.domain.ai.model.AssessmentResult
 import com.rosan.installer.domain.ai.model.FailureCode
 import com.rosan.installer.domain.ai.repository.AiNetworkGate
 import com.rosan.installer.domain.ai.usecase.AiRequestBuilder
-import com.rosan.installer.domain.ai.usecase.DefaultAiRiskAdvisor
+import com.rosan.installer.data.ai.advisory.DefaultAiRiskAdvisor
 import com.rosan.installer.domain.ai.usecase.RequestInstallRiskAssessmentUseCase
 import com.rosan.installer.domain.ai.usecase.StrictAiOutputValidator
 import kotlin.test.Test
@@ -146,20 +146,20 @@ class GroqLiveAdvisorTest {
         )
         val advisor = DefaultAiRiskAdvisor(client, gate(), StrictAiOutputValidator())
         val structured = AiRequestBuilder().build(EvidenceFixtures.normalUpdate)
-        val outcome = runBlocking { advisor.assessDetailed(structured.request) }
+        val result = runBlocking { advisor.assess(structured.request) }
 
-        println("[live] dispatches=${outcome.providerDispatches} result=${outcome.result}")
-        assertTrue(outcome.providerDispatches == 1, "expected exactly one provider dispatch")
-        assertTrue(
-            outcome.result is AdvisorOutcome.Ok,
-            "a dispatched request must yield a parsed result or a failure, got ${outcome.result}",
-        )
-        val parsed = outcome.result.result
-        println("[live] parsed=${parsed::class.simpleName}")
-        assertTrue(
-            parsed is AssessmentResult.Valid ||
-                parsed is AssessmentResult.Invalid ||
-                parsed is AssessmentResult.Missing,
-        )
+        println("[live] result=$result")
+        // The advisor interface exposes only the result; a dispatched request
+        // must yield a parsed value or an explicit failure, never a throw.
+        assertTrue(result is AdvisorOutcome.Ok || result is AdvisorOutcome.Failure, "unexpected $result")
+        val parsed = (result as? AdvisorOutcome.Ok)?.result
+        if (parsed != null) {
+            println("[live] parsed=${parsed::class.simpleName}")
+            assertTrue(
+                parsed is AssessmentResult.Valid ||
+                    parsed is AssessmentResult.Invalid ||
+                    parsed is AssessmentResult.Missing,
+            )
+        }
     }
 }

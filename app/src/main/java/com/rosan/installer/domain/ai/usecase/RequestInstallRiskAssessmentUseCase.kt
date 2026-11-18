@@ -3,26 +3,32 @@
 package com.rosan.installer.domain.ai.usecase
 
 import com.rosan.installer.domain.ai.model.AdvisorOutcome
+import com.rosan.installer.domain.ai.model.AiAdvisorFailure
 import com.rosan.installer.domain.ai.model.AssessmentResult
-import com.rosan.installer.domain.ai.model.FailureCode
-import com.rosan.installer.domain.ai.model.code
 import com.rosan.installer.domain.ai.model.EvidenceCompleteness
+import com.rosan.installer.domain.ai.model.FailureCode
 import com.rosan.installer.domain.ai.model.InstallEvidence
+import com.rosan.installer.domain.ai.model.code
+import com.rosan.installer.domain.ai.repository.AIRiskAdvisor
 
 /**
  * Implements: ADR-001; ADR-002.2; ADR-002.6
- * Enforces: REQ-IX-FR-003, REQ-IX-INV-001, REQ-IX-INV-004
+ * Enforces: REQ-IX-FR-003, REQ-IX-INV-001, REQ-IX-INV-004, REQ-IX-INV-006
  *
  * One-call entry point for the advisory path:
  *
- *   [InstallEvidence] -> [AiRequestBuilder] -> [DefaultAiRiskAdvisor] -> [Status]
+ *   [InstallEvidence] -> [AiRequestBuilder] -> [AIRiskAdvisor] -> [Status]
  *
  * This class **only reports**. It never decides whether to install, never
  * proposes a disposition, and never routes to a human: those belong to the
  * deterministic policy layer, which reads [Status] and decides
  * (`architecture-blueprint.md` section 3, REQ-IX-INV-006).
  *
- * Every failure is a [Status.Failed] carrying a [FailureCode] from
+ * It depends on the [AIRiskAdvisor] interface, not on a concrete provider,
+ * so the data-layer implementation (or a test double) can be supplied
+ * without changing this class (REQ-IX-MOD-001).
+ *
+ * Every failure is a [Status.Failure] carrying a [FailureCode] from
  * `runtime-policy-catalog.md` section 3, so the policy layer can tell
  * "network down" (F-02/F-03) from "model answered badly" (F-05) without
  * re-inspecting exception types. There is no path that yields
@@ -30,7 +36,7 @@ import com.rosan.installer.domain.ai.model.InstallEvidence
  */
 class RequestInstallRiskAssessmentUseCase(
     private val builder: AiRequestBuilder,
-    private val advisor: DefaultAiRiskAdvisor,
+    private val advisor: AIRiskAdvisor,
 ) {
     /**
      * What the advisory step produced. Exactly one of [assessment] and
@@ -59,39 +65,46 @@ class RequestInstallRiskAssessmentUseCase(
         )
     }
 
+    /**
+     * One dispatch is the contract: this calls the advisor once and never
+     * retries (REQ-IX-COST-001). A request the advisor blocks before
+     * transmission (network disabled) consumes no dispatch (F-02).
+     */
     suspend fun invoke(evidence: InstallEvidence, installedVersionCode: Long? = null): Status {
         val structured = builder.build(evidence, installedVersionCode)
-        val outcome = advisor.assessDetailed(structured.request)
-        return when (val result = outcome.result) {
-            is AdvisorOutcome.Ok -> {
-                val assessment = result.result as? AssessmentResult.Valid
-                Status(
-                    assessment = assessment,
-                    failure = if (assessment == null) {
-                        Status.Failure(
-                            code = result.result.code ?: FailureCode.INVALID_OUTPUT,
-                            detail = describeParseFailure(result.result),
-                        )
-                    } else {
-                        null
-                    },
-                    completeness = structured.completeness,
-                    providerDispatches = outcome.providerDispatches,
-                    transmittedPaths = structured.transmittedPaths,
-                )
-            }
+        val outcome = advisor.assess(structured.request)
 
-            is AdvisorOutcome.Failure -> Status(
-                assessment = null,
-                failure = Status.Failure(
-                    code = result.failure.code,
-                    detail = result.failure.message ?: result.failure::class.simpleName ?: "failure",
-                ),
-                completeness = structured.completeness,
-                providerDispatches = outcome.providerDispatches,
-                transmittedPaths = structured.transmittedPaths,
-            )
+        val assessment = (outcome as? AdvisorOutcome.Ok)
+            ?.result
+            .let { it as? AssessmentResult.Valid }
+        val failure = when {
+            outcome is AdvisorOutcome.Ok && assessment == null ->
+                Status.Failure(
+                    code = outcome.result.code ?: FailureCode.INVALID_OUTPUT,
+                    detail = describeParseFailure(outcome.result),
+                )
+
+            outcome is AdvisorOutcome.Failure ->
+                Status.Failure(
+                    code = outcome.failure.code,
+                    detail = outcome.failure.message
+                        ?: outcome.failure::class.simpleName
+                        ?: "failure",
+                )
+
+            else -> null
         }
+
+        val blockedBeforeSending = outcome is AdvisorOutcome.Failure &&
+            outcome.failure is AiAdvisorFailure.NetworkDisabled
+
+        return Status(
+            assessment = assessment,
+            failure = failure,
+            completeness = structured.completeness,
+            providerDispatches = if (blockedBeforeSending) 0 else 1,
+            transmittedPaths = structured.transmittedPaths,
+        )
     }
 
     private fun describeParseFailure(result: AssessmentResult): String = when (result) {

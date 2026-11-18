@@ -1,7 +1,8 @@
-﻿// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2025-2026 InstallerX Revived contributors
 package com.rosan.installer.domain.ai.usecase
 
+import com.rosan.installer.data.ai.advisory.DefaultAiRiskAdvisor
 import com.rosan.installer.domain.ai.model.AdvisorOutcome
 import com.rosan.installer.domain.ai.model.AiAdvisorFailure
 import com.rosan.installer.domain.ai.model.AiInstallRiskRequest
@@ -20,6 +21,9 @@ import kotlin.test.assertTrue
  * Verifies: REQ-IX-INV-004, REQ-IX-FR-004, REQ-IX-SEC-004, REQ-IX-REL-001
  * Offline and deterministic: a scripted [AiModelClient] stands in for the
  * live model. No network access happens in this test.
+ *
+ * The advisor under test is the data-layer implementation; the interface it
+ * satisfies stays in `domain` (ADR-001 Option B).
  */
 class DefaultAiRiskAdvisorTest {
     private val request = AiInstallRiskRequest(
@@ -69,7 +73,7 @@ class DefaultAiRiskAdvisorTest {
         assertEquals(1, client.calls)
     }
 
-    /** Verifies: REQ-IX-SEC-004, REQ-IX-INV-004 (network off —?0 dispatches). */
+    /** Verifies: REQ-IX-SEC-004, REQ-IX-INV-004 (network off -> 0 dispatches). */
     @Test
     fun networkDisabled_makesZeroDispatches() = runTest {
         val client = StubClient { validResponse }
@@ -80,7 +84,7 @@ class DefaultAiRiskAdvisorTest {
         assertEquals(0, client.calls)
     }
 
-    /** Verifies: REQ-IX-INV-004 (timeout —?failure, never an assessment). */
+    /** Verifies: REQ-IX-INV-004 (timeout -> failure, never an assessment). */
     @Test
     fun timeout_neverReturnsAssessment() = runTest {
         val client = StubClient { throw AiAdvisorFailure.Timeout("7s") }
@@ -89,28 +93,28 @@ class DefaultAiRiskAdvisorTest {
         assertEquals(1, client.calls)
     }
 
-    /** Verifies: REQ-IX-INV-004 (rate limit —?failure). */
+    /** Verifies: REQ-IX-INV-004 (rate limit -> failure). */
     @Test
     fun rateLimit_neverReturnsAssessment() = runTest {
         val client = StubClient { throw AiAdvisorFailure.RateLimited(30) }
         assertIs<AdvisorOutcome.Failure>(advisor(client).assess(request))
     }
 
-    /** Verifies: REQ-IX-INV-004 (service error —?failure). */
+    /** Verifies: REQ-IX-INV-004 (service error -> failure). */
     @Test
     fun serviceError_neverReturnsAssessment() = runTest {
         val client = StubClient { throw AiAdvisorFailure.ServiceError(500, "HTTP 500") }
         assertIs<AdvisorOutcome.Failure>(advisor(client).assess(request))
     }
 
-    /** Verifies: REQ-IX-INV-004 (unexpected exception —?failure). */
+    /** Verifies: REQ-IX-INV-004 (unexpected exception -> failure). */
     @Test
     fun unexpectedException_neverReturnsAssessment() = runTest {
         val client = StubClient { throw IllegalStateException("boom") }
         assertIs<AdvisorOutcome.Failure>(advisor(client).assess(request))
     }
 
-    /** Verifies: REQ-IX-INV-001 (install instructions —?Invalid, not an assessment). */
+    /** Verifies: REQ-IX-INV-001 (install instructions -> Invalid, not an assessment). */
     @Test
     fun installInstructions_neverReturnValidAssessment() = runTest {
         val client = StubClient {
@@ -121,7 +125,7 @@ class DefaultAiRiskAdvisorTest {
         assertIs<AssessmentResult.Invalid>(result)
     }
 
-    /** Verifies: REQ-IX-INV-004 (malformed reply —?Invalid, not "assume safe"). */
+    /** Verifies: REQ-IX-INV-004 (malformed reply -> Invalid, not "assume safe"). */
     @Test
     fun malformedReply_isInvalidNotSafe() = runTest {
         val client = StubClient { "Sure! It looks safe to install." }
@@ -129,9 +133,9 @@ class DefaultAiRiskAdvisorTest {
         assertIs<AssessmentResult.Invalid>(result)
     }
 
-    /** Verifies: REQ-IX-INV-004 (truncated reply —?Missing field, not safe). */
+    /** Verifies: REQ-IX-INV-004 (truncated reply -> never valid). */
     @Test
-    fun truncatedReply_isMissingNotSafe() = runTest {
+    fun truncatedReply_isNeverValid() = runTest {
         val client = StubClient { """{"install_success_likelihood":"HIGH","security_ris""" }
         val result = assertIs<AdvisorOutcome.Ok>(advisor(client).assess(request)).result
         assertTrue(

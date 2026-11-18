@@ -10,17 +10,16 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
 /**
- * Implements: ADR-002.2
+ * Implements: ADR-001; ADR-002.2
  * Enforces: REQ-IX-MOD-001, REQ-IX-FR-003, REQ-IX-COST-001
  *
  * Single-provider adapter for the **Groq** OpenAI-compatible chat
  * completions API (`https://api.groq.com/openai/v1/chat/completions`).
  * One provider only for v1; the [AiModelClient] interface keeps the
- * provider replaceable without touching the policy gate.
+ * provider replaceable without touching the policy gate (REQ-IX-MOD-001).
  *
  * A response cut off by the token cap is reported as
  * [AiAdvisorFailure.TokenLimitExceeded] rather than being passed on as text,
