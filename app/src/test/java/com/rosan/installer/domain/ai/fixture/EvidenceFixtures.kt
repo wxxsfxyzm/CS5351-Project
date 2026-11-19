@@ -4,10 +4,15 @@ package com.rosan.installer.domain.ai.fixture
 
 import com.rosan.installer.domain.ai.model.ApkIdentity
 import com.rosan.installer.domain.ai.model.InstallEvidence
+import com.rosan.installer.domain.ai.model.InstallModeSignal
 import com.rosan.installer.domain.ai.model.InstallRelation
 import com.rosan.installer.domain.ai.model.InstalledSignatureMatch
+import com.rosan.installer.domain.ai.model.InstallerCapability
 import com.rosan.installer.domain.ai.model.LocalCompatibility
+import com.rosan.installer.domain.ai.model.PackageSourceSignal
 import com.rosan.installer.domain.ai.model.SignatureVerificationStatus
+import com.rosan.installer.domain.ai.model.SourceConfidenceSignal
+import com.rosan.installer.domain.ai.model.TargetUserScope
 
 /**
  * Implements: ADR-001
@@ -45,7 +50,11 @@ object EvidenceFixtures {
         platformCompatibility = LocalCompatibility.COMPATIBLE,
         abiCompatibility = LocalCompatibility.COMPATIBLE,
         storageSufficient = true,
-        deviceApiLevel = 35,
+        installMode = InstallModeSignal.AutoDialog,
+        targetUserScope = TargetUserScope.CURRENT_USER,
+        packageSource = PackageSourceSignal.STORE,
+        sourceConfidence = SourceConfidenceSignal.EXACT_CALLER,
+        installerCapability = InstallerCapability.SYSTEM_PACKAGE_INSTALLER,
         targetPackageName = "com.example.notes",
         apkSha256 = "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
     )
@@ -61,14 +70,15 @@ object EvidenceFixtures {
 
     /**
      * C: Incompatible with the device. The APK needs a newer platform than
-     * the device offers and ships no ABI the device can run.
+     * the device offers and ships no ABI the device can run. Only the derived
+     * compatibility result is known; the raw platform level stays local and
+     * is not part of the evidence at all (NFC-OUT-006).
      */
     val incompatible = normalUpdate.copy(
         versionCode = 90000001,
         versionName = "4.0.0-beta",
         minSdk = 34,
         targetSdk = 35,
-        deviceApiLevel = 29,
         platformCompatibility = LocalCompatibility.INCOMPATIBLE,
         abiCompatibility = LocalCompatibility.INCOMPATIBLE,
         storageSufficient = false,

@@ -95,6 +95,10 @@ class AdvisorScenarioTest {
                 AiRequestBuilder.ALLOWLISTED_LEAF_PATHS.containsAll(paths),
                 "${scenario.name} sent non-allowlisted field(s): ${paths - AiRequestBuilder.ALLOWLISTED_LEAF_PATHS}",
             )
+            assertFalse(
+                keys.contains("device_api_level"),
+                "${scenario.name} sent the raw device API level",
+            )
         }
     }
 
@@ -135,6 +139,13 @@ class AdvisorScenarioTest {
                 (it as kotlinx.serialization.json.JsonArray).size
             },
         )
+        // REQ-IX-FR-002: the installation-context allowlist entries travel with
+        // the request, in their rev.6 spelling.
+        assertEquals("AutoDialog", payload["install_mode"]!!.jsonPrimitive.content)
+        assertEquals("CURRENT_USER", payload["target_user_scope"]!!.jsonPrimitive.content)
+        assertEquals("STORE", payload["package_source"]!!.jsonPrimitive.content)
+        assertEquals("EXACT_CALLER", payload["source_confidence"]!!.jsonPrimitive.content)
+        assertEquals("SYSTEM_PACKAGE_INSTALLER", payload["installer_capability"]!!.jsonPrimitive.content)
         assertTrue(client.sentUserPrompt!!.contains("Evidence completeness: COMPLETE"))
     }
 
@@ -147,7 +158,9 @@ class AdvisorScenarioTest {
         val payload = jsonOf(client.sentPayload!!)
         assertEquals("INCOMPATIBLE", payload["platform_compatibility"]!!.jsonPrimitive.content)
         assertEquals("INCOMPATIBLE", payload["abi_compatibility"]!!.jsonPrimitive.content)
-        assertEquals(29, payload["device_api_level"]!!.jsonPrimitive.content.toInt())
+        // NFC-OUT-006: the raw platform level is local-only; only the derived
+        // compatibility signal may leave the device.
+        assertFalse(payload.containsKey("device_api_level"), "raw device API level must stay local")
         assertTrue(status.isUsable)
         assertEquals(InstallSuccessLikelihood.LOW, status.assessment!!.assessment.installSuccessLikelihood)
     }
@@ -197,7 +210,7 @@ class AdvisorScenarioTest {
         val payload = jsonOf(client.sentPayload!!)
         assertFalse(payload.containsKey("platform_compatibility"), "absent field must be omitted")
         assertFalse(payload.containsKey("abi_compatibility"), "absent field must be omitted")
-        assertFalse(payload.containsKey("device_api_level"), "absent field must be omitted")
+        assertFalse(payload.containsKey("device_api_level"), "raw device API level must stay local")
         assertTrue(client.sentUserPrompt!!.contains("Evidence completeness: KEY_UNKNOWN"))
         assertTrue(status.isUsable, "a well-formed UNKNOWN reply is usable, just not favorable")
         assertEquals(InstallSuccessLikelihood.UNKNOWN, status.assessment!!.assessment.installSuccessLikelihood)
@@ -229,7 +242,19 @@ class AdvisorScenarioTest {
 
         assertEquals(EvidenceCompleteness.KEY_UNKNOWN, status.completeness)
         val keys = jsonOf(client.sentPayload!!).keys
-        assertEquals(setOf("version_code", "declared_permissions"), keys)
+        assertEquals(
+            // The four context fields with a documented unknown encoding are
+            // always present, even when nothing about the install is known.
+            setOf(
+                "version_code",
+                "declared_permissions",
+                "target_user_scope",
+                "package_source",
+                "source_confidence",
+                "installer_capability",
+            ),
+            keys,
+        )
         assertTrue(status.isUsable)
     }
 
