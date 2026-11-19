@@ -42,13 +42,10 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // CS5351 AI advisory: optional Groq API key, injected only when provided
-        // via -PGROQ_API_KEY or the GROQ_API_KEY environment variable. Empty by
-        // default; never committed. Implements: ADR-002.2
-        val groqApiKey = (project.findProperty("GROQ_API_KEY") as String?)
-            ?: System.getenv("GROQ_API_KEY")
-            ?: ""
-        buildConfigField("String", "GROQ_API_KEY", "\"${groqApiKey.replace("\"", "\\\"")}\"")
+        // CS5351 AI advisory: no API key is compiled into any build variant.
+        // The Groq key is read at runtime only from the process environment
+        // `GROQ_API_KEY` (see di/AiModule.kt), so a secret can never be baked
+        // into an APK or a CI artifact. Implements: ADR-002.2; REQ-IX-FR-009.
     }
 
     signingConfigs {

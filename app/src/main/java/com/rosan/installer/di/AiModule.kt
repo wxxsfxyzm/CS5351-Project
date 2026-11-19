@@ -2,7 +2,6 @@
 // Copyright (C) 2025-2026 InstallerX Revived contributors
 package com.rosan.installer.di
 
-import com.rosan.installer.BuildConfig
 import com.rosan.installer.data.ai.advisory.DefaultAiRiskAdvisor
 import com.rosan.installer.data.ai.gate.AppSettingsNetworkGate
 import com.rosan.installer.data.ai.provider.GroqAiModelClient
@@ -33,10 +32,10 @@ import org.koin.dsl.module
  * (7 s, `runtime-policy-catalog.md` F-01), applied through
  * `newBuilder()` so timeouts stay per-call rather than global.
  *
- * The API key is read from `BuildConfig.GROQ_API_KEY` when the build injects
- * it, otherwise from the process environment `GROQ_API_KEY`. It is never
- * logged; an absent key only disables the live call and never weakens a
- * deterministic check.
+ * The API key is read at runtime from the process environment
+ * `GROQ_API_KEY` and is never compiled into `BuildConfig` or any APK
+ * artifact (REQ-IX-FR-009). It is never logged; an absent key only disables
+ * the live call and never weakens a deterministic check.
  */
 val aiModule = module {
     single { EvidenceSanitizer() }
@@ -48,8 +47,7 @@ val aiModule = module {
         GroqAiModelClient(
             transport = OkHttpAiTransport(
                 apiKeyProvider = {
-                    BuildConfig.GROQ_API_KEY.takeIf { it.isNotBlank() }
-                        ?: System.getenv(GroqAiModelClient.ENV_API_KEY)
+                    System.getenv(GroqAiModelClient.ENV_API_KEY)?.takeIf { it.isNotBlank() }
                 },
                 egressAllowed = { get<AiNetworkGate>().isEgressAllowed() },
                 baseClient = get<OkHttpClient>(),
