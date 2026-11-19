@@ -5,7 +5,11 @@ package com.rosan.installer.domain.ai.usecase
 import com.rosan.installer.domain.ai.model.AiInstallRiskRequest
 import com.rosan.installer.domain.ai.model.EvidenceCompleteness
 import com.rosan.installer.domain.ai.model.InstallEvidence
+import com.rosan.installer.domain.ai.model.InstallerCapability
+import com.rosan.installer.domain.ai.model.PackageSourceSignal
 import com.rosan.installer.domain.ai.model.PreparedAiRequest
+import com.rosan.installer.domain.ai.model.SourceConfidenceSignal
+import com.rosan.installer.domain.ai.model.TargetUserScope
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -23,8 +27,13 @@ import kotlinx.serialization.json.put
  * The **allowlist is the single source of truth** and is enforced here by
  * construction: only the fields named in [ALLOWLISTED_LEAF_PATHS] are ever
  * written into the payload. Local-only values (target package name, APK
- * SHA-256) are used solely for redaction and are never serialized
- * (PMA-OUT-001).
+ * SHA-256, the raw device API level) are used solely for redaction and are
+ * never serialized (PMA-OUT-001, NFC-OUT-006).
+ *
+ * The five installation-context fields (`install_mode`, `target_user_scope`,
+ * `package_source`, `source_confidence`, `installer_capability`) always carry
+ * a value key, using the `unknown_encoding` documented in
+ * `requirements.yaml` where the evidence is unknown.
  */
 class AiRequestBuilder(
     private val sanitizer: EvidenceSanitizer = EvidenceSanitizer(),
@@ -56,7 +65,16 @@ class AiRequestBuilder(
             evidence.platformCompatibility?.let { put("platform_compatibility", it.name) }
             evidence.abiCompatibility?.let { put("abi_compatibility", it.name) }
             evidence.storageSufficient?.let { put("storage_sufficient", it) }
-            evidence.deviceApiLevel?.let { put("device_api_level", it) }
+            // rev.6 gives no unknown encoding for install_mode, so an unknown
+            // context is omitted rather than invented.
+            evidence.installMode?.let { put("install_mode", it.name) }
+            put("target_user_scope", (evidence.targetUserScope ?: TargetUserScope.UNKNOWN).name)
+            put("package_source", (evidence.packageSource ?: PackageSourceSignal.UNSPECIFIED).name)
+            put("source_confidence", (evidence.sourceConfidence ?: SourceConfidenceSignal.UNKNOWN).name)
+            put(
+                "installer_capability",
+                (evidence.installerCapability ?: InstallerCapability.UNKNOWN).name,
+            )
         }
 
         val completeness = evidence.completeness(
@@ -139,7 +157,13 @@ class AiRequestBuilder(
             "evidence.platform_compatibility",
             "evidence.abi_compatibility",
             "evidence.storage_sufficient",
-            "evidence.device_api_level",
+            "evidence.install_mode",
+            "evidence.target_user_scope",
+            "evidence.package_source",
+            "evidence.source_confidence",
+            "evidence.installer_capability",
+            // `device_api_level` is intentionally absent: it is a local_only
+            // entry (NFC-OUT-006). Adding it back is a privacy change.
         )
 
         val SYSTEM_PROMPT: String = listOf(

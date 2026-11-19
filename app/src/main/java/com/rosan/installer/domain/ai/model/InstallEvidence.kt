@@ -32,9 +32,16 @@ data class InstallEvidence(
     val platformCompatibility: LocalCompatibility? = null,
     val abiCompatibility: LocalCompatibility? = null,
     val storageSufficient: Boolean? = null,
-    val deviceApiLevel: Int? = null,
+    val installMode: InstallModeSignal? = null,
+    val targetUserScope: TargetUserScope? = null,
+    val packageSource: PackageSourceSignal? = null,
+    val sourceConfidence: SourceConfidenceSignal? = null,
+    val installerCapability: InstallerCapability? = null,
 
     // --- local-only: never transmitted (PMA-OUT-001) -----------------------
+    // The raw device API level is deliberately **not** a field here: it is a
+    // `local_only` allowlist entry (NFC-OUT-006), and the model already gets
+    // the derived `platformCompatibility` instead.
     /** Bound by the approval record; stays local. */
     val targetPackageName: String? = null,
     /** Bound by the approval record; stays local. */
@@ -45,7 +52,10 @@ data class InstallEvidence(
      *
      * - [EvidenceCompleteness.UNREADABLE] when the APK could not be parsed.
      * - [EvidenceCompleteness.KEY_UNKNOWN] when a required allowlisted key
-     *   has no value.
+     *   has no value. Context fields with a documented unknown encoding
+     *   (`targetUserScope`, `packageSource`, `sourceConfidence`,
+     *   `installerCapability`) encode that value, so they do not block
+     *   completeness; `installMode` has no unknown encoding and does.
      * - [EvidenceCompleteness.TRUNCATED] when a list hit a configured cap
      *   and elements were dropped.
      * - [EvidenceCompleteness.COMPLETE] otherwise.
@@ -61,7 +71,8 @@ data class InstallEvidence(
             targetSdk != null &&
             signatureVerificationStatus != null &&
             installedSignatureMatch != null &&
-            installRelation != null
+            installRelation != null &&
+            installMode != null
         return if (requiredKnown) EvidenceCompleteness.COMPLETE else EvidenceCompleteness.KEY_UNKNOWN
     }
 }

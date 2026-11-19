@@ -7,10 +7,15 @@ import com.rosan.installer.domain.ai.model.AiAdvisorFailure
 import com.rosan.installer.domain.ai.model.AiInstallRiskRequest
 import com.rosan.installer.domain.ai.model.FailureCode
 import com.rosan.installer.domain.ai.model.InstallEvidence
+import com.rosan.installer.domain.ai.model.InstallModeSignal
 import com.rosan.installer.domain.ai.model.InstallRelation
 import com.rosan.installer.domain.ai.model.InstalledSignatureMatch
+import com.rosan.installer.domain.ai.model.InstallerCapability
 import com.rosan.installer.domain.ai.model.LocalCompatibility
+import com.rosan.installer.domain.ai.model.PackageSourceSignal
 import com.rosan.installer.domain.ai.model.SignatureVerificationStatus
+import com.rosan.installer.domain.ai.model.SourceConfidenceSignal
+import com.rosan.installer.domain.ai.model.TargetUserScope
 import com.rosan.installer.domain.ai.repository.AiModelClient
 import com.rosan.installer.domain.ai.repository.AiNetworkGate
 import kotlin.test.Test
@@ -46,7 +51,11 @@ class AdvisorFailureReportingTest {
         platformCompatibility = LocalCompatibility.COMPATIBLE,
         abiCompatibility = LocalCompatibility.COMPATIBLE,
         storageSufficient = true,
-        deviceApiLevel = 35,
+        installMode = InstallModeSignal.AutoNotification,
+        targetUserScope = TargetUserScope.CURRENT_USER,
+        packageSource = PackageSourceSignal.DOWNLOADED_FILE,
+        sourceConfidence = SourceConfidenceSignal.REFERRER_HEURISTIC,
+        installerCapability = InstallerCapability.SYSTEM_PACKAGE_INSTALLER,
         targetPackageName = "com.example.app",
         apkSha256 = "abc123",
     )
