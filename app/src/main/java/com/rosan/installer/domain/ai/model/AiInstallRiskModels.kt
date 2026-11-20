@@ -25,14 +25,19 @@ data class AiInstallRiskRequest(
 
 /**
  * Failure classification used by the caller to route to
- * `REQUIRE_REVIEW / AWAIT_HUMAN` (DR-08) and to fill the audit fields.
+ * `REQUIRE_REVIEW / AWAIT_HUMAN` (DR-02/DR-08) and to fill the audit fields.
  * It is a [Throwable] so transports can throw it out of a failing call
  * while the advisor still receives it as data, never as advice.
  * Implements: ADR-002.2
  * Requirements: REQ-IX-INV-004, REQ-IX-REL-001
  */
 sealed class AiAdvisorFailure(message: String) : Throwable(message.substringBefore('\n')) {
-    class NetworkDisabled(cause: String) : AiAdvisorFailure(cause)
+    /** ADR-001 Option B, REQ-IX-FR-009: rejection known to precede HTTP dispatch. */
+    sealed class BeforeDispatch(message: String) : AiAdvisorFailure(message)
+
+    class NetworkDisabled(cause: String) : BeforeDispatch(cause)
+    class ConsentUnavailable : BeforeDispatch("model request consent is unavailable")
+    class ApiKeyUnavailable : BeforeDispatch("model API key is unavailable")
     class NetworkError(cause: String) : AiAdvisorFailure(cause)
     class Timeout(cause: String) : AiAdvisorFailure(cause)
     class RateLimited(val retryAfterSeconds: Long?) : AiAdvisorFailure("rate limited")
@@ -63,6 +68,9 @@ sealed class AiAdvisorFailure(message: String) : Throwable(message.substringBefo
 enum class FailureCode {
     /** F-02: egress blocked by the in-app network setting. 0 dispatches. */
     NETWORK_DISABLED,
+
+    /** Local consent unavailable (DR-02). 0 dispatches. */
+    CONSENT_UNAVAILABLE,
 
     /** F-01: the 7 s model-call budget expired. */
     TIMEOUT,
@@ -127,7 +135,8 @@ val AiAdvisorFailure.code: FailureCode
     get() = when (this) {
         is AiAdvisorFailure.NetworkDisabled -> FailureCode.NETWORK_DISABLED
         is AiAdvisorFailure.Timeout -> FailureCode.TIMEOUT
-        is AiAdvisorFailure.NetworkError -> FailureCode.NETWORK_ERROR
+        is AiAdvisorFailure.ConsentUnavailable -> FailureCode.CONSENT_UNAVAILABLE
+        is AiAdvisorFailure.ApiKeyUnavailable, is AiAdvisorFailure.NetworkError -> FailureCode.NETWORK_ERROR
         is AiAdvisorFailure.RateLimited -> FailureCode.RATE_LIMITED
         is AiAdvisorFailure.ServiceError -> FailureCode.SERVICE_ERROR
         is AiAdvisorFailure.TokenLimitExceeded -> FailureCode.TOKEN_LIMIT_EXCEEDED

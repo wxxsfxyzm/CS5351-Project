@@ -36,6 +36,10 @@ import org.koin.dsl.module
  * `GROQ_API_KEY` and is never compiled into `BuildConfig` or any APK
  * artifact (REQ-IX-FR-009). It is never logged; an absent key only disables
  * the live call and never weakens a deterministic check.
+ *
+ * Consent is assessment-scoped, not a singleton binding. Both checkpoints
+ * deny by default until the caller supplies a current-consent reader through
+ * the coroutine context.
  */
 val aiModule = module {
     single { EvidenceSanitizer() }

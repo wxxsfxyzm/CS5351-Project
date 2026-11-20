@@ -3,9 +3,11 @@
 package com.rosan.installer.data.ai.provider
 
 import com.rosan.installer.domain.ai.model.AiAdvisorFailure
+import com.rosan.installer.domain.ai.repository.ModelRequestGate
 import java.io.IOException
 import java.io.InterruptedIOException
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -29,7 +31,9 @@ import okhttp3.Response
  *
  * **Network boundary.** It re-checks [egressAllowed] immediately before the
  * request leaves the process, so a caller that skips the gate still cannot
- * egress while the in-app network setting is off (`AGENTS.md`).
+ * egress while the in-app network setting is off (`AGENTS.md`). It also reads
+ * the assessment's current consent immediately before dispatch (REQ-IX-FR-012).
+ * Withdrawal cannot recall an in-flight request.
  *
  * **Secrets.** The API key is read through a lambda and is never logged,
  * stored in the request object, or included in failure messages
@@ -67,8 +71,7 @@ class OkHttpAiTransport(
             throw AiAdvisorFailure.NetworkDisabled("network egress is disabled in app settings")
         }
 
-        val apiKey = apiKeyProvider()
-            ?: throw AiAdvisorFailure.NetworkError("no API key configured")
+        val apiKey = readApiKey()
 
         val request = Request.Builder()
             .url("${baseUrl.trimEnd('/')}/$path")
@@ -76,6 +79,8 @@ class OkHttpAiTransport(
             .header("Content-Type", "application/json")
             .post(body.toRequestBody(JSON_MEDIA_TYPE))
             .build()
+
+        if (!ModelRequestGate.hasCurrentConsent()) throw AiAdvisorFailure.ConsentUnavailable()
 
         try {
             client.newCall(request).execute().use { response ->
@@ -121,6 +126,19 @@ class OkHttpAiTransport(
         } catch (io: IOException) {
             throw AiAdvisorFailure.NetworkError(io.message ?: "network error")
         }
+    }
+
+    /** Reads a usable Bearer credential without exposing the key or the source error (REQ-IX-FR-009). */
+    private fun readApiKey(): String {
+        val key = try {
+            apiKeyProvider()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            throw AiAdvisorFailure.ApiKeyUnavailable()
+        }
+        return key?.takeIf { it.isNotEmpty() && it.all { char -> char in '!'..'~' } }
+            ?: throw AiAdvisorFailure.ApiKeyUnavailable()
     }
 
     /**

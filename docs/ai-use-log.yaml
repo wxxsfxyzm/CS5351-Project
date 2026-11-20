@@ -329,3 +329,50 @@ entries:
     - opencode-records/2026-11-20-pr13-policy/session-export.json
     - opencode-records/2026-11-20-pr13-policy/full-gradle.LahrmfXK/gradle.log
     notes: '仅首批差异，不计入继承自 PR #13 的改动。未调用 Groq、未安装 APK、未运行外部 CI、未审批合并。Stacked draft 不触发当前 PR CI；组长最终合入审查另行记录。'
+
+  - id: AI-GArbage823-0004
+    operator: GArbage823
+    date: '2026-11-21'
+    tool: OpenCode v1.19.2
+    model: haddock/gpt-6.2-sol
+    role: build
+    task: Implement the default-deny, request-scoped model egress gate for single-APK AutoDialog assessments
+      and re-verify the working tree offline on merged main at a114ca6.
+    requirements:
+    - REQ-IX-FR-003
+    - REQ-IX-FR-009
+    - REQ-IX-FR-011
+    - REQ-IX-FR-012
+    - REQ-IX-SEC-004
+    - REQ-IX-INV-004
+    - DR-02
+    - DR-08
+    - ADR-001 Option B
+    artifacts:
+    - docs/plans/2026-11-21-autodialog-model-egress.md
+    - app/src/main/java/com/rosan/installer/domain/ai/repository/ModelRequestGate.kt
+    - app/src/main/java/com/rosan/installer/domain/ai/usecase/RequestInstallRiskAssessmentUseCase.kt
+    - app/src/main/java/com/rosan/installer/data/ai/provider/OkHttpAiTransport.kt
+    - app/src/main/java/com/rosan/installer/domain/ai/model/AiInstallRiskModels.kt
+    - app/src/main/java/com/rosan/installer/data/ai/advisory/DefaultAiRiskAdvisor.kt
+    - app/src/main/java/com/rosan/installer/di/AiModule.kt
+    - app/src/test/java/com/rosan/installer/domain/ai/usecase/ModelRequestGateTest.kt
+    human_decisions:
+    - The human explicitly approved the implementation plan and relevant tests before coding.
+    - The human confirmed that consent must be read for the current assessment and must default to denial
+      when no provider is configured.
+    - The human subsequently authorized a separate commit for the gate and requested offline re-verification
+      on main at a114ca6 before the next stage.
+    verification:
+    - Ran ../../opencode-records/2026-11-21-model-egress/verify-egress-offline with a 900000 ms timeout
+      on the working tree based on main at a114ca6; exit code 0.
+    - Spotless passed. The full JVM suite passed 266 tests, including 7 new gate tests, with 0 errors, 0
+      failures, and 0 skipped.
+    - assembleUnstableDebug and assemblePreviewDebug passed and produced one APK each.
+    - 'Real-device verification, live Groq calls, and combined integration with PR #18 were not run.'
+    evidence:
+    - opencode-records/2026-11-21-model-egress/session-export.json (local only)
+    - gradle.log (local verifier output)
+    notes: The operator reported that the 11 local files matched the saved snapshot byte-for-byte after
+      moving the working tree to main at a114ca6. No source was edited and no commit was made during the
+      verification and drafting step. The operator will append this entry to the AI-use log.

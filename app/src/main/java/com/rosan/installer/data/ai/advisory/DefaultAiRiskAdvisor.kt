@@ -47,7 +47,7 @@ class DefaultAiRiskAdvisor(
 
     data class Outcome(
         val result: AdvisorOutcome,
-        /** `1` when a request was sent, `0` when blocked before transmission. */
+        /** `0` for a known preflight rejection; otherwise `1`, not proof of delivery. */
         val providerDispatches: Int,
     )
 
@@ -92,7 +92,10 @@ class DefaultAiRiskAdvisor(
         val raw = try {
             modelClient.complete(request)
         } catch (failure: AiAdvisorFailure) {
-            return Outcome(AdvisorOutcome.Failure(failure), providerDispatches = 1)
+            return Outcome(
+                AdvisorOutcome.Failure(failure),
+                providerDispatches = if (failure is AiAdvisorFailure.BeforeDispatch) 0 else 1,
+            )
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (t: Throwable) {
