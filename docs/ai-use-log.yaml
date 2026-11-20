@@ -268,3 +268,30 @@ entries:
     - docs/architecture/evaluation-logbook.md (EV-008)
     - docs/architecture/option-ledger.md (OL-03, OL-03a)
     notes: Documentation only. ADR-001 status is now accepted on Option B; concrete package roots remain open and are deferred to the first build plan.
+
+  - id: AI-wxxsfxyzm-0006
+    date: 2026-11-21
+    tool: OpenCode v1
+    model: cityu/CS5351/DeepSeek-V4-Flash
+    role: plan
+    operator: wxxsfxyzm (project lead)
+    task: "Plan the CI tidy of .github/workflows/pr-check.yml to drop the dev-only PR restriction so PR #13 and PR #16 run PR checks, and plan disabling the release/signing/Telegram workflows."
+    requirements:
+      - REQ-IX-VER-001
+      - REQ-IX-COMP-001
+      - REQ-IX-GOV-002
+    artifacts:
+      - docs/plans/2026-11-21-ci-workflow-tidy.md
+      - docs/ai-use-log.yaml
+    human_decisions:
+      - Lead approved the pr-check.yml diff and the verification plan.
+      - Lead decided the plan is drafted by the agent and saved by the lead into docs/plans/2026-11-21-ci-workflow-tidy.md.
+      - Lead decided the patch is applied by the lead; the agent does not apply it.
+      - Lead ordered PR Target required-check confirmation and disabling of Preview Release, Manual Stable Release, and Branch CI before the CI PR merges to main.
+    verification:
+      - "Verification results pending; CI outcomes for PR #13 and PR #16 to be recorded once the maintainer supplies the Actions run links and per-job results."
+      - No Gradle format, unit, or build result is claimed in this entry.
+    evidence:
+      - OpenCode session transcript (this session)
+      - docs/plans/2026-11-21-ci-workflow-tidy.md
+    notes: Plan only; no workflow file was edited by the agent and no commit, push, merge, or rebase was performed. Patch application and CI runs are human actions.
