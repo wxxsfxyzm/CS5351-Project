@@ -330,6 +330,46 @@ entries:
     - opencode-records/2026-11-20-pr13-policy/full-gradle.LahrmfXK/gradle.log
     notes: '仅首批差异，不计入继承自 PR #13 的改动。未调用 Groq、未安装 APK、未运行外部 CI、未审批合并。Stacked draft 不触发当前 PR CI；组长最终合入审查另行记录。'
 
+
+  - id: AI-GArbage823-0003
+    operator: GArbage823
+    date: '2026-11-21'
+    tool: OpenCode v1.19.2
+    model: haddock/gpt-6.2-sol
+    role: build
+    task: Implement and verify offline evidence mapping for ordinary single-APK AutoDialog assessments.
+    requirements:
+    - REQ-IX-FR-001
+    - REQ-IX-FR-002
+    - REQ-IX-SEC-004
+    - REQ-IX-INV-006
+    artifacts:
+    - app/src/main/java/com/rosan/installer/domain/ai/usecase/AutoDialogInstallEvidenceMapper.kt
+    - app/src/test/java/com/rosan/installer/domain/ai/usecase/AutoDialogInstallEvidenceMapperTest.kt
+    - docs/plans/2026-11-20-autodialog-install-evidence.md
+    human_decisions:
+    - The user replied “批准” after reviewing the implementation plan and tests.
+    - The user confirmed that production analysis does not populate fileHash and approved a caller-verified
+      SHA-256 fallback for the same selected APK, with contradictory digests rejected.
+    - The user confirmed that a null installed-app lookup does not prove absence for the actual target user
+      and approved requiring affirmative confirmation before classifying it as a new install.
+    - The user explicitly authorized submitting the evidence-conversion PR against main and limited this
+      session to verification and drafting submission text.
+    verification:
+    - Ran ../../opencode-records/2026-11-20-autodialog-evidence/verify-evidence-offline with timeout 900000;
+      exit code 0.
+    - spotlessCheck and both Spotless subtasks reported UP-TO-DATE, reusing local verification results.
+    - :app:testUnstableDebugUnitTest reported 276 tests, including 17 mapper tests, with zero errors, failures,
+      or skips.
+    - :app:assembleUnstableDebug and :app:assemblePreviewDebug each produced one APK.
+    evidence:
+    - opencode-records/2026-11-20-autodialog-evidence/session-export.json
+    - opencode-records/2026-11-20-autodialog-evidence/gradle.log
+    notes: 'Check performed on the worktree aligned with merged PR #16 at main a114ca6. The full transcript
+      and verification log are local; no remote transcript link exists. The model-request gate remains separate.
+      On-device installation, live Groq requests, and release signing were not verified. This session did
+      not edit files, commit, or push.'
+
   - id: AI-GArbage823-0004
     operator: GArbage823
     date: '2026-11-21'
