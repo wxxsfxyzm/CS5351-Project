@@ -295,3 +295,37 @@ entries:
       - OpenCode session transcript (this session)
       - docs/plans/2026-11-21-ci-workflow-tidy.md
     notes: Plan only; no workflow file was edited by the agent and no commit, push, merge, or rebase was performed. Patch application and CI runs are human actions.
+
+  - id: AI-GArbage823-0002
+    operator: GArbage823
+    date: '2026-11-20'
+    tool: OpenCode v1.19.2
+    model: haddock/gpt-6.2-sol
+    role: build
+    task: 实现并复验首批纯 Kotlin Policy Engine、D1 决策表单测和依赖边界检查。
+    requirements:
+    - ADR-001 Option B
+    - REQ-IX-FR-005
+    - REQ-IX-FR-007（处置交接边界）
+    - REQ-IX-INV-001 至 REQ-IX-INV-007（首批适用部分）
+    - D1 rev.6 DR-01 至 DR-10
+    artifacts:
+    - app/src/main/java/com/rosan/installer/domain/engine/policy/DeterministicPolicyEngine.kt
+    - app/src/main/java/com/rosan/installer/domain/engine/policy/PolicyDecisionModels.kt
+    - app/src/test/java/com/rosan/installer/domain/engine/policy/PolicyDecisionTableTest.kt
+    - app/src/test/java/com/rosan/installer/domain/engine/policy/PolicyDependencyBoundaryTest.kt
+    - docs/plans/2026-11-20-pr13-policy-engine.md
+    - docs/ai-use-log.yaml
+    human_decisions:
+    - 用户收到首批计划和测试范围后回复“开始吧”，明确批准实施。
+    - 用户补齐 DR-09 和 FR-007 原文，明确引擎与最终复验、提交的边界。
+    - 用户批准按 Spotless 差异仅修格式，并要求完整复验通过后提交首批 Draft PR、开始下一阶段。
+    verification:
+    - 首次完整检查仅 Spotless 格式检查失败；只修正格式后完整复验。
+    - 锁定 Gradle 9.8.0 / JDK 25 复验退出 0：spotlessCheck 通过。
+    - :app:testUnstableDebugUnitTest：42 份新 JUnit 报告，259 项测试，0 失败、0 错误、0 跳过；本批 6 项通过。
+    - assembleUnstableDebug 和 assemblePreviewDebug 均通过，各生成 1 个 APK。
+    evidence:
+    - opencode-records/2026-11-20-pr13-policy/session-export.json
+    - opencode-records/2026-11-20-pr13-policy/full-gradle.LahrmfXK/gradle.log
+    notes: '仅首批差异，不计入继承自 PR #13 的改动。未调用 Groq、未安装 APK、未运行外部 CI、未审批合并。Stacked draft 不触发当前 PR CI；组长最终合入审查另行记录。'

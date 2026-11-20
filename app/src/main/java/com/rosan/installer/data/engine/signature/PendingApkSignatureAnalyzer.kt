@@ -157,7 +157,8 @@ class PendingApkSignatureAnalyzer(
         if (isVerifiedUsingV2Scheme) add("V2")
         if (isVerifiedUsingV3Scheme) add("V3")
         if (isVerifiedUsingV31Scheme) add("V3.1")
-        if (isVerifiedUsingV32Scheme) add("V3.2")
+        // v3.2 is not reported by the apksig bundled with Build Tools (it only
+        // exposes V1-V3.1 and V4 flags), so there is no V3.2 flag to read.
         if (isVerifiedUsingV4Scheme) add("V4")
     }
 

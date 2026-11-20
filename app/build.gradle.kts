@@ -41,6 +41,11 @@ android {
         versionName = project.getBaseVersionName()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // CS5351 AI advisory: no API key is compiled into any build variant.
+        // The Groq key is read at runtime only from the process environment
+        // `GROQ_API_KEY` (see di/AiModule.kt), so a secret can never be baked
+        // into an APK or a CI artifact. Implements: ADR-002.2; REQ-IX-FR-009.
     }
 
     signingConfigs {
