@@ -10,6 +10,7 @@ import com.rosan.installer.domain.ai.model.AdvisorOutcome
 import com.rosan.installer.domain.ai.model.AssessmentResult
 import com.rosan.installer.domain.ai.model.FailureCode
 import com.rosan.installer.domain.ai.repository.AiNetworkGate
+import com.rosan.installer.domain.ai.repository.ModelRequestGate
 import com.rosan.installer.domain.ai.usecase.AiRequestBuilder
 import com.rosan.installer.domain.ai.usecase.RequestInstallRiskAssessmentUseCase
 import com.rosan.installer.domain.ai.usecase.StrictAiOutputValidator
@@ -76,7 +77,7 @@ class GroqLiveAdvisorTest {
         val failures = mutableListOf<String>()
 
         for (scenario in EvidenceFixtures.all) {
-            val status = runBlocking { useCase.invoke(scenario.evidence) }
+            val status = runBlocking(ModelRequestGate { true }) { useCase.invoke(scenario.evidence) }
             println(
                 "[live] ${scenario.name}: usable=${status.isUsable} " +
                     "dispatches=${status.providerDispatches} " +
@@ -146,7 +147,9 @@ class GroqLiveAdvisorTest {
         )
         val advisor = DefaultAiRiskAdvisor(client, gate(), StrictAiOutputValidator())
         val prepared = AiRequestBuilder().build(EvidenceFixtures.normalUpdate)
-        val result = runBlocking { advisor.assessRequest(prepared.request, prepared.transmittedPaths) }
+        val result = runBlocking(ModelRequestGate { true }) {
+            advisor.assessRequest(prepared.request, prepared.transmittedPaths)
+        }
 
         println("[live] result=$result")
         // The advisor interface exposes only the result; a dispatched request

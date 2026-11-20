@@ -12,12 +12,14 @@ import com.rosan.installer.domain.ai.model.InstallSuccessLikelihood
 import com.rosan.installer.domain.ai.model.SecurityRisk
 import com.rosan.installer.domain.ai.repository.AiModelClient
 import com.rosan.installer.domain.ai.repository.AiNetworkGate
+import com.rosan.installer.domain.ai.repository.ModelRequestGate
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
@@ -72,10 +74,12 @@ class AdvisorScenarioTest {
     private suspend fun evaluate(
         client: AiModelClient,
         scenario: EvidenceFixtures.Scenario,
-    ): RequestInstallRiskAssessmentUseCase.Status = RequestInstallRiskAssessmentUseCase(
-        builder = AiRequestBuilder(),
-        advisor = DefaultAiRiskAdvisor(client, AllowAll(), StrictAiOutputValidator()),
-    ).invoke(scenario.evidence)
+    ): RequestInstallRiskAssessmentUseCase.Status = withContext(ModelRequestGate { true }) {
+        RequestInstallRiskAssessmentUseCase(
+            builder = AiRequestBuilder(),
+            advisor = DefaultAiRiskAdvisor(client, AllowAll(), StrictAiOutputValidator()),
+        ).invoke(scenario.evidence)
+    }
 
     // --- 1. What the model is sent, per scenario ------------------------------
 
@@ -359,7 +363,7 @@ class AdvisorScenarioTest {
             builder = AiRequestBuilder(),
             advisor = DefaultAiRiskAdvisor(client, AllowAll(), StrictAiOutputValidator()),
         )
-        val status = useCase.invoke(EvidenceFixtures.normalUpdate)
+        val status = withContext(ModelRequestGate { true }) { useCase.invoke(EvidenceFixtures.normalUpdate) }
         assertEquals(1, status.providerDispatches)
         val assessment: AssessmentResult.Valid = assertIs(status.assessment)
         assertTrue(assessment.assessment.reasons.isNotEmpty())

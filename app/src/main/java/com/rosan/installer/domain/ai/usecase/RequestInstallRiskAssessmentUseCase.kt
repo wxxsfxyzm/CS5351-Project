@@ -10,6 +10,7 @@ import com.rosan.installer.domain.ai.model.FailureCode
 import com.rosan.installer.domain.ai.model.InstallEvidence
 import com.rosan.installer.domain.ai.model.code
 import com.rosan.installer.domain.ai.repository.AIRiskAdvisor
+import com.rosan.installer.domain.ai.repository.ModelRequestGate
 
 /**
  * Implements: ADR-001; ADR-002.2; ADR-002.6
@@ -17,7 +18,7 @@ import com.rosan.installer.domain.ai.repository.AIRiskAdvisor
  *
  * One-call entry point for the advisory path:
  *
- *   [InstallEvidence] -> [AiRequestBuilder] -> [AIRiskAdvisor] -> [Status]
+ *   [ModelRequestGate] -> [AiRequestBuilder] -> [AIRiskAdvisor] -> [Status]
  *
  * This class **only reports**. It never decides whether to install, never
  * proposes a disposition, and never routes to a human: those belong to the
@@ -48,7 +49,7 @@ class RequestInstallRiskAssessmentUseCase(
         /** Present for every failure; null on success. */
         val failure: Failure?,
         val completeness: EvidenceCompleteness,
-        /** 1 when a request left the device, 0 when blocked before sending. */
+        /** 0 for a known preflight rejection; otherwise 1 advisory attempt, not proof of delivery. */
         val providerDispatches: Int,
         val transmittedPaths: Set<String>,
     ) {
@@ -71,6 +72,17 @@ class RequestInstallRiskAssessmentUseCase(
      * transmission (network disabled) consumes no dispatch (F-02).
      */
     suspend fun invoke(evidence: InstallEvidence, installedVersionCode: Long? = null): Status {
+        if (!ModelRequestGate.hasCurrentConsent()) {
+            val failure = AiAdvisorFailure.ConsentUnavailable()
+            return Status(
+                assessment = null,
+                failure = Status.Failure(failure.code, requireNotNull(failure.message)),
+                completeness = evidence.completeness(),
+                providerDispatches = 0,
+                transmittedPaths = emptySet(),
+            )
+        }
+
         val prepared = builder.build(evidence, installedVersionCode)
         val outcome = advisor.assessRequest(prepared.request, prepared.transmittedPaths)
 
@@ -96,14 +108,14 @@ class RequestInstallRiskAssessmentUseCase(
         }
 
         val blockedBeforeSending = outcome is AdvisorOutcome.Failure &&
-            outcome.failure is AiAdvisorFailure.NetworkDisabled
+            outcome.failure is AiAdvisorFailure.BeforeDispatch
 
         return Status(
             assessment = assessment,
             failure = failure,
             completeness = prepared.completeness,
             providerDispatches = if (blockedBeforeSending) 0 else 1,
-            transmittedPaths = prepared.transmittedPaths,
+            transmittedPaths = if (blockedBeforeSending) emptySet() else prepared.transmittedPaths,
         )
     }
 

@@ -18,12 +18,14 @@ import com.rosan.installer.domain.ai.model.SourceConfidenceSignal
 import com.rosan.installer.domain.ai.model.TargetUserScope
 import com.rosan.installer.domain.ai.repository.AiModelClient
 import com.rosan.installer.domain.ai.repository.AiNetworkGate
+import com.rosan.installer.domain.ai.repository.ModelRequestGate
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 
 /**
  * Verifies: REQ-IX-INV-004, REQ-IX-REL-001
@@ -69,9 +71,17 @@ class AdvisorFailureReportingTest {
         override suspend fun isEgressAllowed() = allowed
     }
 
-    private fun useCase(client: AiModelClient, allowed: Boolean = true) = RequestInstallRiskAssessmentUseCase(
-        builder = AiRequestBuilder(),
-        advisor = DefaultAiRiskAdvisor(client, Gate(allowed), StrictAiOutputValidator()),
+    private class ConsentingAssessment(private val delegate: RequestInstallRiskAssessmentUseCase) {
+        suspend fun invoke(evidence: InstallEvidence) = withContext(ModelRequestGate { true }) {
+            delegate.invoke(evidence)
+        }
+    }
+
+    private fun useCase(client: AiModelClient, allowed: Boolean = true) = ConsentingAssessment(
+        RequestInstallRiskAssessmentUseCase(
+            builder = AiRequestBuilder(),
+            advisor = DefaultAiRiskAdvisor(client, Gate(allowed), StrictAiOutputValidator()),
+        ),
     )
 
     private val validReply = """
