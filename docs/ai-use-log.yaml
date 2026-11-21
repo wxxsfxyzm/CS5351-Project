@@ -537,6 +537,151 @@ entries:
     - architecture-blueprint.md
     notes: Documentation only. No file under app/ was modified. ADR-002.3 and ADR-002.4 remain not started.
 
+  - id: AI-wxxsfxyzm-0007
+    date: 2026-11-21
+    tool: Claude Code
+    model: claude-opus-5-5
+    role: other
+    operator: wxxsfxyzm (project lead)
+    task: Fix the OpenCode plan-stage agent so plan files can be written to docs/plans/.
+    requirements: []
+    artifacts:
+      - .opencode/permissions.jsonc
+      - Prompt.md
+      - docs/architecture/permission-model.md
+      - docs/code-governance/mcp-tool-manifest.md
+      - docs/bug-diary.md
+      - docs/debt-register.md
+      - docs/ai-use-log.yaml
+    human_decisions:
+      - Lead delegated the fix with a written task specification - prefer a custom primary agent, edits limited to docs/plans/, build and verify unchanged, no commit.
+      - Lead chose not to export this maintenance session as a transcript.
+      - Lead asked the agent to judge whether the issue needed recording.
+    verification:
+      - Root cause confirmed from the OpenCode 1.19.5 binary - a hard-coded read-only reminder for agents named plan (BUG-001).
+      - 47 static cases passed against the resolved project-plan ruleset; build and verify rulesets unchanged apart from machine-local skill directories.
+      - Live opencode run probe with project-plan - write to docs/plans/ allowed; writes to app/src/ and .opencode/, reading a local.properties decoy, git push, and a redirect were denied. Probe file removed.
+      - Interactive TUI agent switching not tested.
+    evidence:
+      - docs/bug-diary.md (BUG-001, BUG-002)
+      - No transcript exported (project lead decision).
+    notes: build and verify still lack the redirect deny rules; tracked as DEBT-001.
+
+  - id: AI-wxxsfxyzm-0008
+    date: 2026-11-22
+    tool: OpenCode 1.x (project-plan/build agents)
+    model: CS5351/DeepSeek-V4-Flash
+    role: build
+    operator: wxxsfxyzm (project lead)
+    task: Implement steps 1-10 of the ApprovalCoordinator + ApprovalBinding + InstallationGateway first slice.
+    requirements:
+      - REQ-IX-FR-001
+      - REQ-IX-FR-005
+      - REQ-IX-FR-006
+      - REQ-IX-FR-007
+      - REQ-IX-INV-001
+      - REQ-IX-INV-003
+      - REQ-IX-INV-004
+      - REQ-IX-INV-005
+      - REQ-IX-REL-002
+      - REQ-IX-REL-003
+      - REQ-IX-REL-004
+      - REQ-IX-ARCH-001
+      - REQ-IX-SEC-003
+    artifacts:
+      - app/src/main/java/com/rosan/installer/domain/engine/approval/ApprovalBinding.kt
+      - app/src/main/java/com/rosan/installer/domain/engine/approval/ApprovalState.kt
+      - app/src/main/java/com/rosan/installer/domain/engine/approval/ApprovalStateStore.kt
+      - app/src/main/java/com/rosan/installer/domain/engine/approval/BindingFactsProvider.kt
+      - app/src/main/java/com/rosan/installer/domain/engine/approval/SubmissionLedger.kt
+      - app/src/main/java/com/rosan/installer/domain/engine/approval/ApprovalCoordinator.kt
+      - app/src/main/java/com/rosan/installer/domain/engine/install/InstallationGateway.kt
+      - app/src/test/java/com/rosan/installer/domain/engine/approval/InMemoryApprovalStateStore.kt
+      - app/src/test/java/com/rosan/installer/domain/engine/approval/FakeInstallationGateway.kt
+      - app/src/test/java/com/rosan/installer/domain/engine/approval/FakeBindingFactsProvider.kt
+      - app/src/test/java/com/rosan/installer/domain/engine/approval/ApprovalBindingTest.kt
+      - app/src/test/java/com/rosan/installer/domain/engine/approval/ApprovalCoordinatorTest.kt
+      - app/src/test/java/com/rosan/installer/domain/engine/approval/IdempotencyTest.kt
+      - app/src/test/java/com/rosan/installer/domain/engine/approval/RecoveryTest.kt
+      - app/src/test/java/com/rosan/installer/domain/engine/approval/StatePersistenceTest.kt
+      - app/src/test/java/com/rosan/installer/domain/engine/approval/ChokePointTest.kt
+      - app/src/test/java/com/rosan/installer/domain/engine/approval/ApprovalIsolationTest.kt
+      - docs/plans/2026-11-21-approval-coordinator-binding-gateway.md
+      - docs/ai-use-log.yaml
+    human_decisions:
+      - Lead approved the plan and the step 1-10 test plan on 2026-11-22 before coding.
+      - Lead decided Q1 (reuse Authorizer, non-nullable), Q2 (caller supplies configSnapshotHash), Q3 (builder returns null on missing field), Q4 (steps 1-10 only, no di module), Q5 (no docs/architecture edits), Q6 (defer approval TTL).
+      - Lead required BindingFactsProvider double-read revalidation and test doubles only under app/src/test/.
+    verification:
+      - ./gradlew :app:testUnstableDebugUnitTest --tests "com.rosan.installer.domain.engine.approval.*" - BUILD SUCCESSFUL (33 tests, 0 failures).
+      - ./gradlew --offline :app:testUnstableDebugUnitTest - BUILD SUCCESSFUL; full unit suite passed, 0 regressions.
+      - ./gradlew --offline :app:assembleUnstableDebug - BUILD SUCCESSFUL.
+      - Failure injection, TOCTOU re-read, concurrency (20 threads), and recovery (R1-R5) cases passed.
+    evidence:
+      - docs/plans/2026-11-21-approval-coordinator-binding-gateway.md
+      - app/build/test-results/testUnstableDebugUnitTest/TEST-com.rosan.installer.domain.engine.approval.*.xml
+    notes: First slice only. Room persistence (ADR-002.3), real InstallationGateway wiring, review/consent UI, DecisionAuditRecorder, and production relocation of the test doubles remain unfinished Must items per plan section 10.
+
+  - id: AI-wxxsfxyzm-0009
+    date: 2026-11-22
+    tool: Claude Code
+    model: claude-opus-5-5
+    role: other
+    operator: wxxsfxyzm (project lead)
+    task: Close course-compliance gaps found by checking the repository against the CS5351 project specification.
+    requirements:
+      - REQ-IX-GOV-001
+      - REQ-IX-VER-001
+      - REQ-IX-COST-001
+    artifacts:
+      - .github/workflows/ci.yml
+      - .github/scripts/course_gates.py
+      - prompts/prompt_v1.0.yaml
+      - README.md
+      - docs/architecture/adr/001-architecture-choice.md
+      - docs/architecture/invariants.md
+      - docs/architecture/trace-matrix.md
+      - docs/ai-use-log.yaml
+    human_decisions:
+      - Lead asked for a compliance check against the course specification and for the agent to do what it could while the OpenCode build session ran.
+      - Work was done in a separate git worktree on branch docs/course-compliance to avoid the running build session.
+    verification:
+      - Gate scripts passed locally for schema, permissions, dependencies, and prompt sync.
+      - Negative checks confirmed the gates block a widened project-plan edit rule, prompt drift, a code change without a log update, a missing test-approval answer, and a nonexistent plan reference.
+      - ci.yml parsed as YAML; the Gradle jobs were not run locally or on GitHub Actions.
+    evidence:
+      - No transcript exported for this session.
+    notes: ADR-001 section 11 states that the COST-001 preflight token cap and the 32 KB input cap are not implemented. Report.md, .opencode/rules.md, and branch protection remain for the lead.
+
+  - id: AI-wxxsfxyzm-0010
+    date: 2026-11-22
+    tool: OpenCode 1.x (build agent)
+    model: CS5351/DeepSeek-V4-Flash
+    role: build
+    operator: wxxsfxyzm (project lead)
+    task: Fix the autoSubmit trust defect and persist the binding before submission.
+    requirements:
+      - REQ-IX-FR-005
+      - REQ-IX-INV-005
+      - REQ-IX-REL-002
+      - REQ-IX-ARCH-001
+    artifacts:
+      - app/src/main/java/com/rosan/installer/domain/engine/approval/ApprovalCoordinator.kt
+      - app/src/main/java/com/rosan/installer/domain/engine/approval/ApprovalState.kt
+      - app/src/test/java/com/rosan/installer/domain/engine/approval/ApprovalCoordinatorTest.kt
+      - app/src/test/java/com/rosan/installer/domain/engine/approval/RecoveryTest.kt
+      - docs/ai-use-log.yaml
+    human_decisions:
+      - Lead approved a fix limited to ApprovalCoordinator.kt and its tests after review found autoSubmit trusted a caller-supplied PolicyResult.
+      - Lead required autoSubmit to derive the decision from persisted state, persist the binding before submitting, make a gateway failure terminal, and add five specific tests.
+    verification:
+      - ./gradlew --offline spotlessApply - BUILD SUCCESSFUL.
+      - ./gradlew --offline spotlessCheck - BUILD SUCCESSFUL.
+      - ./gradlew --offline :app:testUnstableDebugUnitTest - 323 tests, 0 failures (ApprovalCoordinatorTest 16, RecoveryTest 7).
+    evidence:
+      - app/build/test-results/testUnstableDebugUnitTest/TEST-com.rosan.installer.domain.engine.approval.ApprovalCoordinatorTest.xml
+    notes: Two initially failing assertions were corrected to reflect that a second autoSubmit is rejected by the persisted-state guard (ContinueRejected) rather than reaching the ledger. autoSubmit no longer accepts a PolicyResult; a forged EXECUTE_ONCE cannot bypass the engine. GatewayResult.Failed now terminal (ApprovalState.FAILED).
+
 
   - id: AI-60747744-0001
     date: '2026-11-21'

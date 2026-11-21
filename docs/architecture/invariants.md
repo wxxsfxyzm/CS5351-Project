@@ -44,6 +44,7 @@ when it is.
 - **Implementation links:** forbidden dependency list in
   `permission-model.md` §9.2; authority separation in
   `adr/002-later-important-arch-decisions.md` ADR-002.6.
+- **Operational fallback:** Turn off the in-app network setting (or withdraw AI consent) on affected builds, so `AiNetworkGate` or `ModelRequestGate` blocks every model call and in-scope installs route to `REQUIRE_REVIEW`. Revert the offending change, add the escaped type to `AdvisorIsolationTest`'s forbidden list, and record a `bug-diary.md` entry before re-enabling.
 - **Status:** conceptual.
 
 ### REQ-IX-INV-002 — Advice does not override deterministic prohibition
@@ -63,6 +64,7 @@ when it is.
 - **Implementation links:** `runtime-policy-catalog.md` DR-01 and §7
   baseline mechanisms; `adr/002-later-important-arch-decisions.md`
   ADR-002.6.
+- **Operational fallback:** Switch affected profiles from automatic to dialog installation so no install proceeds without an explicit user action, and revert the policy change. Re-run the DR-01 rows of `PolicyDecisionTableTest` and review operations decided since the faulty release before restoring automatic installation.
 - **Status:** conceptual.
 
 ### REQ-IX-INV-003 — Approval binds the installation object
@@ -88,6 +90,7 @@ when it is.
 - **Implementation links:** `local_approval_binding.retains` in
   `requirements.yaml`; `adr/002-later-important-arch-decisions.md`
   ADR-002.7; `runtime-policy-catalog.md` F-16 / DR-10.
+- **Operational fallback:** Discard all outstanding approvals in `ApprovalStateStore`, so every pending install needs a fresh Continue and revalidation. Keep automatic submission disabled (dialog installation) until `ApprovalBindingTest` covers the unbound field.
 - **Status:** conceptual.
 
 ### REQ-IX-INV-004 — Model failure does not silently approve
@@ -111,6 +114,7 @@ when it is.
 - **Implementation links:** `runtime-policy-catalog.md` §3 failure
   catalog (F-01 … F-09), `adr/002-later-important-arch-decisions.md`
   ADR-002.6.
+- **Operational fallback:** Turn off the in-app network setting so no model call, and therefore no model failure, can occur; installs route to `REQUIRE_REVIEW`. Revert the change and add the failure type to `FailureFallbackTest` before re-enabling.
 - **Status:** conceptual.
 
 ### REQ-IX-INV-005 — At most one submission per repeated event
@@ -130,6 +134,7 @@ when it is.
   submission).
 - **Implementation links:** `runtime-policy-catalog.md` §6 counter
   semantics and F-16; REQ-IX-REL-004 deduplication.
+- **Operational fallback:** Switch affected profiles to dialog installation to stop automatic submission. Treat each duplicated operation as `RESULT_UNKNOWN` and check the installed package state instead of submitting again; re-enable only after `IdempotencyTest` reproduces and covers the duplicate path.
 - **Status:** conceptual.
 
 ### REQ-IX-INV-006 — Policy decision independent of model
@@ -152,6 +157,7 @@ when it is.
 - **Implementation links:** `permission-model.md` §9.2 (policy forbidden
   dependencies) and §9.3; `adr/001-architecture-choice.md` §6
   (check-based enforcement under the accepted Option B).
+- **Operational fallback:** Revert the change that introduced the model or network dependency. Confirm with the network setting off that `DeterministicPolicyEngine` still returns `BLOCK` or `REQUIRE_REVIEW` for every row of the decision table, and extend `PolicyDependencyBoundaryTest` to catch the dependency.
 - **Status:** conceptual.
 
 ### REQ-IX-INV-007 — AI does not lower deterministic restrictions
@@ -172,6 +178,7 @@ when it is.
   `ALLOW_AUTO`; base `BLOCK` plus human approval stays `BLOCK`).
 - **Implementation links:** `runtime-policy-catalog.md` DR-05 … DR-09;
   `adr/002-later-important-arch-decisions.md` ADR-002.6.
+- **Operational fallback:** Switch affected profiles to dialog installation and turn off the in-app network setting, so neither automatic installation nor advice is active. Revert the change and add the failing combination as a row in `PolicyDecisionTableTest` before re-enabling.
 - **Status:** conceptual.
 
 ---
