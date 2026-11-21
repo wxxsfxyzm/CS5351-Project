@@ -444,5 +444,4 @@ entries:
     evidence:
     - docs/architecture/adr/002-later-important-arch-decisions.md
     - architecture-blueprint.md
-    - docs/plans/2026-11-21-d2-sync-post-merge.md
     notes: Documentation only. No file under app/ was modified. ADR-002.3 and ADR-002.4 remain not started.

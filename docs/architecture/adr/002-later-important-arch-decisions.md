@@ -115,12 +115,18 @@ policy specified in the D2 artifact named; an entry with status
 
 ## ADR-002.5 — Placement of the network gate
 
-- **Status:** decided — implemented in PR #13 (PR #16) and extended with
-  consent scoping in PR #19.
+- **Status:** decided — partially implemented. The underlying network
+  and consent gates are merged (PR #16, PR #19), but the **consent UI
+  and the end-to-end production wiring are not complete**. No production
+  call site installs `ModelRequestGate` around an assessment today; the
+  only install sites are tests (`AdvisorScenarioTest`,
+  `ModelRequestGateTest`). There is no consent screen or UI flow
+  (`ConsentGate` element, blueprint §3 #11, remains unimplemented), so
+  REQ-IX-FR-011's user-facing consent requirement is not yet satisfied.
 - **Problem:** REQ-IX-SEC-004 requires outbound egress to obey consent
   and the in-app network switch; REQ-IX-FR-011 makes consent a
   per-assessment precondition.
-- **Decision as implemented — two layers, both default-deny:**
+- **Decision as specified — two layers, both default-deny:**
   1. **Network switch.** `AiNetworkGate` is implemented by
      `data/ai/gate/AppSettingsNetworkGate.kt`, which reads the existing
      `AppPreferences.allowInternetAccess` and **fails closed**: an
@@ -144,6 +150,13 @@ policy specified in the D2 artifact named; an entry with status
   is per assessment, not per session; a Koin singleton gate cannot hold
   it safely. The context element keeps the gate stateless and lets the
   transport re-check it at the last moment.
+- **Remaining work (downstream build role):**
+  - Install `ModelRequestGate` at the production assessment entry point
+    so every real call carries the current per-assessment consent.
+  - Build the consent UI that obtains, displays, and allows withdrawal
+    of consent (`ConsentGate`), in both UI families.
+  - Persist consent decisions and record them in the audit trail
+    (REQ-IX-FR-011, REQ-IX-DATA-001).
 - **Requirements:** REQ-IX-FR-003, REQ-IX-FR-011, REQ-IX-FR-012,
   REQ-IX-SEC-004, REQ-IX-INV-004.
 - **Evidence:** `data/ai/gate/AppSettingsNetworkGate.kt`,
@@ -227,7 +240,7 @@ policy specified in the D2 artifact named; an entry with status
 | 002.2 | AI adapter interface and provider | decided — implemented (PR #13/#16) |
 | 002.3 | Approval and audit persistence | not started |
 | 002.4 | Dual-UI review and consent | not started |
-| 002.5 | Network gate placement (incl. `ModelRequestGate`) | decided — implemented (PR #16/#19) |
+| 002.5 | Network gate placement (incl. `ModelRequestGate`) | decided — gates implemented; consent UI and runtime wiring not complete |
 | 002.6 | Authority separation | decided (specified) |
 | 002.7 | Hash and integrity verification | decided (specified) |
 
