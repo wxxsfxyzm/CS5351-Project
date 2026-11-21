@@ -416,3 +416,95 @@ entries:
     notes: The operator reported that the 11 local files matched the saved snapshot byte-for-byte after
       moving the working tree to main at a114ca6. No source was edited and no commit was made during the
       verification and drafting step. The operator will append this entry to the AI-use log.
+
+  - id: AI-yuki11111111111-0003
+    operator: yuki11111111111 (Member A)
+    date: '2026-11-19'
+    tool: OpenCode
+    model: cityu/CS5351/DeepSeek-V4-Flash
+    role: build
+    task: Review the project and the AI advisory seams, then implement the advisory install-risk path against the D1 rev.6 requirements and the accepted ADR-001 Option B, driving it to a compiling and test-passing state without committing.
+    requirements:
+    - REQ-IX-FR-001
+    - REQ-IX-FR-002
+    - REQ-IX-FR-003
+    - REQ-IX-FR-004
+    - REQ-IX-FR-009
+    - REQ-IX-SEC-001
+    - REQ-IX-SEC-004
+    - REQ-IX-SEC-005
+    - REQ-IX-INV-001
+    - REQ-IX-INV-004
+    - REQ-IX-INV-006
+    - REQ-IX-MOD-001
+    - ADR-001 Option B
+    artifacts:
+    - app/src/main/java/com/rosan/installer/data/ai/advisory/DefaultAiRiskAdvisor.kt
+    - app/src/main/java/com/rosan/installer/data/ai/gate/AppSettingsNetworkGate.kt
+    - app/src/main/java/com/rosan/installer/data/ai/provider/GroqAiModelClient.kt
+    - app/src/main/java/com/rosan/installer/data/ai/provider/OkHttpAiTransport.kt
+    - app/src/main/java/com/rosan/installer/data/ai/provider/OpenAiCompatibleTransport.kt
+    - app/src/main/java/com/rosan/installer/di/AiModule.kt
+    - app/src/main/java/com/rosan/installer/di/init/app_modules.kt
+    - app/src/main/java/com/rosan/installer/domain/ai/model/AdvisoryEnums.kt
+    - app/src/main/java/com/rosan/installer/domain/ai/model/AiInstallRiskModels.kt
+    - app/src/main/java/com/rosan/installer/domain/ai/model/AssessmentResult.kt
+    - app/src/main/java/com/rosan/installer/domain/ai/model/InstallEvidence.kt
+    - app/src/main/java/com/rosan/installer/domain/ai/repository/AiAdvisorContracts.kt
+    - app/src/main/java/com/rosan/installer/domain/ai/usecase/AiRequestBuilder.kt
+    - app/src/main/java/com/rosan/installer/domain/ai/usecase/EvidenceSanitizer.kt
+    - app/src/main/java/com/rosan/installer/domain/ai/usecase/RequestInstallRiskAssessmentUseCase.kt
+    - app/src/main/java/com/rosan/installer/domain/ai/usecase/StrictAiOutputValidator.kt
+    - app/src/test/java/com/rosan/installer/data/ai/advisory/DefaultAiRiskAdvisorTest.kt
+    - app/src/test/java/com/rosan/installer/domain/ai/AdvisorIsolationTest.kt
+    - app/src/test/java/com/rosan/installer/domain/ai/fixture/EvidenceFixtures.kt
+    - app/src/test/java/com/rosan/installer/domain/ai/usecase/AdvisorFailureReportingTest.kt
+    - app/src/test/java/com/rosan/installer/domain/ai/usecase/AdvisorScenarioTest.kt
+    - app/src/test/java/com/rosan/installer/domain/ai/usecase/AiRequestBuilderTest.kt
+    - app/src/test/java/com/rosan/installer/domain/ai/usecase/EvidenceSanitizerTest.kt
+    - app/src/test/java/com/rosan/installer/domain/ai/usecase/StrictAiOutputValidatorTest.kt
+    - app/src/test/java/com/rosan/installer/live/GroqLiveAdvisorTest.kt
+    - app/build.gradle.kts
+    human_decisions:
+    - The operator asked for a review of the project and of the AI advisory seams before any implementation.
+    - The operator chose Groq's OpenAI-compatible endpoint as the model integration rather than a local endpoint or OpenCode itself.
+    - The operator accepted the advisor contract, the sanitizer, and the strict fixed-format parser, and kept the live model test outside the deterministic offline suite.
+    - No commit, push, or PR was authorised in this session.
+    verification:
+    - ':app:testUnstableDebugUnitTest reported BUILD SUCCESSFUL at the final checkpoint, 223 tests in 38 suites with 0 failures, including the 23 validator tests, the 13 AdvisorFailureReportingTest cases, and the advisor scenario tests.'
+    - Two earlier checkpoints also passed, at 196 tests and 210 tests with 0 failures, each after a compile fix.
+    - Every Gradle run was executed in a scratch copy at Temp/opencode/cs5351-verify with one baseline line commented out, because the local SDK has build-tools 36 while the baseline needs 37. The repository working tree was not built directly.
+    - One test was corrected after failing: it asserted one dispatch for the network-disabled path when the production code was right. The test, not the code, was changed.
+    - No live Groq call was made (no API key present), and no on-device test was run.
+    evidence:
+    - transcripts/transcriptE-Chengqian He-60267540.md
+    - https://github.com/wxxsfxyzm/CS5351-Project/pull/14
+    notes: The tool and model identifiers are taken from the session configuration, because the exported transcript records neither. The transcript ends on the discussion of model choice; the commit and pull request that carried this work were created outside it. Verification was run against a scratch copy, so these results are evidence for the sources in that copy and not for a build of the repository tree as committed.
+  - id: AI-yuki11111111111-0004
+    operator: yuki11111111111 (Member A)
+    date: '2026-11-19'
+    tool: OpenCode
+    model: cityu/CS5351/DeepSeek-V4-Flash
+    role: other
+    task: Compare the local working tree with the GitHub repository, relay the team lead's architecture review of PR #13, and record the state of the review fixes before they were committed.
+    requirements:
+    - REQ-IX-SEC-001
+    - REQ-IX-SEC-004
+    - REQ-IX-INV-001
+    - REQ-IX-INV-004
+    - REQ-IX-INV-006
+    - ADR-001 Option B
+    - ADR-002.1
+    artifacts: []
+    human_decisions:
+    - The operator supplied the team lead's review of PR #13 and asked whether the local modifications had been saved.
+    - The operator did not authorise a commit in this session; the fixes stayed uncommitted on branch fix/pr13-architecture-review.
+    verification:
+    - Read-only comparison of the working tree against the repository; no Gradle command, test, or build was run.
+    - The agent confirmed that the eleven modified files were present locally and that one of them, docs/plans/2026-11-19-pr13-architecture-review-fixes.md, was new.
+    - The agent confirmed source-level defects for the reviewed items (deviceApiLevel egress, the isVerifiedUsingV32Scheme removal, and the GROQ_API_KEY buildConfigField) and confirmed that the probe file ZzProbeScanTest.kt had been removed and that git stash was empty.
+    - The agent warned that the changes existed only as uncommitted work on the branch and would be lost by a checkout.
+    evidence:
+    - transcripts/transcriptE-Chengqian He-60267540 fix.md
+    - https://github.com/wxxsfxyzm/CS5351-Project/pull/15
+    notes: The warning given here was not acted on inside the session; the fixes were committed later on the same branch. The tool and model identifiers are taken from the session configuration, because the exported transcript records neither.
