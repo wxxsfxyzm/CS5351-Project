@@ -417,6 +417,97 @@ entries:
       moving the working tree to main at a114ca6. No source was edited and no commit was made during the
       verification and drafting step. The operator will append this entry to the AI-use log.
 
+
+  - id: AI-yuki11111111111-0001
+    date: 2026-11-19
+    tool: OpenCode v1
+    model: cityu/CS5351/DeepSeek-V4-Flash
+    role: other
+    operator: yuki11111111111 (Member A)
+    task: Explore the local project against the GitHub repository, explain the architecture and code seams, and answer design questions about model selection and the advisory integration.
+    requirements:
+      - REQ-IX-MOD-001
+      - REQ-IX-SEC-004
+      - REQ-IX-INV-001
+      - REQ-IX-INV-006
+      - ADR-001 Option B
+    artifacts: []
+    human_decisions:
+      - Operator asked for an exploration of the project and the matching GitHub repository before any work.
+      - Operator proposed using OpenCode itself as the AI the app calls; the agent explained that OpenCode is a developer-side harness, not an on-device endpoint, and set out three readings (use the same model, point the transport at a local OpenAI-compatible server, or use OpenCode as a fixture-authoring tool).
+      - No code change was requested or approved in this session; no follow-up was ordered.
+    verification:
+      - Read-only review only; no Gradle command, test, or build was run.
+      - Findings were checked against the repository state at HEAD eaf9fe78 on main, which was documentation and architecture only at the time.
+    evidence:
+      - transcripts/transcriptE-Chengqian He-60267540.md
+      - https://github.com/wxxsfxyzm/CS5351-Project/pull/14
+    notes: Exploration and discussion session; the agent made no edits, commits, or pushes. Model identifier is taken from the OpenCode session configuration because the transcript does not record it.
+
+  - id: AI-yuki11111111111-0002
+    date: 2026-11-19
+    tool: OpenCode v1
+    model: cityu/CS5351/DeepSeek-V4-Flash
+    role: build
+    operator: yuki11111111111 (Member A)
+    task: Implement the four blocking items and one note from the team lead's architecture review of PR #13 (E-1 device_api_level egress, E-2 data/ai isolation coverage, E-3 API key in BuildConfig, E-4 missing allowlisted context fields), then submit the changes to the existing PR.
+    requirements:
+      - REQ-IX-SEC-001
+      - REQ-IX-SEC-004
+      - REQ-IX-FR-002
+      - REQ-IX-FR-003
+      - REQ-IX-FR-009
+      - REQ-IX-INV-001
+      - REQ-IX-INV-004
+      - REQ-IX-INV-006
+      - REQ-IX-MOD-001
+      - NFC-OUT-001
+      - NFC-OUT-002
+      - NFC-OUT-006
+      - ADR-001 Option B (§6)
+      - ADR-002.1
+    artifacts:
+      - docs/plans/2026-11-19-pr13-architecture-review-fixes.md
+      - docs/plans/2026-11-19-pr13-pr-description.md
+      - app/src/main/java/com/rosan/installer/domain/ai/model/InstallEvidence.kt
+      - app/src/main/java/com/rosan/installer/domain/ai/model/AdvisoryEnums.kt
+      - app/src/main/java/com/rosan/installer/domain/ai/usecase/AiRequestBuilder.kt
+      - app/src/main/java/com/rosan/installer/di/AiModule.kt
+      - app/build.gradle.kts
+      - app/src/main/java/com/rosan/installer/data/engine/signature/PendingApkSignatureAnalyzer.kt
+      - app/src/test/java/com/rosan/installer/domain/ai/AdvisorIsolationTest.kt
+      - app/src/test/java/com/rosan/installer/domain/ai/fixture/EvidenceFixtures.kt
+      - app/src/test/java/com/rosan/installer/domain/ai/usecase/AiRequestBuilderTest.kt
+      - app/src/test/java/com/rosan/installer/domain/ai/usecase/AdvisorScenarioTest.kt
+      - app/src/test/java/com/rosan/installer/domain/ai/usecase/AdvisorFailureReportingTest.kt
+      - docs/ai-use-log.yaml
+    human_decisions:
+      - The human pasted the team lead's review and instructed the agent to fix the local project accordingly.
+      - The agent first produced a plan and stopped for approval, which the human rejected; the human required the plan to be persisted in the repository and directed the fixes to be applied.
+      - The human decided E-4 as "implement the five fields" rather than declaring a reduced allowlist subset, and approved the plan and its test design together before coding.
+      - The human asked whether every change was saved locally, then authorised pushing to the original repository and rewriting PR #13 with the project PR template; no separate duplicate PR was created.
+      - The human reviewed and retained both #14 and #15 transcripts and asked for this AI-use log entry.
+    verification:
+      - spotlessCheck passed.
+      - :app:testUnstableDebugUnitTest with --rerun-tasks passed 253 tests in 40 classes with 0 failures and 0 errors; AI suites covered AdvisorIsolationTest 7, AdvisorScenarioTest 15, AiRequestBuilderTest 16, AdvisorFailureReportingTest 13, DefaultAiRiskAdvisorTest 15, EvidenceSanitizerTest 7, StrictAiOutputValidatorTest 23.
+      - assembleUnstableDebug and assemblePreviewDebug both passed and produced an APK each.
+      - E-2 and E-3 guards were verified as load-bearing by temporarily injecting a forbidden okhttp3 import and a GROQ_API_KEY buildConfigField, observing the failures, and reverting.
+      - No on-device test, no live Groq call, and no external CI result was observed by the agent.
+    evidence:
+      - transcripts/transcriptE-Chengqian He-60267540 fix.md
+      - https://github.com/wxxsfxyzm/CS5351-Project/pull/13
+      - docs/plans/2026-11-19-pr13-architecture-review-fixes.md
+    notes: >-
+      Commits 20da737a, 85bc6030, 5a024845, f01ff58f and 27f21d47 were pushed to feat/ai-risk-advisor.
+      The agent's first E-3 guard derived the wrong app/ directory and was caught by a probe run before
+      submission. One change, removing isVerifiedUsingV32Scheme from PendingApkSignatureAnalyzer, is outside
+      the AI advisory scope; it blocked compilation against the apksig jar bundled with Build Tools 37.0.0 and
+      is flagged in PR #13 for the reviewer to confirm. This transcript ends before the push, so the push and
+      the PR description rewrite are not shown in it. Author correction: the local git identity was misconfigured
+      at the time, so the commits pushed to feat/ai-risk-advisor carry the wrong commit author; the operator
+      confirmed yuki11111111111 as the correct account and chose to leave the pushed commit authorship unchanged
+      rather than rewrite shared history.
+
   - id: AI-memberC-0003
     date: '2026-11-21'
     tool: OpenCode v1
