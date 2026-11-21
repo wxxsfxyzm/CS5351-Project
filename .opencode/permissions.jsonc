@@ -17,10 +17,16 @@
 //   G2  Credentials, keystores, and local properties are never read.
 //   G3  Agents never edit their own permissions or rules
 //       (.opencode/, .agent/), CODEOWNERS, or release workflows.
-//   G4  Governance documents are editable only by the plan agent,
-//       and only after per-edit human approval (ask).
+//   G4  The project plan role (agent `project-plan`) edits only
+//       docs/plans/. No agent edits governance documents.
 //   G5  No push, merge, or history rewrite; commits need approval.
 //   G6  No subagents, skills, or paths outside the project.
+//
+// Role mapping: project role `plan` = agent `project-plan`.
+// OpenCode 1.x injects a hard-coded read-only reminder into every
+// turn of an agent named exactly `plan`, so the built-in `plan`
+// agent cannot write plan files. It is kept read-only below and is
+// not used for the project plan stage.
 //
 // Agents must not edit this file. Changes require human review.
 {
@@ -55,10 +61,10 @@
   },
 
   "agent": {
-    // Plan: reads context, writes execution plans, and drafts
-    // architecture or governance documents with approval.
-    "plan": {
-      "description": "Plans work and drafts governance documents; no source edits.",
+    // Project plan role: reads context and writes execution plans to
+    // docs/plans/ only, then stops for human approval.
+    "project-plan": {
+      "description": "Project plan stage: writes plans to docs/plans/ only, then waits for approval.",
       "mode": "primary",
       "permission": {
         "read": {
@@ -94,21 +100,83 @@
         },
         "edit": {
           "*": "deny",
-          "docs/plans/*": "allow",
-          "architecture-blueprint.md": "ask",
-          "docs/req/*": "ask",
-          "docs/architecture/*": "ask",
-          "docs/code-governance/*": "ask",
-          "docs/ai-use-log.yaml": "allow",
-          ".opencode/*": "deny",
-          ".agent/*": "deny"
+          "docs/plans/*": "allow"
+        },
+        // Read-only git. OpenCode checks each chained command
+        // separately but matches redirections as part of the command
+        // text, so redirects, --output, and --no-index are denied to
+        // stop file writes and reads outside the whitelist.
+        "bash": {
+          "*": "deny",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "git log*": "allow",
+          "git show*": "allow",
+          "*>*": "deny",
+          "*--output*": "deny",
+          "*--no-index*": "deny",
+          "git push*": "deny",
+          "git merge*": "deny",
+          "git rebase*": "deny",
+          "git reset*": "deny"
+        },
+        "task": "deny",
+        "skill": "deny",
+        "webfetch": "deny",
+        "websearch": "deny",
+        "external_directory": "deny"
+      }
+    },
+
+    // OpenCode built-in `plan` agent: read-only by OpenCode design and
+    // not used for the project plan stage (see role mapping above).
+    "plan": {
+      "description": "OpenCode built-in read-only planner; use project-plan for the project plan stage.",
+      "mode": "primary",
+      "permission": {
+        "read": {
+          "*": "deny",
+          "AGENTS.md": "allow",
+          "Prompt.md": "allow",
+          "README.md": "allow",
+          "CONTRIBUTING.md": "allow",
+          "architecture-blueprint.md": "allow",
+          "docs/*": "allow",
+          "app/*": "allow",
+          "app-process/*": "allow",
+          "hidden-api/*": "allow",
+          "build-plugins/*": "allow",
+          "baselineprofile/*": "allow",
+          "src/*": "allow",
+          "test/*": "allow",
+          "prompts/*": "allow",
+          "gradle/*": "allow",
+          "settings.gradle.kts": "allow",
+          "build.gradle.kts": "allow",
+          "gradle.properties": "allow",
+          ".github/*": "allow",
+          ".opencode/*": "allow",
+          ".agent/*": "allow",
+          "*local.properties": "deny",
+          "*keystore.properties": "deny",
+          "*keystore/*": "deny",
+          "*.jks": "deny",
+          "*.keystore": "deny",
+          "*.env": "deny",
+          "*.env.*": "deny"
+        },
+        "edit": {
+          "*": "deny"
         },
         "bash": {
           "*": "deny",
           "git status*": "allow",
           "git diff*": "allow",
           "git log*": "allow",
-          "git show*": "allow"
+          "git show*": "allow",
+          "*>*": "deny",
+          "*--output*": "deny",
+          "*--no-index*": "deny"
         },
         "task": "deny",
         "skill": "deny",

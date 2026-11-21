@@ -28,16 +28,17 @@ network-access boundary in `AGENTS.md`.
 | `read` | Read a file | whitelist | whitelist | whitelist |
 | `glob`, `grep`, `list` | Find files and text | allow | allow | allow |
 | `lsp` | Code intelligence | allow | allow | allow |
-| `edit`, `write`, `patch` | Change files | `docs/plans/`; governance docs (ask) | source and test paths | QA records |
+| `edit`, `write`, `patch` | Change files | `docs/plans/` only | source and test paths | QA records |
 | `bash` | Run shell commands | read-only git | git read, Gradle build/test/lint; others ask | git read, Gradle build/test/lint/check; others ask |
 | `todowrite` | Track task steps | allow | allow | allow |
-| `question` | Ask the human a structured question | allow | allow | deny (ask in plain text) |
+| `question` | Ask the human a structured question | deny (ask in plain text) | allow | deny (ask in plain text) |
 | `task` | Start a subagent | deny | deny | deny |
 | `skill` | Load an agent skill | deny | deny | deny |
 | `webfetch`, `websearch` | Network access | deny | deny | deny |
 
 "Whitelist", "ask", and "deny" follow the definitions in the
-permission model.
+permission model. The `plan` column is the OpenCode agent
+`project-plan`; its edit rights are `docs/plans/` only.
 
 ## Rationale
 
