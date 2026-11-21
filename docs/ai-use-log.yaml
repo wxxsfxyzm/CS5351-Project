@@ -536,3 +536,33 @@ entries:
     - docs/architecture/adr/002-later-important-arch-decisions.md
     - architecture-blueprint.md
     notes: Documentation only. No file under app/ was modified. ADR-002.3 and ADR-002.4 remain not started.
+
+  - id: AI-wxxsfxyzm-0007
+    date: 2026-11-21
+    tool: Claude Code
+    model: claude-opus-5-5
+    role: other
+    operator: wxxsfxyzm (project lead)
+    task: Fix the OpenCode plan-stage agent so plan files can be written to docs/plans/.
+    requirements: []
+    artifacts:
+      - .opencode/permissions.jsonc
+      - Prompt.md
+      - docs/architecture/permission-model.md
+      - docs/code-governance/mcp-tool-manifest.md
+      - docs/bug-diary.md
+      - docs/debt-register.md
+      - docs/ai-use-log.yaml
+    human_decisions:
+      - Lead delegated the fix with a written task specification - prefer a custom primary agent, edits limited to docs/plans/, build and verify unchanged, no commit.
+      - Lead chose not to export this maintenance session as a transcript.
+      - Lead asked the agent to judge whether the issue needed recording.
+    verification:
+      - Root cause confirmed from the OpenCode 1.19.5 binary - a hard-coded read-only reminder for agents named plan (BUG-001).
+      - 47 static cases passed against the resolved project-plan ruleset; build and verify rulesets unchanged apart from machine-local skill directories.
+      - Live opencode run probe with project-plan - write to docs/plans/ allowed; writes to app/src/ and .opencode/, reading a local.properties decoy, git push, and a redirect were denied. Probe file removed.
+      - Interactive TUI agent switching not tested.
+    evidence:
+      - docs/bug-diary.md (BUG-001, BUG-002)
+      - No transcript exported (project lead decision).
+    notes: build and verify still lack the redirect deny rules; tracked as DEBT-001.

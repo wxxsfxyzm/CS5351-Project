@@ -38,11 +38,23 @@ meaning; change both in the same pull request.
 
 ## Roles
 
-| Role | Purpose | Writes |
-|---|---|---|
-| `plan` | Read context, produce execution plans, draft architecture and governance documents | `docs/plans/`, governance docs with per-edit approval |
-| `build` | Implement an approved plan | Source and test paths |
-| `verify` | Run verification and draft QA records | Review memo, bug diary, debt register |
+| Role | OpenCode agent | Purpose | Writes |
+|---|---|---|---|
+| `plan` | `project-plan` | Read context and write execution plans, then stop for approval | `docs/plans/` only |
+| `build` | `build` | Implement an approved plan | Source and test paths |
+| `verify` | `verify` | Run verification and draft QA records | Review memo, bug diary, debt register |
+
+The plan role uses the custom agent `project-plan`, not OpenCode's
+built-in `plan` agent. OpenCode 1.x appends a hard-coded read-only
+reminder to every turn of an agent named exactly `plan` ("Plan mode
+ACTIVE … STRICTLY FORBIDDEN: ANY file edits"), which overrides the
+permission rules and stops it from writing plan files. The built-in
+`plan` agent is kept read-only (all edits denied) and is not used
+for the project plan stage. In the tables below, the `plan` column
+describes `project-plan`.
+
+Select the agent with Tab in the OpenCode TUI, or with
+`opencode run --agent project-plan`.
 
 Any other agent, including OpenCode built-in subagents, falls
 back to the global rules: deny all reads, edits, and shell
@@ -74,8 +86,8 @@ Default: deny. `ask` means OpenCode prompts a human for every edit.
 | Path | plan | build | verify |
 |---|---|---|---|
 | `docs/plans/` | allow | deny | deny |
-| `architecture-blueprint.md`, `docs/req/`, `docs/architecture/`, `docs/code-governance/` | ask | deny | deny |
-| `docs/ai-use-log.yaml` | allow | allow | allow |
+| `architecture-blueprint.md`, `docs/req/`, `docs/architecture/`, `docs/code-governance/` | deny | deny | deny |
+| `docs/ai-use-log.yaml` | deny | allow | allow |
 | `app/src/`, `app-process/src/`, `hidden-api/src/`, `src/`, `test/` | deny | allow | deny |
 | `app/build.gradle.kts`, `app-process/build.gradle.kts`, `hidden-api/build.gradle.kts`, `gradle/libs.versions.toml`, `settings.gradle.kts` | deny | ask | deny |
 | `docs/review-memo.md`, `docs/bug-diary.md`, `docs/debt-register.md` | deny | deny | allow |
@@ -91,7 +103,13 @@ Default: deny. `ask` means OpenCode prompts a human for every edit.
 | `./gradlew check*` | deny | ask | allow |
 | `git commit` | deny | ask | deny |
 | `git push`, `git merge`, `git rebase`, `git reset --hard`, `gh pr merge`, `rm -rf` | deny | deny | deny |
+| Any command containing `>`, `--output`, or `--no-index` | deny | as above | as above |
 | Any other command | deny | ask | ask |
+
+OpenCode checks each command in a chain separately, but matches a
+command together with its redirections. The `plan` column therefore
+denies `>`, `--output`, and `--no-index`, so read-only git commands
+cannot write files or read paths outside the whitelist.
 
 ## Other Tools
 
@@ -112,7 +130,7 @@ Default: deny. `ask` means OpenCode prompts a human for every edit.
 | G1 | Reads and edits are denied unless whitelisted | `"*": "deny"` first in every `read` and `edit` block |
 | G2 | Credentials, keystores, and local properties are never read | Deny rules placed after the read whitelist |
 | G3 | Agents never edit their own permissions or rules, `CODEOWNERS`, or workflows | `.opencode/*` and `.agent/*` denied last; `.github/` never whitelisted |
-| G4 | Governance documents change only with per-edit human approval | `ask` for the plan role only |
+| G4 | The plan role writes only plan files; no agent edits governance documents | `project-plan` edit whitelist is `docs/plans/*` only |
 | G5 | No push, merge, or history rewrite; commits need approval | Shell deny rules; `git commit` is `ask` for build only |
 | G6 | No subagents, skills, network tools, or paths outside the project | `task`, `skill`, `webfetch`, `websearch`, `external_directory` denied |
 
@@ -132,6 +150,12 @@ review.
 - **Shell `ask` relies on the human.** A command such as
   `cat local.properties` is not blocked automatically for build or
   verify; the reviewer must reject it at the prompt.
+- **Redirects in build and verify.** Their allowed git and Gradle
+  commands do not yet deny `>`, `--output`, or `--no-index`, so for
+  example `git status > .opencode/x` would be allowed. Only the plan
+  agents have these denies.
+- **Plan-role sessions cannot update the AI-use log.** The human
+  records those sessions in `docs/ai-use-log.yaml`.
 - **Per-machine configuration still merges in.** A project-level
   `opencode.json` would override this file; a user's global config
   can add rules that are not listed here.

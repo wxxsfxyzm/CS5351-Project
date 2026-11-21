@@ -19,7 +19,10 @@ Before giving the agent a task:
 
 3. Run the smoke test in `docs/architecture/permission-model.md`
    and keep the output in the transcript.
-4. Select the role for this stage: `plan`, `build`, or `verify`.
+4. Select the agent for this stage (Tab in the OpenCode TUI):
+   `project-plan` for the plan role, `build`, or `verify`. Do not
+   use OpenCode's built-in `plan` agent; it is hard-wired read-only
+   and cannot write plan files.
 5. Send the first message in this form, so the transcript records
    the launch:
 
@@ -43,7 +46,7 @@ missing fields before doing any work.
 - If the task, scope, or approval status is unclear, ask before
   continuing.
 
-## 2. Produce an Execution Plan (plan role)
+## 2. Produce an Execution Plan (plan role, agent `project-plan`)
 
 Write the plan to `docs/plans/<date>-<short-task-name>.md` with:
 
@@ -88,7 +91,9 @@ Then **stop** for human review of the results.
 
 ## 5. Close the Session
 
-- Update `docs/ai-use-log.yaml` with this session's entry.
+- Update `docs/ai-use-log.yaml` with this session's entry. In
+  plan-role sessions the agent cannot edit it; the human adds the
+  entry.
 - Summarize: what changed, what was verified, what remains
   unverified, and any human interventions.
 - Do not commit, push, or open a pull request unless a human asks.
