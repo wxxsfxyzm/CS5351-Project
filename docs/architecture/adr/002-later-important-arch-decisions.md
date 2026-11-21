@@ -21,27 +21,70 @@ policy specified in the D2 artifact named; an entry with status
 
 ## ADR-002.1 — Placement of the deterministic policy module
 
-- **Status:** not started — blocked on ADR-001 acceptance.
-- **Problem:** `DeterministicPolicyEngine` must run without a model SDK
-  or network (REQ-IX-INV-006) and must own every decision
-  (REQ-IX-FR-005). Its final module and source set are unresolved.
-- **Constraints:** pure JVM-testable; no Android framework dependency in
-  the decision core; Koin registration in an existing `di/` module.
+- **Status:** decided — implemented in PR #16.
+- **Decision as implemented:** the policy core lives in
+  `domain/engine/policy/` in the existing `app` module, as two files:
+  - `DeterministicPolicyEngine.kt` — a plain Kotlin class with
+    `fun evaluate(input: PolicyInput): PolicyResult`. It evaluates
+    DR-01 … DR-10 in first-match order over the supplied facts and holds
+    no model, network, or Android dependency (REQ-IX-INV-006).
+  - `PolicyDecisionModels.kt` — the contract types `EvaluatedPolicy`,
+    `HumanApprovalState`, `PolicyAdvice`, `PolicyInput`,
+    `PolicyDecision` (enum), `PolicyDisposition` (enum), and
+    `PolicyResult` (data class carrying `decision`, `disposition`,
+    `ruleId`, `reasonCode`).
+- **Naming note:** `PolicyDecision` is an **enum**
+  (`ALLOW_AUTO`, `REQUIRE_REVIEW`, `BLOCK`), matching the DI requirement
+  that only an active deterministic prohibition may produce `BLOCK`.
+  The full decision *outcome* is the `PolicyResult` data class, not the
+  enum. Earlier D2 drafts sketched a `PolicyDecision` data class with
+  separate enums; the merged implementation is authoritative.
+- **Constraints honoured:** pure JVM-testable; no Android framework type
+  in the decision core; no Koin registration needed because the engine
+  is stateless (`PolicyDecisionTableTest` constructs it directly).
 - **Requirements:** REQ-IX-FR-005, REQ-IX-INV-002, REQ-IX-INV-006,
   REQ-IX-INV-007, REQ-IX-ARCH-001.
+- **Evidence:** `domain/engine/policy/DeterministicPolicyEngine.kt`,
+  `domain/engine/policy/PolicyDecisionModels.kt`,
+  `domain/engine/policy/PolicyDecisionTableTest.kt`.
 
 ## ADR-002.2 — AI adapter interface and provider selection
 
-- **Status:** not started.
-- **Problem:** REQ-IX-MOD-001 requires one adapter interface so the
-  provider can be replaced without touching policy or UI. The interface
-  shape, timeout, and provider configuration are unresolved.
-- **Constraints:** at most one provider dispatch per attempt, no
-  automatic retry (REQ-IX-FR-003, REQ-IX-COST-001). Model tokens and
-  endpoints are never logged (REQ-IX-FR-009). Provider-side output cap
-  required before spend (REQ-IX-COST-001, provisional).
+- **Status:** decided — implemented in PR #13, merged to `main` in PR #16.
+- **Decision as implemented:**
+  - `domain/ai/repository/AiAdvisorContracts.kt` defines the boundary
+    interfaces: `AIRiskAdvisor.assessRequest(request, knownEvidencePaths)`
+    returning `AdvisorOutcome` (a report, never a decision:
+    REQ-IX-INV-001), `AiModelClient` (the provider seam,
+    REQ-IX-MOD-001), and `AiOutputValidator.parse(...)`.
+  - The concrete advisory path lives in `data/ai/advisory/DefaultAiRiskAdvisor.kt`
+    (ADR-001 Option B: interface in `domain`, provider in `data`).
+  - The v1 provider is Groq, an OpenAI-compatible endpoint, through
+    `data/ai/provider/GroqAiModelClient.kt` and
+    `data/ai/provider/OkHttpAiTransport.kt`, reusing the app's existing
+    `OkHttpClient` via `newBuilder()` with a 7 s per-call read budget
+    (no second HTTP stack, no automatic retry: REQ-IX-COST-001).
+  - The response is parsed into a sealed
+    `AssessmentResult = Valid | Invalid | Missing` with no default arm
+    (REQ-IX-INV-004).
+- **Review items resolved before merge:**
+  - E-1: `device_api_level` is no longer transmitted; it is a
+    `local_only` allowlist entry and is absent from `InstallEvidence`,
+    the builder, and `ALLOWLISTED_LEAF_PATHS`, with a regression test
+    (REQ-IX-SEC-004, NFC-OUT-006).
+  - E-3: `GROQ_API_KEY` is **not** compiled into `BuildConfig`; the key
+    is read at runtime from the process environment only and appears
+    solely in the `Authorization` header (REQ-IX-FR-009).
+  - E-4: the five D1 context fields (`install_mode`,
+    `target_user_scope`, `package_source`, `source_confidence`,
+    `installer_capability`) are implemented with rev.6 enum spellings
+    and documented unknown encodings.
+- **Known deviation:** `AiRequestBuilder` builds wire JSON inside
+  `domain/ai`, coupling `domain` to `kotlinx.serialization`. Accepted
+  under ADR-001 Option B.
 - **Requirements:** REQ-IX-FR-003, REQ-IX-FR-004, REQ-IX-MOD-001,
-  REQ-IX-COST-001, REQ-IX-PER-001.
+  REQ-IX-COST-001, REQ-IX-PER-001, REQ-IX-SEC-004.
+- **Evidence:** `domain/ai/`, `data/ai/`, PR #13 review fixes, PR #16.
 
 ## ADR-002.3 — Persistence for approval state and decision audit
 
@@ -72,17 +115,55 @@ policy specified in the D2 artifact named; an entry with status
 
 ## ADR-002.5 — Placement of the network gate
 
-- **Status:** not started.
+- **Status:** decided — partially implemented. The underlying network
+  and consent gates are merged (PR #16, PR #19), but the **consent UI
+  and the end-to-end production wiring are not complete**. No production
+  call site installs `ModelRequestGate` around an assessment today; the
+  only install sites are tests (`AdvisorScenarioTest`,
+  `ModelRequestGateTest`). There is no consent screen or UI flow
+  (`ConsentGate` element, blueprint §3 #11, remains unimplemented), so
+  REQ-IX-FR-011's user-facing consent requirement is not yet satisfied.
 - **Problem:** REQ-IX-SEC-004 requires outbound egress to obey consent
-  and the in-app network switch. The existing
-  `BooleanSetting.AllowInternetAccess` setting is a configuration flag,
-  not a dedicated `NetworkGate` element. Whether to add an element or
-  reuse the setting plus a guard is unresolved.
-- **Constraints:** network requests stay disabled when the in-app
-  setting is off (`AGENTS.md`); outbound payload matches the allowlist
-  exactly (REQ-IX-SEC-004).
-- **Requirements:** REQ-IX-FR-003, REQ-IX-FR-011, REQ-IX-SEC-004,
-  REQ-IX-INV-004.
+  and the in-app network switch; REQ-IX-FR-011 makes consent a
+  per-assessment precondition.
+- **Decision as specified — two layers, both default-deny:**
+  1. **Network switch.** `AiNetworkGate` is implemented by
+     `data/ai/gate/AppSettingsNetworkGate.kt`, which reads the existing
+     `AppPreferences.allowInternetAccess` and **fails closed**: an
+     unreadable preference denies egress. `OkHttpAiTransport` re-checks
+     the gate immediately before the request leaves the process. No new
+     setting is introduced and the baseline network boundary is not
+     widened (`AGENTS.md`).
+  2. **Consent scoping (PR #19).** `ModelRequestGate`
+     (`domain/ai/repository/ModelRequestGate.kt`) is a coroutine-context
+     element the caller installs around exactly one assessment. Its
+     `Key.hasCurrentConsent()` reads the *current* authorization for
+     that assessment on each check; a missing, declined, withdrawn, or
+     unreadable consent all deny it, and a cached grant must never be
+     supplied. Both `RequestInstallRiskAssessmentUseCase` and
+     `OkHttpAiTransport` consult it, so a consent change after a request
+     is built still blocks transmission. A denial is reported as
+     `AiAdvisorFailure.ConsentUnavailable` → `FailureCode.CONSENT_UNAVAILABLE`
+     with **0 provider dispatches**, which the policy layer routes to
+     DR-02 / `REQUIRE_REVIEW` (REQ-IX-INV-004).
+- **Why a context element rather than a constructor parameter:** consent
+  is per assessment, not per session; a Koin singleton gate cannot hold
+  it safely. The context element keeps the gate stateless and lets the
+  transport re-check it at the last moment.
+- **Remaining work (downstream build role):**
+  - Install `ModelRequestGate` at the production assessment entry point
+    so every real call carries the current per-assessment consent.
+  - Build the consent UI that obtains, displays, and allows withdrawal
+    of consent (`ConsentGate`), in both UI families.
+  - Persist consent decisions and record them in the audit trail
+    (REQ-IX-FR-011, REQ-IX-DATA-001).
+- **Requirements:** REQ-IX-FR-003, REQ-IX-FR-011, REQ-IX-FR-012,
+  REQ-IX-SEC-004, REQ-IX-INV-004.
+- **Evidence:** `data/ai/gate/AppSettingsNetworkGate.kt`,
+  `domain/ai/repository/ModelRequestGate.kt`,
+  `data/ai/provider/OkHttpAiTransport.kt`,
+  `domain/ai/usecase/RequestInstallRiskAssessmentUseCase.kt`,
+  `ModelRequestGateTest.kt`, PR #19.
 
 ## ADR-002.6 — Authority separation between AI advisory and the policy gate
 
@@ -155,14 +236,16 @@ policy specified in the D2 artifact named; an entry with status
 
 | ADR | Topic | Status |
 |---|---|---|
-| 002.1 | Policy module placement | not started (blocked on ADR-001) |
-| 002.2 | AI adapter interface and provider | not started |
+| 002.1 | Policy module placement | decided — implemented (PR #16) |
+| 002.2 | AI adapter interface and provider | decided — implemented (PR #13/#16) |
 | 002.3 | Approval and audit persistence | not started |
 | 002.4 | Dual-UI review and consent | not started |
-| 002.5 | Network gate placement | not started |
+| 002.5 | Network gate placement (incl. `ModelRequestGate`) | decided — gates implemented; consent UI and runtime wiring not complete |
 | 002.6 | Authority separation | decided (specified) |
 | 002.7 | Hash and integrity verification | decided (specified) |
 
 A `decided (specified)` entry states the required behavior from the
-requirements registry; it does not claim that code exists. Tests named
-here are planned, per `verification-constraints.md` §2.
+requirements registry; it does not claim that code exists. A
+`decided — implemented` entry names the merged code that realizes it.
+Tests named here are planned unless the entry cites an existing suite,
+per `verification-constraints.md` §2.
