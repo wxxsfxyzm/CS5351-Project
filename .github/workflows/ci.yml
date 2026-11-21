@@ -1,0 +1,218 @@
+# CS5351 blocking gates (course project requirement section 6, D4/D7).
+# Gate design: README.md, "CS5351 blocking gates". Branch protection on
+# main must require every job below to pass.
+name: CS5351 Gates
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
+  push:
+    branches: [main]
+
+concurrency:
+  group: cs5351-gates-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  governance:
+    name: Governance gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      code: ${{ steps.changes.outputs.code }}
+      tests: ${{ steps.changes.outputs.tests }}
+      prompts: ${{ steps.changes.outputs.prompts }}
+      safety: ${{ steps.changes.outputs.safety }}
+    env:
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install gate dependencies
+        run: pip install pyyaml==6.0.2 jsonschema==4.23.0
+
+      - name: Classify changed paths
+        id: changes
+        run: |
+          if git cat-file -e "$BASE_SHA" 2>/dev/null; then
+            python .github/scripts/course_gates.py changes "$BASE_SHA" "$HEAD_SHA" >> "$GITHUB_OUTPUT"
+          else
+            printf 'code=true\ntests=true\nprompts=true\nsafety=true\n' >> "$GITHUB_OUTPUT"
+          fi
+          cat "$GITHUB_OUTPUT"
+
+      - name: Schema gate
+        run: python .github/scripts/course_gates.py schema
+
+      - name: Permission check
+        run: python .github/scripts/course_gates.py permissions
+
+      - name: Dependency check (version catalog only)
+        run: python .github/scripts/course_gates.py dependencies
+
+      - name: Prompt sync check
+        run: python .github/scripts/course_gates.py prompt-sync
+
+      - name: AI-use log gate
+        if: github.event_name == 'pull_request'
+        run: python .github/scripts/course_gates.py ai-use-log "$BASE_SHA" "$HEAD_SHA"
+
+      - name: Test approval gate
+        if: github.event_name == 'pull_request'
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: python .github/scripts/course_gates.py test-approval "$BASE_SHA" "$HEAD_SHA"
+
+  static_analysis:
+    name: Static analysis (lint and type check)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'zulu'
+          java-version: '25'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: true
+
+      - name: Lint (spotless with ktlint)
+        run: ./gradlew spotlessCheck --no-configuration-cache
+
+      - name: Type check (Kotlin compile; also fails on unresolvable dependencies)
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew compileUnstableDebugKotlin --no-configuration-cache -PAPP_ID="com.rosan.installer.x.revived.test"
+
+  safety_checks:
+    name: Safety-path checks (boundary, contract, permission)
+    needs: governance
+    if: needs.governance.outputs.safety == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'zulu'
+          java-version: '25'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: true
+
+      - name: Architecture boundary and policy contract tests
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          ./gradlew testUnstableDebugUnitTest --no-configuration-cache
+          -PAPP_ID="com.rosan.installer.x.revived.test"
+          --tests '*IsolationTest'
+          --tests '*DependencyBoundaryTest'
+          --tests '*PolicyDecisionTableTest'
+
+  regression:
+    name: Regression gate (full offline suite)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'zulu'
+          java-version: '25'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: true
+
+      - name: Run all unit test suites
+        # Live tests skip themselves without GROQ_API_KEY, so this is the
+        # deterministic offline suite.
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew testUnstableDebugUnitTest --no-configuration-cache -PAPP_ID="com.rosan.installer.x.revived.test"
+
+  semantic_eval:
+    name: Semantic evaluation gate
+    needs: governance
+    if: needs.governance.outputs.prompts == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'zulu'
+          java-version: '25'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: true
+
+      - name: Replay fixed offline evaluation set
+        # Recorded model replies; thresholds in prompts/*.yaml (pass rate 1.0,
+        # zero safety escapes).
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          ./gradlew testUnstableDebugUnitTest --no-configuration-cache
+          -PAPP_ID="com.rosan.installer.x.revived.test"
+          --tests 'com.rosan.installer.domain.ai.*'
+          --tests 'com.rosan.installer.data.ai.*'
+
+      - name: Live model evaluation (only when GROQ_API_KEY is configured)
+        if: env.GROQ_API_KEY != ''
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          ./gradlew testUnstableDebugUnitTest --no-configuration-cache
+          -PAPP_ID="com.rosan.installer.x.revived.test"
+          --tests 'com.rosan.installer.live.*'
