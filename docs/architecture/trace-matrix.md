@@ -13,12 +13,17 @@
 Course marker `[M]` — mandatory artifact.
 
 This matrix maps every requirement to the component that enforces it,
-the planned test, the verification tier, and the governing ADR. It is
-generated from `requirements.yaml` and checked by a read-only script
-(see §5). Every `status` value is the value in the registry.
+the planned test, its runtime monitor, the verification tier, and the
+governing ADR. It is generated from `requirements.yaml` and checked by a
+read-only script (see §5). Every `status` value is the value in the
+registry.
 
 Regenerate this file whenever `requirements.yaml` changes; do not edit
-rows by hand.
+rows by hand. Exception: the **Runtime monitor** column has no source
+field in the registry and is maintained by hand; keep it when
+regenerating. `implemented` names a runtime signal that exists in
+`main`; `planned:` names a monitor that depends on unbuilt elements
+(mostly `DecisionAuditRecorder`).
 
 An ADR value of `—` means no architecture decision governs that problem
 shape: it is a process, governance, or measurement requirement
@@ -31,49 +36,49 @@ structure carries an ADR link.
 
 ## 1. Full requirement matrix (41 of 41)
 
-| ID | Priority | Enforcing component | Planned test | Verification tier | ADR | Status |
-|---|---|---|---|---|---|---|
-| `REQ-IX-FR-001` | Must | `ApprovalCoordinator` | ApprovalRequestTest | behavioral | ADR-001, ADR-002.6 | conceptual |
-| `REQ-IX-FR-002` | Must | `InstallEvidenceCollector` | EvidenceCollectorTest | behavioral | ADR-001 | conceptual |
-| `REQ-IX-FR-003` | Must | `AIRiskAdvisor` | AdvisorIntegrationTest | behavioral | ADR-002.2 | conceptual |
-| `REQ-IX-FR-004` | Must | `AIOutputValidator` | OutputValidationTest | behavioral | ADR-002.2 | conceptual |
-| `REQ-IX-FR-005` | Must | `DeterministicPolicyEngine` | PolicyDecisionTableTest | behavioral | ADR-002.6 | conceptual |
-| `REQ-IX-FR-006` | Must | `HumanReviewHandler` | ReviewUiTest | behavioral | ADR-002.4 | conceptual |
-| `REQ-IX-FR-007` | Must | `InstallationGateway` | ControlledInstallTest | behavioral | ADR-001, ADR-002.6 | conceptual |
-| `REQ-IX-FR-008` | Must | `InstallerSession UI` | ProgressCancelTest | behavioral | ADR-002.4 | conceptual |
-| `REQ-IX-FR-009` | Must | `DecisionAuditRecorder` | AuditRecordTest | behavioral | ADR-002.3 | conceptual |
-| `REQ-IX-FR-010` | Should | `AuditQuery UI` | AuditQueryTest | behavioral | ADR-002.3 | conceptual |
-| `REQ-IX-FR-011` | Must | `ConsentGate` | ConsentGateTest | behavioral | ADR-002.4 | conceptual |
-| `REQ-IX-FR-012` | Must | `Settings + ConsentGate` | ToggleSemanticsTest | behavioral | ADR-002.4 | conceptual |
-| `REQ-IX-INV-001` | Must | `ApprovalCoordinator` | AdvisorIsolationTest | structural + behavioral | ADR-001, ADR-002.6 | conceptual |
-| `REQ-IX-INV-002` | Must | `DeterministicPolicyEngine` | HardBlockPrecedenceTest | behavioral | ADR-002.6 | conceptual |
-| `REQ-IX-INV-003` | Must | `ApprovalStateStore` | ApprovalBindingTest | behavioral | ADR-002.7 | conceptual |
-| `REQ-IX-INV-004` | Must | `ApprovalCoordinator` | FailureFallbackTest | behavioral | ADR-002.6 | conceptual |
-| `REQ-IX-INV-005` | Must | `ApprovalStateStore` | IdempotencyTest | behavioral | ADR-002.3 | conceptual |
-| `REQ-IX-INV-006` | Must | `DeterministicPolicyEngine` | PolicyWithoutModelTest | structural + behavioral | ADR-001 | conceptual |
-| `REQ-IX-INV-007` | Must | `DeterministicPolicyEngine` | NoDowngradeTest | behavioral | ADR-002.6 | conceptual |
-| `REQ-IX-SEC-001` | Must | `AIRiskAdvisor` | AdapterPermissionTest | structural + behavioral | ADR-001, ADR-002.6 | conceptual |
-| `REQ-IX-SEC-002` | Must | `DeterministicPolicyEngine` | HardRuleRegressionTest | behavioral | ADR-002.6 | conceptual |
-| `REQ-IX-SEC-003` | Must | `ApprovalStateStore` | ApprovalTamperTest | behavioral | ADR-002.7 | conceptual |
-| `REQ-IX-SEC-004` | Must | `NetworkGate` | OutboundWhitelistTest | behavioral | ADR-002.5 | conceptual |
-| `REQ-IX-SEC-005` | Must | `EvidenceSanitizer` | SanitizerInjectionTest | behavioral | ADR-001 | conceptual |
-| `REQ-IX-REL-001` | Must | `ApprovalCoordinator` | FailureModeTest | behavioral | ADR-002.6 | conceptual |
-| `REQ-IX-REL-002` | Must | `ApprovalStateStore` | StatePersistenceTest | behavioral | ADR-002.3 | conceptual |
-| `REQ-IX-REL-003` | Must | `ApprovalStateStore` | RecoveryTest | behavioral | ADR-002.3 | conceptual |
-| `REQ-IX-REL-004` | Must | `ApprovalStateStore` | DedupTest | behavioral | ADR-002.3 | conceptual |
-| `REQ-IX-PER-001` | Should | `AIRiskAdvisor` | LatencyBudgetTest | behavioral | ADR-002.2 | conceptual |
-| `REQ-IX-COST-001` | Should | `AIRiskAdvisor` | CallBudgetTest; TokenBudgetTest; CostDistributionEvaluation | behavioral | ADR-002.2 | conceptual |
-| `REQ-IX-MOD-001` | Should | `AIRiskAdvisor` | AdapterContractTest | structural + behavioral | ADR-001, ADR-002.2 | conceptual |
-| `REQ-IX-COMP-001` | Must | `Baseline regression suite` | BaselineRegressionTest | structural + behavioral | — | conceptual |
-| `REQ-IX-AIQ-001` | Should | `Evaluation harness` | AIQualityEvaluation | behavioral | — | conceptual |
-| `REQ-IX-QUAL-001` | Should | `AIOutputValidator` | ExplanationGroundingTest | behavioral | — | conceptual |
-| `REQ-IX-VER-001` | Must | `Test suite` | requirements trace check | structural + behavioral | — | conceptual |
-| `REQ-IX-GOV-001` | Must | `requirements registry` | validate_requirements.py | structural + behavioral | — | conceptual |
-| `REQ-IX-GOV-002` | Must | `Process records` | review log | structural + behavioral | — | conceptual |
-| `REQ-IX-SCOPE-001` | Must | `Scope inventory` | entry-point audit | structural + behavioral | — | conceptual |
-| `REQ-IX-ARCH-001` | Must | `InstallationGateway` | ChokePointTest | structural + behavioral | ADR-001, ADR-002.6 | conceptual |
-| `REQ-IX-ARCH-002` | Should | `UI layer` | DualUiSmokeTest | structural + behavioral | ADR-002.4 | conceptual |
-| `REQ-IX-DATA-001` | Must | `DecisionAuditRecorder` | AuditIntegrityTest | behavioral | ADR-002.7 | conceptual |
+| ID | Priority | Enforcing component | Planned test | Runtime monitor | Verification tier | ADR | Status |
+|---|---|---|---|---|---|---|---|
+| `REQ-IX-FR-001` | Must | `ApprovalCoordinator` | ApprovalRequestTest | planned: audit record of operation/attempt IDs and decision | behavioral | ADR-001, ADR-002.6 | conceptual |
+| `REQ-IX-FR-002` | Must | `InstallEvidenceCollector` | EvidenceCollectorTest | planned: audit record of evidence completeness state | behavioral | ADR-001 | conceptual |
+| `REQ-IX-FR-003` | Must | `AIRiskAdvisor` | AdvisorIntegrationTest | `AssessmentResult` status and dispatch count (implemented) | behavioral | ADR-002.2 | conceptual |
+| `REQ-IX-FR-004` | Must | `AIOutputValidator` | OutputValidationTest | `AssessmentResult` INVALID count (implemented) | behavioral | ADR-002.2 | conceptual |
+| `REQ-IX-FR-005` | Must | `DeterministicPolicyEngine` | PolicyDecisionTableTest | planned: audit record of decision, disposition, and DR rule ID | behavioral | ADR-002.6 | conceptual |
+| `REQ-IX-FR-006` | Must | `HumanReviewHandler` | ReviewUiTest | planned: audit record of Continue/Cancel actions | behavioral | ADR-002.4 | conceptual |
+| `REQ-IX-FR-007` | Must | `InstallationGateway` | ControlledInstallTest | planned: gateway submission counter per operation | behavioral | ADR-001, ADR-002.6 | conceptual |
+| `REQ-IX-FR-008` | Must | `InstallerSession UI` | ProgressCancelTest | planned: audit record of install result, including RESULT_UNKNOWN | behavioral | ADR-002.4 | conceptual |
+| `REQ-IX-FR-009` | Must | `DecisionAuditRecorder` | AuditRecordTest | planned: audit append failures | behavioral | ADR-002.3 | conceptual |
+| `REQ-IX-FR-010` | Should | `AuditQuery UI` | AuditQueryTest | planned: audit export events | behavioral | ADR-002.3 | conceptual |
+| `REQ-IX-FR-011` | Must | `ConsentGate` | ConsentGateTest | `ModelRequestGate` denial on missing consent (implemented) | behavioral | ADR-002.4 | conceptual |
+| `REQ-IX-FR-012` | Must | `Settings + ConsentGate` | ToggleSemanticsTest | `AppSettingsNetworkGate` denial when the network switch is off (implemented) | behavioral | ADR-002.4 | conceptual |
+| `REQ-IX-INV-001` | Must | `ApprovalCoordinator` | AdvisorIsolationTest | planned: gateway calls attributed to a non-coordinator caller (must be 0) | structural + behavioral | ADR-001, ADR-002.6 | conceptual |
+| `REQ-IX-INV-002` | Must | `DeterministicPolicyEngine` | HardBlockPrecedenceTest | planned: audit record: BLOCK followed by submission (must be 0) | behavioral | ADR-002.6 | conceptual |
+| `REQ-IX-INV-003` | Must | `ApprovalStateStore` | ApprovalBindingTest | planned: audit record: binding mismatches and INVALIDATED count | behavioral | ADR-002.7 | conceptual |
+| `REQ-IX-INV-004` | Must | `ApprovalCoordinator` | FailureFallbackTest | `AssessmentResult` failure codes (implemented); planned: auto-approvals after failure (must be 0) | behavioral | ADR-002.6 | conceptual |
+| `REQ-IX-INV-005` | Must | `ApprovalStateStore` | IdempotencyTest | planned: submissions per operation ID (must be ≤ 1) | behavioral | ADR-002.3 | conceptual |
+| `REQ-IX-INV-006` | Must | `DeterministicPolicyEngine` | PolicyWithoutModelTest | planned: policy decisions recorded with network off | structural + behavioral | ADR-001 | conceptual |
+| `REQ-IX-INV-007` | Must | `DeterministicPolicyEngine` | NoDowngradeTest | planned: audit record: decisions less restrictive than baseline policy (must be 0) | behavioral | ADR-002.6 | conceptual |
+| `REQ-IX-SEC-001` | Must | `AIRiskAdvisor` | AdapterPermissionTest | planned: advisory-element backend references (static, must be 0) | structural + behavioral | ADR-001, ADR-002.6 | conceptual |
+| `REQ-IX-SEC-002` | Must | `DeterministicPolicyEngine` | HardRuleRegressionTest | planned: audit record of hard-rule hits | behavioral | ADR-002.6 | conceptual |
+| `REQ-IX-SEC-003` | Must | `ApprovalStateStore` | ApprovalTamperTest | planned: audit record: tamper detections (hash mismatch) | behavioral | ADR-002.7 | conceptual |
+| `REQ-IX-SEC-004` | Must | `NetworkGate` | OutboundWhitelistTest | `AiRequestBuilder.transmittedPaths` per call (implemented) | behavioral | ADR-002.5 | conceptual |
+| `REQ-IX-SEC-005` | Must | `EvidenceSanitizer` | SanitizerInjectionTest | `EvidenceSanitizer` truncation flag → completeness `TRUNCATED` (implemented) | behavioral | ADR-001 | conceptual |
+| `REQ-IX-REL-001` | Must | `ApprovalCoordinator` | FailureModeTest | `AssessmentResult` failure code per failure type (implemented) | behavioral | ADR-002.6 | conceptual |
+| `REQ-IX-REL-002` | Must | `ApprovalStateStore` | StatePersistenceTest | planned: state-store write failures | behavioral | ADR-002.3 | conceptual |
+| `REQ-IX-REL-003` | Must | `ApprovalStateStore` | RecoveryTest | planned: recovered operations by state at restart | behavioral | ADR-002.3 | conceptual |
+| `REQ-IX-REL-004` | Must | `ApprovalStateStore` | DedupTest | planned: duplicate-event suppressions | behavioral | ADR-002.3 | conceptual |
+| `REQ-IX-PER-001` | Should | `AIRiskAdvisor` | LatencyBudgetTest | planned: model call latency per attempt | behavioral | ADR-002.2 | conceptual |
+| `REQ-IX-COST-001` | Should | `AIRiskAdvisor` | CallBudgetTest; TokenBudgetTest; CostDistributionEvaluation | dispatch count (implemented); planned: token totals per call and cohort | behavioral | ADR-002.2 | conceptual |
+| `REQ-IX-MOD-001` | Should | `AIRiskAdvisor` | AdapterContractTest | planned: provider ID and model ID per call | structural + behavioral | ADR-001, ADR-002.2 | conceptual |
+| `REQ-IX-COMP-001` | Must | `Baseline regression suite` | BaselineRegressionTest | CI regression gate (`ci.yml`) | structural + behavioral | — | conceptual |
+| `REQ-IX-AIQ-001` | Should | `Evaluation harness` | AIQualityEvaluation | CI semantic evaluation gate (`ci.yml`) | behavioral | — | conceptual |
+| `REQ-IX-QUAL-001` | Should | `AIOutputValidator` | ExplanationGroundingTest | `AssessmentResult` INVALID count for missing evidence refs (implemented) | behavioral | — | conceptual |
+| `REQ-IX-VER-001` | Must | `Test suite` | requirements trace check | CI regression gate; trace check in review | structural + behavioral | — | conceptual |
+| `REQ-IX-GOV-001` | Must | `requirements registry` | validate_requirements.py | CI schema gate (`ci.yml`) | structural + behavioral | — | conceptual |
+| `REQ-IX-GOV-002` | Must | `Process records` | review log | CI AI-use log gate; `docs/review-memo.md` | structural + behavioral | — | conceptual |
+| `REQ-IX-SCOPE-001` | Must | `Scope inventory` | entry-point audit | planned: entry-point audit per release | structural + behavioral | — | conceptual |
+| `REQ-IX-ARCH-001` | Must | `InstallationGateway` | ChokePointTest | planned: gateway submission counter by caller | structural + behavioral | ADR-001, ADR-002.6 | conceptual |
+| `REQ-IX-ARCH-002` | Should | `UI layer` | DualUiSmokeTest | planned: review-screen render events per UI family | structural + behavioral | ADR-002.4 | conceptual |
+| `REQ-IX-DATA-001` | Must | `DecisionAuditRecorder` | AuditIntegrityTest | planned: audit record hash-chain verification failures | behavioral | ADR-002.7 | conceptual |
 
 ---
 

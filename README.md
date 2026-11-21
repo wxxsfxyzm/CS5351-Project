@@ -15,6 +15,97 @@ InstallerX Revived is a modern Android package installer and the community-maint
 
 It is designed to replace limited stock or OEM package installers with a cleaner interface, broader package support, configurable installation profiles, and privileged workflows through Shizuku, Root, Dhizuku, or the system package manager mode.
 
+## CS5351 Course Project
+
+GitHub repository: <https://github.com/wxxsfxyzm/CS5351-Project>
+
+### Purpose and architecture
+
+This repository extends InstallerX Revived (baseline commit `816ea541`)
+for the CS5351 Agentic Software Engineering project. It adds an
+**AI install-risk advisor** to the AutoDialog installation flow: before
+an install, the app sends a sanitized, allowlisted summary of the APK and
+device facts to a language model, which returns an estimated install
+success likelihood and security risk with reasons.
+
+The safety boundary is that **AI output is advisory only**. A
+deterministic policy engine makes every install decision (`ALLOW_AUTO`,
+`REQUIRE_REVIEW`, or `BLOCK`) from local facts, and AI advice can only
+keep or raise a restriction, never lower it. The AI component holds no
+installer, Root, Shizuku, or Dhizuku capability, and the policy engine
+has no model SDK or network dependency. Model egress is gated by user
+consent and the in-app network switch.
+
+Main elements (ADR-001, Option B: in-tree packages in the existing `app`
+module): `AIRiskAdvisor`, `EvidenceSanitizer`, and `AIOutputValidator`
+under `domain/ai` and `data/ai`; `DeterministicPolicyEngine` under
+`domain/engine/policy`; `ModelRequestGate` and `AiNetworkGate` for
+egress. `ApprovalCoordinator`, `ApprovalBinding`, and
+`InstallationGateway` are the remaining build work; see
+`architecture-blueprint.md` §3 for the status of each element.
+
+### File organization
+
+| Path | Contents |
+|---|---|
+| `AGENTS.md`, `Prompt.md` | Coding-agent entry point and static session prompt (D3, D9) |
+| `architecture-blueprint.md` | Master constraint document (D2.1) |
+| `docs/req/` | Requirements registry and its JSON schema (D1) |
+| `docs/architecture/` | ADRs, invariants, trace matrix, memory design, permission model, runtime policy catalog, evaluation table, optional records (D2) |
+| `docs/code-governance/` | Structural and verification constraints, MCP tool manifest, InstallerX baseline rules (D3, D4) |
+| `docs/ai-use-log.yaml`, `docs/review-memo.md`, `docs/debt-register.md`, `docs/bug-diary.md` | Process and QA records (D4) |
+| `docs/plans/` | Approved agent execution plans |
+| `.opencode/`, `.agent/` | Agent permissions and always-on rules (D3) |
+| `prompts/` | Versioned runtime prompts for the AI advisor |
+| `transcripts/` | Annotated agent-session transcripts (D5) |
+| `app/src/main/`, `app/src/test/` | Application source and tests (D8) |
+
+The course layout names top-level `src/` and `test/` directories. ADR-001
+keeps the new code inside the existing Android module instead, so
+`app/src/main/java/com/rosan/installer/` holds the source and
+`app/src/test/java/com/rosan/installer/` holds the tests. Deterministic
+offline tests and live tests are separated by package: everything under
+`com.rosan.installer.live` calls a real model; all other test packages are
+offline. `architecture-blueprint.md` sits at the repository root, as in
+the course's required repository structure.
+
+### Running the tests
+
+Requires JDK 25 and GitHub Packages credentials (see [Building](#building)).
+
+```bash
+# Offline suite: deterministic, no network. Live tests skip themselves
+# when GROQ_API_KEY is unset.
+./gradlew testUnstableDebugUnitTest
+
+# Live tests only: call the real model API.
+GROQ_API_KEY=<key> ./gradlew testUnstableDebugUnitTest --tests "com.rosan.installer.live.*"
+
+# Full suite: offline and live together.
+GROQ_API_KEY=<key> ./gradlew testUnstableDebugUnitTest
+```
+
+### CS5351 blocking gates
+
+`.github/workflows/ci.yml` implements the course's blocking gates. The
+script `.github/scripts/course_gates.py` holds the non-Gradle checks.
+
+| Gate | When it runs | What blocks the merge |
+|---|---|---|
+| Test approval | PRs that change source or tests | PR body does not answer "tests approved before implementation?" with Yes, gives no approval evidence, or names a plan file that does not exist |
+| Static analysis | Every push and PR | `spotlessCheck` (ktlint) fails, Kotlin compilation fails, or a dependency is declared outside `gradle/libs.versions.toml` |
+| Safety-path checks | PRs that touch AI, policy, approval, gateway, or agent-permission paths | Architecture boundary tests (`*IsolationTest`, `*DependencyBoundaryTest`) or the policy decision-table contract test fails |
+| Permission check | Every push and PR | `.opencode/permissions.jsonc` loses a guard rule: default deny, protected paths, secret reads, push/merge denial, or `project-plan` editing outside `docs/plans/` |
+| Schema | Every push and PR | `docs/req/requirements.yaml` does not validate against `docs/req/req-schema.json`, or IDs repeat |
+| Semantic evaluation | PRs that change prompts or AI request code | The fixed offline evaluation set (recorded model replies in the `domain.ai` and `data.ai` suites) fails, or `prompts/*.yaml` is out of sync with the code; the live suite also runs when a `GROQ_API_KEY` secret is set |
+| Regression | Every push and PR | Any test in the full prior suite fails |
+| AI-use log | PRs that change source, tests, or prompts | `docs/ai-use-log.yaml` is not updated, or an entry has a malformed ID or missing fields |
+
+Branch protection on `main` must require all `CS5351 Gates` jobs and code
+owner review. `.github/CODEOWNERS` routes safety-critical and governance
+paths to the project lead, and changes to safety-critical code also need
+an architecture decision (`.agent/rules.md` §4).
+
 ## Documentation
 
 The full user guide, installation instructions, advanced options, system integration notes, and FAQ are maintained on the [documentation site](https://wxxsfxyzm.github.io/InstallerX-Revived-Website/).
