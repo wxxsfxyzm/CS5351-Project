@@ -123,21 +123,26 @@ The 13 runtime elements below are the `enforcing_component` names in
 `requirements.yaml`. No name is invented. Layer names refer to the
 baseline layering (`core`, `data`, `di`, `domain`, `framework`, `ui`).
 
-| # | Element | Responsibility | Inputs | Outputs | Allowed dependencies | Layer |
-|---|---|---|---|---|---|---|
-| 1 | `ApprovalCoordinator` | sequence evidence → advice → policy → human → submit; own failure routing | install request, policy decisions, human actions | operation/attempt IDs, decision, submission command | `ApprovalStateStore`, `InstallationGateway`, advisory elements, policy, audit | `domain` (element), wired in `di` |
-| 2 | `InstallEvidenceCollector` | collect local evidence with completeness state | `PackageAnalysisResult`, installed info, device facts | evidence summary + completeness | analysis models, device providers | `domain` |
-| 3 | `AIRiskAdvisor` | call the model adapter, return structured advice | sanitized evidence | `install_success_likelihood`, `security_risk`, reasons, evidence refs | model adapter, shared models only | `data` behind `domain` contract |
-| 4 | `AIOutputValidator` | structural + semantic-reference validation | model response | valid advice or `INVALID` | shared models | `domain` |
-| 5 | `DeterministicPolicyEngine` | decide `ALLOW_AUTO` / `REQUIRE_REVIEW` / `BLOCK` | evidence completeness, compatibility, advice, policy version, human state | decision, disposition, DR rule ID | shared models only | `domain` |
-| 6 | `HumanReviewHandler` | present review, capture Continue/Cancel | decision, evidence, advice | approval request, cancel | UI contract, `ApprovalStateStore` | `domain` + `ui` |
-| 7 | `InstallationGateway` | single authorized backend entry point | revalidated approval | backend call | `AppInstallerRepository` | `domain` (element), `data` (impl) |
-| 8 | `InstallerSession UI` | progress, cancellation, result display | stage model | user actions | `InstallerSessionRepository` | `ui` |
-| 9 | `DecisionAuditRecorder` | append-only, hash-chained audit | decision record fields | audit entry | persistence | `data` behind `domain` contract |
-| 10 | `AuditQuery UI` | view and export audit records | audit store | UI, export file | audit repository | `ui` |
-| 11 | `ConsentGate` | first-use outbound consent, withdrawal | field list, purpose, retention | consent state | settings, UI contract | `ui` + `domain` |
-| 12 | `ApprovalStateStore` | own approval binding and persisted state | binding fields, decisions | binding record, state | persistence | `data` behind `domain` contract |
-| 13 | `NetworkGate` | enforce consent + network switch on egress | consent state, network setting | allow/deny egress | settings | `domain` |
+The **Status** column reflects the code merged in `main` at `fa87baee`
+(see §3.1 for the implemented contracts). `implemented` names merged
+code; `not implemented` is design-only and belongs to the downstream
+build role.
+
+| # | Element | Status | Responsibility | Inputs | Outputs | Allowed dependencies | Layer |
+|---|---|---|---|---|---|---|---|
+| 1 | `ApprovalCoordinator` | not implemented | sequence evidence → advice → policy → human → submit; own failure routing | install request, policy decisions, human actions | operation/attempt IDs, decision, submission command | `ApprovalStateStore`, `InstallationGateway`, advisory elements, policy, audit | `domain` (element), wired in `di` |
+| 2 | `InstallEvidenceCollector` | partial — `AutoDialogInstallEvidenceMapper` (PR #18) only | collect local evidence with completeness state | `PackageAnalysisResult`, installed info, device facts | evidence summary + completeness | analysis models, device providers | `domain` |
+| 3 | `AIRiskAdvisor` | implemented (PR #16) | call the model adapter, return structured advice | sanitized evidence | `install_success_likelihood`, `security_risk`, reasons, evidence refs | model adapter, shared models only | `data` behind `domain` contract |
+| 4 | `AIOutputValidator` | implemented (PR #16) | structural + semantic-reference validation | model response | valid advice or `INVALID` | shared models | `domain` |
+| 5 | `DeterministicPolicyEngine` | implemented (PR #16) | decide `ALLOW_AUTO` / `REQUIRE_REVIEW` / `BLOCK` | evidence completeness, compatibility, advice, policy version, human state | decision, disposition, DR rule ID | shared models only | `domain` |
+| 6 | `HumanReviewHandler` | not implemented | present review, capture Continue/Cancel | decision, evidence, advice | approval request, cancel | UI contract, `ApprovalStateStore` | `domain` + `ui` |
+| 7 | `InstallationGateway` | not implemented | single authorized backend entry point | revalidated approval | backend call | `AppInstallerRepository` | `domain` (element), `data` (impl) |
+| 8 | `InstallerSession UI` | not implemented (review/consent stages absent) | progress, cancellation, result display | stage model | user actions | `InstallerSessionRepository` | `ui` |
+| 9 | `DecisionAuditRecorder` | not implemented | append-only, hash-chained audit | decision record fields | audit entry | persistence | `data` behind `domain` contract |
+| 10 | `AuditQuery UI` | not implemented | view and export audit records | audit store | UI, export file | audit repository | `ui` |
+| 11 | `ConsentGate` | partial — `ModelRequestGate` (PR #19); no UI | first-use outbound consent, withdrawal | field list, purpose, retention | consent state | settings, UI contract | `ui` + `domain` |
+| 12 | `ApprovalStateStore` | not implemented | own approval binding and persisted state | binding fields, decisions | binding record, state | persistence | `data` behind `domain` contract |
+| 13 | `NetworkGate` | implemented — `AiNetworkGate` + `ModelRequestGate` (PR #16/#19) | enforce consent + network switch on egress | consent state, network setting | allow/deny egress | settings | `domain` |
 
 Process components, not runtime elements: `Baseline regression suite`,
 `Test suite`, `Evaluation harness`, `requirements registry`,
@@ -145,6 +150,51 @@ Process components, not runtime elements: `Baseline regression suite`,
 
 Element → driver and invariant mapping is in
 `evaluation-table.md` §6 and `invariants.md` §2.
+
+### 3.1 Implemented policy contracts (merged in `main`)
+
+The deterministic side of the advisory flow is implemented in
+`domain/engine/policy/` (PR #16). The types below are the actual merged
+contracts; where an earlier draft of this section proposed a different
+shape, the code is authoritative.
+
+| Type | Shape as implemented | Requirements |
+|---|---|---|
+| `EvaluatedPolicy` | `version`, `hardBlock`, `baselineAllowsAuto`, `autoRulesSatisfied` — already-evaluated local policy facts | REQ-IX-FR-005, REQ-IX-INV-002 |
+| `HumanApprovalState` | enum: `NOT_OBTAINED`, `VALID_APPROVAL_AND_REVALIDATION_PASSED`, `REVALIDATION_FAILED_AFTER_APPROVAL` | REQ-IX-FR-005, REQ-IX-INV-003 |
+| `PolicyAdvice` | sealed: `Valid(result)`, `Failed(code)`, `Unusable { CONSENT_DECLINED, UNAVAILABLE, BUDGET_REJECTED, OVERAGE, BLOCKED_THIRD }` — advice is never an approval | REQ-IX-FR-005, REQ-IX-INV-004 |
+| `PolicyInput` | `policy`, `evidence: EvidenceCompleteness`, `compatibility: LocalCompatibility`, `advice: PolicyAdvice`, `human: HumanApprovalState` | REQ-IX-FR-005 |
+| `PolicyDecision` | **enum**: `ALLOW_AUTO`, `REQUIRE_REVIEW`, `BLOCK` | REQ-IX-FR-005 |
+| `PolicyDisposition` | **enum**: `EXECUTE_ONCE`, `AWAIT_HUMAN`, `RECOLLECT`, `INVALIDATED`, `BLOCKED` | REQ-IX-FR-005, REQ-IX-FR-007 |
+| `PolicyResult` | data class: `decision`, `disposition`, `ruleId`, `reasonCode` | REQ-IX-FR-005 |
+
+`DeterministicPolicyEngine.evaluate(input: PolicyInput): PolicyResult`
+evaluates DR-01 … DR-10 in first-match order using only the supplied
+facts; it holds no model, network, or Android dependency
+(REQ-IX-INV-006). `EXECUTE_ONCE` does **not** perform a submission; the
+caller is responsible for final revalidation and single submission.
+
+**Naming note.** `PolicyDecision` is the enum of allowed decisions; the
+full outcome is `PolicyResult`. An earlier D2 draft proposed a
+`PolicyDecision` data class with separate `Decision`/`Disposition`
+enums. That shape was not implemented and must not be reintroduced.
+
+### 3.2 Not yet implemented — downstream build role
+
+The following elements are specified but have **no implementation** in
+`main` at `fa87baee`. They are the remaining work for the build role,
+not documentation gaps:
+
+| Element | What is missing | Requirements |
+|---|---|---|
+| `ApprovalBinding` / `ApprovalStateStore` | the binding record (operation ID, attempt ID, APK SHA-256, package, user, mode, backend, config snapshot, policy version) and its persistence | REQ-IX-INV-003, REQ-IX-REL-002, REQ-IX-REL-003 |
+| `InstallationGateway` | the single authorized backend entry point wrapping `AppInstallerRepository.doInstallWork` | REQ-IX-FR-007, REQ-IX-ARCH-001 |
+| `ApprovalCoordinator` | the sequencer that owns failure routing, persists at the REL-002 transitions, revalidates the binding, and calls the gateway at most once | REQ-IX-ARCH-001, REQ-IX-INV-005 |
+| `HumanReviewHandler`, review/consent UI, `DecisionAuditRecorder`, `AuditQuery UI` | review flow in both UI families, consent screen, audit persistence and query | REQ-IX-FR-006, FR-008, FR-009, FR-010, ARCH-002, DATA-001 |
+
+Until these exist, no in-scope flow can reach `EXECUTE_ONCE` submission
+through the choke point: only the advisory and policy halves of the
+chain are live.
 
 ---
 
@@ -412,19 +462,36 @@ module. **No new Gradle module is created**; the active modules remain
 | REQ-IX-SEC-005 | §6, §7.3 | `permission-model.md` §9 |
 | REQ-IX-REL-002 | §8 | `memory-design.md` |
 | REQ-IX-REL-003 | §8 | `memory-design.md` |
-| REQ-IX-MOD-001 | §3 #3, §9 | ADR-002.2 |
+| REQ-IX-MOD-001 | §3 #3, §9, §3.1 | ADR-002.2 (implemented) |
+| REQ-IX-FR-005 | §3.1 | ADR-002.1 (implemented) |
+| REQ-IX-FR-011, REQ-IX-SEC-004 | §3 #11/#13, §3.1 | ADR-002.5 (implemented) |
 | All 41 requirements | — | `trace-matrix.md` |
+
+Implementation status at `main` `fa87baee`: advisory path (PR #13/#16),
+evidence mapping (PR #18), and consent-scoped egress (PR #19) are
+merged. The approval/coordinator/gateway/audit elements in §3.2 are
+not.
 
 ---
 
 ## 11. Open questions
 
-1. Exact package roots inside `app` (ADR-001 is accepted on Option B;
-   the concrete package names are fixed in the first build plan).
+1. Exact package roots will settle as the remaining elements are built;
+   the implemented ones are already at `domain/ai`, `data/ai`,
+   `domain/engine/policy`, and `di/AiModule.kt`.
 2. Whether the runtime AI-adapter isolation needs a separate artifact, or
    §7 plus `permission-model.md` §9 is enough (plan Q1).
-3. Approval/audit table shape on top of the Room database (ADR-002.3).
-4. Retention period and deletion entry point for OI-06.
-5. Whether `ActionHandler` and `InAppInstallProviderImpl` bypasses get
+3. Policy and egress contracts (`PolicyInput`, `PolicyResult`,
+   `ModelRequestGate`) are implemented in §3.1. `ApprovalBinding`,
+   `InstallationGateway`, and `ApprovalCoordinator` remain
+   **unimplemented** and are the next build-role work; no additional
+   architecture decision is required to start them beyond ADR-002.3
+   (persistence shape).
+4. Approval/audit table shape on top of the Room database (ADR-002.3).
+5. Retention period and deletion entry point for OI-06.
+6. Whether `ActionHandler` and `InAppInstallProviderImpl` bypasses get
    any wording change in the product docs; v1 leaves them unfixed.
-6. INV-005 is not flagged `asr: true` in the registry (plan Q3).
+7. INV-005 is not flagged `asr: true` in the registry (plan Q3).
+8. `PolicyDecision` is an enum and the outcome is `PolicyResult`; the
+   earlier draft's `PolicyDecision` data class must not be reintroduced
+   (§3.1 naming note).

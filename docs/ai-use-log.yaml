@@ -416,3 +416,33 @@ entries:
     notes: The operator reported that the 11 local files matched the saved snapshot byte-for-byte after
       moving the working tree to main at a114ca6. No source was edited and no commit was made during the
       verification and drafting step. The operator will append this entry to the AI-use log.
+
+  - id: AI-memberC-0003
+    date: '2026-11-21'
+    tool: OpenCode v1
+    model: custom-foundry/CS5351/DeepSeek-V4-Flash
+    role: build
+    operator: Member C (Software Architect)
+    task: Sync ADR-002 and the architecture blueprint with the AI advisory and policy code merged to main via PR #16, #18, and #19.
+    requirements:
+    - REQ-IX-FR-005
+    - REQ-IX-FR-011
+    - REQ-IX-MOD-001
+    - REQ-IX-SEC-004
+    - REQ-IX-INV-006
+    artifacts:
+    - docs/architecture/adr/002-later-important-arch-decisions.md
+    - architecture-blueprint.md
+    human_decisions:
+    - Member C decided to fold the PR #19 consent-scoped ModelRequestGate into ADR-002.5 rather than create a new ADR-002.8.
+    - Member C limited the sync to ADR-002.1, ADR-002.2, ADR-002.5, and blueprint sections 3, 3.1, 10, and 11; trace-matrix, evaluation-logbook, and risk-list were explicitly left out of scope.
+    verification:
+    - Confirmed against main at fa87baee that PolicyDecision (enum), PolicyResult, PolicyInput, PolicyDisposition, EvaluatedPolicy, HumanApprovalState, and PolicyAdvice exist in domain/engine/policy.
+    - Confirmed ApprovalBinding, InstallationGateway, and ApprovalCoordinator do NOT exist in app/src/main and recorded them as unimplemented for the build role.
+    - Confirmed the documented contracts by reading PolicyDecisionModels.kt, DeterministicPolicyEngine.kt, ModelRequestGate.kt, and PolicyDecisionTableTest.kt.
+    - No Gradle build or test run; documentation-only change with no app/ edits.
+    evidence:
+    - docs/architecture/adr/002-later-important-arch-decisions.md
+    - architecture-blueprint.md
+    - docs/plans/2026-11-21-d2-sync-post-merge.md
+    notes: Documentation only. No file under app/ was modified. ADR-002.3 and ADR-002.4 remain not started.
