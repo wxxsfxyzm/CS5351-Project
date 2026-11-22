@@ -11526,6 +11526,11 @@ The IDs were renamed in `docs/ai-use-log.yaml` as follows:
 | AI-wxxsfxyzm-0015 | AI-yuki11111111111-0005 |
 | AI-wxxsfxyzm-0016 | AI-yuki11111111111-0006 |
 
+The tool label was also corrected on operator request: a first revision wrote
+`OpenCode 2.3.2` from the session-store version field, but this transcript
+records the harness as `OpenCode v1`, so entries AI-yuki11111111111-0003
+through -0006 now carry `OpenCode v1 (build agent)`.
+
 The transcript above is left unmodified, so it still shows the original IDs
 and the original commit message. Where this transcript and the current
 `docs/ai-use-log.yaml` disagree on an ID, the log is authoritative. Entries

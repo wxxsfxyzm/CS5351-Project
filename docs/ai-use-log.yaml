@@ -749,7 +749,7 @@ entries:
 
   - id: AI-yuki11111111111-0003
     date: '2026-11-22'
-    tool: OpenCode 2.3.2 (build agent)
+    tool: OpenCode v1 (build agent)
     model: CS5351/DeepSeek-V4-Flash
     role: build
     operator: yuki11111111111
@@ -787,7 +787,7 @@ entries:
 
   - id: AI-yuki11111111111-0004
     date: '2026-11-22'
-    tool: OpenCode 2.3.2 (build agent)
+    tool: OpenCode v1 (build agent)
     model: CS5351/DeepSeek-V4-Flash
     role: build
     operator: yuki11111111111
@@ -823,7 +823,7 @@ entries:
     notes: G-1 adds a strict structural check in StrictAiOutputValidator (FIXED_KEYS) after the action-field check, so an action key still reports the more specific reason. G-3 removes the local installed-version hint from the prompt and documents the installedVersionCode parameter as local-only, so no prompt text contradicts an install_relation of UNKNOWN. G-4 adds AdapterContractTest as the REQ-IX-MOD-001 adapter-swap evidence. No frozen model type, provider, transport or DI registration was changed. Not committed or pushed.
   - id: AI-yuki11111111111-0005
     date: '2026-11-22'
-    tool: OpenCode 2.3.2 (build agent)
+    tool: OpenCode v1 (build agent)
     model: CS5351/DeepSeek-V4-Flash
     role: build
     operator: yuki11111111111
@@ -855,7 +855,7 @@ entries:
     notes: "G-1 makes StrictAiOutputValidator.parse total (REQ-IX-INV-004). Before, a legal JSON body with an illegal inner type threw out of parse, past DefaultAiRiskAdvisor and the use case, so the policy layer received no status at all. parse now wraps validation, parseEnum and parseStringList guard contentOrNull, and only the exception type name is recorded, never the model text. G-3 adds FailureEscalationTest, which carries timeout, network disabled, consent refused, invalid JSON, an extra action key and an ill-typed body end to end through RequestInstallRiskAssessmentUseCase and DeterministicPolicyEngine, asserting REQUIRE_REVIEW / AWAIT_HUMAN / DR-08, plus control cases for DR-05 and DR-07. Two of my own initial assertions were wrong and were corrected against observed behaviour: a reason-only instruction string stays Valid advice, and an action key with favorable fields is Invalid and escalated. No frozen model, prompt, provider or DI registration was changed. Not committed or pushed."
   - id: AI-yuki11111111111-0006
     date: '2026-11-22'
-    tool: OpenCode 2.3.2 (build agent)
+    tool: OpenCode v1 (build agent)
     model: CS5351/DeepSeek-V4-Flash
     role: build
     operator: yuki11111111111
