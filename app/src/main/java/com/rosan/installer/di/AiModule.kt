@@ -4,8 +4,9 @@ package com.rosan.installer.di
 
 import com.rosan.installer.data.ai.advisory.DefaultAiRiskAdvisor
 import com.rosan.installer.data.ai.gate.AppSettingsNetworkGate
-import com.rosan.installer.data.ai.provider.GroqAiModelClient
+import com.rosan.installer.data.ai.provider.AiEndpointConfigSource
 import com.rosan.installer.data.ai.provider.OkHttpAiTransport
+import com.rosan.installer.data.ai.provider.OpenAiCompatibleModelClient
 import com.rosan.installer.domain.ai.repository.AIRiskAdvisor
 import com.rosan.installer.domain.ai.repository.AiModelClient
 import com.rosan.installer.domain.ai.repository.AiNetworkGate
@@ -14,6 +15,7 @@ import com.rosan.installer.domain.ai.usecase.AiRequestBuilder
 import com.rosan.installer.domain.ai.usecase.EvidenceSanitizer
 import com.rosan.installer.domain.ai.usecase.RequestInstallRiskAssessmentUseCase
 import com.rosan.installer.domain.ai.usecase.StrictAiOutputValidator
+import com.rosan.installer.domain.engine.approval.PrepareApprovalUseCase
 import com.rosan.installer.domain.settings.repository.AppSettingsRepository
 import okhttp3.OkHttpClient
 import org.koin.core.module.dsl.singleOf
@@ -32,10 +34,10 @@ import org.koin.dsl.module
  * (7 s, `runtime-policy-catalog.md` F-01), applied through
  * `newBuilder()` so timeouts stay per-call rather than global.
  *
- * The API key is read at runtime from the process environment
- * `GROQ_API_KEY` and is never compiled into `BuildConfig` or any APK
- * artifact (REQ-IX-FR-009). It is never logged; an absent key only disables
- * the live call and never weakens a deterministic check.
+ * The endpoint and API key are resolved per call from app-private storage
+ * through [AiEndpointConfigSource] and are never compiled into the APK
+ * (REQ-IX-FR-009). A missing key only disables the live call and never
+ * weakens a deterministic check.
  *
  * Consent is assessment-scoped, not a singleton binding. Both checkpoints
  * deny by default until the caller supplies a current-consent reader through
@@ -48,18 +50,18 @@ val aiModule = module {
     single<AiNetworkGate> { AppSettingsNetworkGate(appSettingsRepository = get<AppSettingsRepository>()) }
 
     single<AiModelClient> {
-        GroqAiModelClient(
+        OpenAiCompatibleModelClient(
             transport = OkHttpAiTransport(
-                apiKeyProvider = {
-                    System.getenv(GroqAiModelClient.ENV_API_KEY)?.takeIf { it.isNotBlank() }
-                },
+                apiKeyProvider = { get<AiEndpointConfigSource>().current().apiKey },
                 egressAllowed = { get<AiNetworkGate>().isEgressAllowed() },
                 baseClient = get<OkHttpClient>(),
             ),
+            configSource = get<AiEndpointConfigSource>(),
         )
     }
 
     singleOf(::DefaultAiRiskAdvisor)
     single<AIRiskAdvisor> { get<DefaultAiRiskAdvisor>() }
     singleOf(::RequestInstallRiskAssessmentUseCase)
+    singleOf(::PrepareApprovalUseCase)
 }

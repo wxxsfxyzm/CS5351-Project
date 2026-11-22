@@ -41,6 +41,9 @@ data class InstallerState(
     val defaultInstallerFromSettings: String? = null,
     val managedInstallerPackages: List<NamedPackage> = emptyList(),
 
+    /** Whether the AI install-risk advisor switch is on (from app settings). */
+    val aiAdvisorEnabled: Boolean = false,
+
     // User State & Other
     val rootMode: RootMode = RootMode.Magisk,
     val availableUsers: Map<Int, String> = emptyMap(),
@@ -67,6 +70,8 @@ data class InstallerState(
             is InstallerStage.InstallingModule -> stage.isFinished
 
             is InstallerStage.InstallPrepare -> !(showMiuixSheetRightActionSettings || showMiuixPermissionList)
+
+            is InstallerStage.AiReview -> true
 
             is InstallerStage.Preparing,
             is InstallerStage.InstallWaitingUnknownSource,

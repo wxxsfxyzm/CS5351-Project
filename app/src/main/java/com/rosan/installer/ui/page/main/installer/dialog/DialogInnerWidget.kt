@@ -63,6 +63,8 @@ fun dialogGenerateParams(viewModel: InstallerViewModel): DialogParams {
 
         is InstallerStage.InstallPrepare -> installPrepareDialog(viewModel)
 
+        is InstallerStage.AiReview -> installPrepareDialog(viewModel)
+
         is InstallerStage.InstallExtendedMenu -> installExtendedMenuDialog(viewModel)
 
         is InstallerStage.InstallExtendedSubMenu -> installExtendedMenuSubMenuDialog(viewModel)

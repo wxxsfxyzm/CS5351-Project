@@ -28,7 +28,7 @@ import com.rosan.installer.domain.engine.model.state.InstallActionType
  * Requirements: REQ-IX-FR-001, REQ-IX-FR-002, REQ-IX-SEC-004, REQ-IX-INV-006.
  * Converts existing in-memory facts for a plain single APK in AutoDialog.
  */
-internal class AutoDialogInstallEvidenceMapper {
+class AutoDialogInstallEvidenceMapper {
     /**
      * Caller-supplied facts for this candidate and device (ADR-001 Option B, REQ-IX-FR-002).
      * [versionAction] is the existing structured install action when it conveys a known version comparison;

@@ -1001,4 +1001,48 @@
     <string name="unarchive_action_clear_storage">Clear storage</string>
     <string name="unarchive_action_app_settings">App settings</string>
     <string name="installer_result_pending">Another installation is already in progress. Wait for it to finish, then try again.</string>
+
+    <!-- AI install-risk advisor -->
+    <string name="ai_advisor_settings_title">AI install-risk advisor</string>
+    <string name="ai_advisor_enable_title">Enable AI install-risk advisor</string>
+    <string name="ai_advisor_enable_desc">Sends derived, non-identifying APK and device signals to the configured model, then shows an advisory opinion. The install decision is always made by the app\'s deterministic policy, never by the model.</string>
+    <string name="ai_advisor_consent_title">Allow sending evidence to the model</string>
+    <string name="ai_advisor_consent_desc">Required for the advisor to run. You will be shown exactly which fields are sent before this takes effect.</string>
+    <string name="ai_advisor_configure_title">Configure endpoint and key</string>
+    <string name="ai_advisor_configure_desc">Sets the model endpoint and API key. The key is stored only on this device.</string>
+    <string name="ai_advisor_model_prompt_title">Model and prompt</string>
+    <string name="ai_advisor_requires_network">Turn on network access to use the AI advisor.</string>
+    <string name="ai_advisor_not_configured">Not configured</string>
+    <string name="ai_advisor_key_masked_none">No key stored</string>
+    <string name="ai_advisor_config_title">AI advisor configuration</string>
+    <string name="ai_advisor_endpoint_label">Endpoint (HTTPS)</string>
+    <string name="ai_advisor_endpoint_helper">Must be an https:// URL. The default is the course service.</string>
+    <string name="ai_advisor_api_key_label">API key</string>
+    <string name="ai_advisor_api_key_helper">Stored only on this device and never leaves it except in the request header.</string>
+    <string name="ai_advisor_endpoint_invalid">Enter a valid https:// endpoint.</string>
+    <string name="ai_advisor_key_missing">Enter an API key.</string>
+    <string name="ai_advisor_clear_configuration">Clear configuration</string>
+    <string name="ai_advisor_consent_dialog_title">Fields sent to the model</string>
+    <string name="ai_advisor_consent_dialog_intro">Turning this on sends the following derived fields to the configured host. Package names, APK hashes, labels, and paths are never sent.</string>
+    <string name="ai_advisor_consent_dialog_recipient">Recipient host</string>
+    <string name="ai_advisor_consent_dialog_cancel">Keep off</string>
+
+    <!-- AI advisory card (install dialog) -->
+    <string name="ai_advisor_card_advisory_only">Advisory only — the decision below is made by deterministic policy.</string>
+    <string name="ai_advisor_card_likelihood">Install success likelihood</string>
+    <string name="ai_advisor_card_risk">Security risk</string>
+    <string name="ai_advisor_card_reasons">Reasons</string>
+    <string name="ai_advisor_card_policy_decision">Policy decision</string>
+    <string name="ai_advisor_card_loading">Getting an advisory opinion…</string>
+    <string name="ai_advisor_unavailable_consent_off">Advice unavailable: evidence sharing is off.</string>
+    <string name="ai_advisor_unavailable_unconfigured">Advice unavailable: the advisor is not configured.</string>
+    <string name="ai_advisor_unavailable_network_off">Advice unavailable: network access is off.</string>
+    <string name="ai_advisor_unavailable_model_failure">Advice unavailable: the model call failed.</string>
+    <string name="ai_advisor_unavailable_invalid_output">Advice unavailable: the model reply was not usable.</string>
+    <string name="ai_advisor_policy_blocked">Blocked by policy</string>
+    <string name="ai_advisor_policy_review">Needs your review</string>
+    <string name="ai_advisor_policy_recollect">Evidence incomplete; collect again</string>
+    <string name="ai_advisor_policy_auto">Allowed to install</string>
+    <string name="ai_advisor_policy_invalidated">Decision no longer valid</string>
+    <string name="ai_advisor_error_title">Advice unavailable: the assessment could not be completed.</string>
 </resources>
