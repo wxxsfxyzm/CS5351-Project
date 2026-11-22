@@ -89,3 +89,30 @@ root cause, fix, and the invariant or guard gap it exposed.
   run real SQLite on the JVM under the project JDK 25 toolchain; that
   assumption was not proven before the slice depended on it. A test
   runtime compatible with the toolchain was not confirmed up front.
+
+## BUG-004 — Live course-service test passed while proving nothing
+
+- **Date / reporter:** 2026-11-22, found by the project lead while
+  running the AI advisor end-to-end slice (PR #30) live suite.
+- **Status:** Fixed (PR #30).
+- **Symptom:** `CourseServiceLiveAdvisorTest` reported PASS with 10/10
+  `NETWORK_ERROR` results and 0 usable replies, so the run validated
+  no model behavior while still showing green.
+- **Reproduction:** Run the live course-service suite in JVM unit tests
+  on the project JDK 25 toolchain; every request returned
+  `NETWORK_ERROR` before any HTTP dispatch.
+- **Classification:** Verification defect; a test that asserts only
+  "no crash" (vacuous pass).
+- **Root cause:** OkHttp 5 detects the Android platform in JVM unit
+  tests and calls `android.util.Log.isLoggable`, which is not mocked in
+  a plain JVM test, so every request failed before dispatch. TLS, the
+  proxy, and the JDK 25 network stack were all fine; the failure was
+  inside OkHttp's platform detection, not the network.
+- **Fix:** In PR #30 the live test uses a test-only `java.net.http`
+  transport instead of OkHttp and asserts at least `MIN_USABLE = 8` of
+  10 usable replies, so an all-failure run now fails instead of passing.
+- **Residual:** The production `OkHttpAiTransport` is verified only on
+  device, not in JVM tests, so a JVM-only run cannot exercise the real
+  production transport.
+- **Gap exposed:** A live or integration test must assert a positive
+  outcome threshold, not merely that the run did not crash.

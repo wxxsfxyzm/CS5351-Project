@@ -1159,3 +1159,38 @@ entries:
     evidence:
     - PR 25
     notes: Contributor history kept (merge, no rebase or force-push). No change to the contributor's tests, test plan, or transcript.
+
+  - id: AI-wxxsfxyzm-0018
+    date: '2026-11-22'
+    tool: OpenCode v1 (verify agent)
+    model: CS5351/DeepSeek-V4-Flash
+    role: verify
+    operator: wxxsfxyzm (project lead)
+    task: Record the verification findings from the AI advisor end-to-end slice (PR #30) and PR #29 in the bug diary and debt register.
+    requirements:
+    - REQ-IX-ARCH-001
+    - REQ-IX-FR-003
+    - REQ-IX-FR-004
+    - REQ-IX-FR-006
+    - REQ-IX-INV-003
+    - REQ-IX-INV-004
+    - REQ-IX-SEC-004
+    - ADR-002.2
+    - ADR-002.6
+    - ADR-002.7
+    artifacts:
+    - docs/bug-diary.md
+    - docs/debt-register.md
+    - docs/ai-use-log.yaml
+    human_decisions:
+    - Lead decided these findings be recorded - the lead approved this verify-role session and the three records (BUG-004, DEBT-004, DEBT-005) to be written to the bug diary, debt register, and this log entry.
+    verification:
+    - BUG-004 records the vacuous live test pass (10/10 NETWORK_ERROR, 0 usable), the OkHttp 5 android.util.Log.isLoggable root cause, the PR #30 test-only java.net.http transport with MIN_USABLE = 8, and the residual that OkHttpAiTransport is device-only.
+    - DEBT-004 records the plaintext AI API key in the ai_credentials preferences file, its exposure on rooted devices (backup already disabled by allowBackup=false and the extraction rules; REQ-IX-SEC-004), and the Android Keystore resolution.
+    - DEBT-005 records the stale-evidence uninstall retry, AutoDialog-only v1 evaluation per the narrowed REQ-IX-ARCH-001, and the 8/10 usable rate on prompt v1.2.
+    - Documentation only; no build or test run.
+    evidence:
+    - docs/plans/2026-11-22-ai-advisor-end-to-end-slice.md (approved rev.3, section 13)
+    - merged PRs 29, 30, and 31
+    - docs/ai-use-log.yaml (this entry, AI-wxxsfxyzm-0018)
+    notes: Documentation only. No source, test, Gradle, or prompt file was changed. No commit or push performed. No network test was run. Lead review corrected DEBT-004 after the session - the instruction wrongly listed app-data backup as an exposure path; backup is already disabled.
