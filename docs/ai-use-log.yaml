@@ -752,7 +752,7 @@ entries:
     tool: OpenCode 1.x (build agent)
     model: CS5351/DeepSeek-V4-Flash
     role: build
-    operator: wxxsfxyzm (project lead)
+    operator: yuki11111111111 (Member A)
     task: Add an offline FixedResponseAdvisor over the C-frozen AssessmentResult so A/D can run integration tests without network access.
     requirements:
     - ADR-001
@@ -790,7 +790,7 @@ entries:
     tool: OpenCode 1.x (build agent)
     model: CS5351/DeepSeek-V4-Flash
     role: build
-    operator: wxxsfxyzm (project lead)
+    operator: yuki11111111111 (Member A)
     task: Close three gaps found when reviewing request construction, model invocation, structured parsing, and AIOutputValidator against REQ-IX-FR-003/FR-004/SEC-004/MOD-001.
     requirements:
     - REQ-IX-FR-003
@@ -825,7 +825,6 @@ entries:
     tool: OpenCode 1.x (build agent)
     model: CS5351/DeepSeek-V4-Flash
     role: build
-    operator: wxxsfxyzm (project lead)
     task: Audit the advisory-only guarantees and the timeout/network/consent/invalid-JSON/extra-action failure paths, then close the two real gaps found.
     requirements:
     - ADR-002.6
@@ -859,7 +858,7 @@ entries:
     tool: OpenCode 1.x (build agent)
     model: CS5351/DeepSeek-V4-Flash
     role: build
-    operator: wxxsfxyzm (project lead)
+    operator: yuki11111111111 (Member A)
     task: Audit the advisory-only guarantees and the timeout/network/consent/invalid-JSON/extra-action failure paths, then close the two real gaps found.
     requirements:
     - ADR-002.6
@@ -891,7 +890,7 @@ entries:
     tool: OpenCode 1.x (build agent)
     model: CS5351/DeepSeek-V4-Flash
     role: build
-    operator: wxxsfxyzm (project lead)
+    operator: yuki11111111111 (Member A)
     task: Package the fixed-response advisor, the AI-path gap closure and the failure-escalation work into a pull request, and append the authoring transcript.
     requirements:
     - ADR-001
@@ -906,6 +905,7 @@ entries:
     human_decisions:
     - Lead instructed that all changes be submitted as a pull request following .github/pull_request_template.md.
     - Lead instructed that the AI-use log carry the usage record and that the authoring transcript be appended to transcripts/transcriptE-Chengqian He-60267540.md.
+    - Lead corrected the operator account to yuki11111111111 (Member A) for entries AI-wxxsfxyzm-0013 through -0016; the earlier wxxsfxyzm label was an agent error, not the operator's identity.
     - Earlier instruction still applies: docs/plans/ is excluded from the commit.
     verification:
     - python yaml.safe_load on docs/ai-use-log.yaml - entry count and unique id check.
