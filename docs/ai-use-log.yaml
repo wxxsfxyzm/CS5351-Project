@@ -682,6 +682,71 @@ entries:
       - app/build/test-results/testUnstableDebugUnitTest/TEST-com.rosan.installer.domain.engine.approval.ApprovalCoordinatorTest.xml
     notes: Two initially failing assertions were corrected to reflect that a second autoSubmit is rejected by the persisted-state guard (ContinueRejected) rather than reaching the ledger. autoSubmit no longer accepts a PolicyResult; a forged EXECUTE_ONCE cannot bypass the engine. GatewayResult.Failed now terminal (ApprovalState.FAILED).
 
+  - id: AI-wxxsfxyzm-0011
+    date: '2026-11-22'
+    tool: OpenCode 1.x (build agent)
+    model: CS5351/DeepSeek-V4-Flash
+    role: build
+    operator: wxxsfxyzm (project lead)
+    task: Start ADR-002.3 persistence slice; deferred after step 2 block (Robolectric Room smoke test cannot run under JDK 25).
+    requirements:
+    - ADR-002.3
+    - REQ-IX-REL-002
+    - REQ-IX-REL-003
+    - REQ-IX-REL-004
+    - REQ-IX-INV-003
+    - REQ-IX-INV-005
+    - REQ-IX-SEC-003
+    - REQ-IX-FR-009
+    - REQ-IX-DATA-001
+    artifacts:
+    - docs/plans/2026-11-22-approval-persistence-slice.md
+    - docs/ai-use-log.yaml
+    human_decisions:
+    - Lead approved plan rev.3 and its tests on 2026-11-22 (conditions in plan section 0.1).
+    - Lead directed step 2 first (add robolectric + room3-testing and prove one Robolectric Room test runs under :app:testUnstableDebugUnitTest); stop and report the exact error if it cannot run; do not switch to androidTest.
+    - Lead deferred the slice after the step 2 block; fallback not applied; no source or test changes.
+    verification:
+    - Added org.robolectric:robolectric 4.18.1 and androidx.room3:room3-testing 3.0.3 as testImplementation via libs.versions.toml; both resolved from mavenCentral/google.
+    - ./gradlew :app:testUnstableDebugUnitTest --tests "...RobolectricRoomSmokeTest" - FAILED, exit value 134 (SIGABRT); test reported SKIPPED before the JVM aborted.
+    - Minimal Robolectric-only probe (no Room) also aborted with exit value 134, confirming the failure is the Robolectric native runtime, not Room.
+    - Direct JVM run shows "Loading android native library from ... libandroid_runtime.dylib" then "could not find method serverCertificateRequested" then abort(); no hs_err written (C-level abort()/JNI_OnLoad failure).
+    - Reproduced with --enable-native-access=ALL-UNNAMED, -Xmx2g, sdk=35 and sdk=37, and with -Drobolectric.nativeruntime=false.
+    - All step-2 edits reverted (app/build.gradle.kts, gradle/libs.versions.toml, smoke test, robolectric.properties); working tree clean except the untracked plan.
+    evidence:
+    - docs/plans/2026-11-22-approval-persistence-slice.md section 4 (Q1 timebox) and section 5 step 2 stop rule.
+    notes: "DEFERRED: the ADR-002.3 persistence slice is deferred and tracked as DEBT-003. The step 2 Robolectric block removes the real-SQLite evidence the slice needs (durability after restart, unique-key atomicity, migration), and the remaining project time goes to course deliverables. Steps 3-9 not implemented; fake-DAO fallback not applied; no source or test changes retained; not switching to androidTest (no emulator in CI). Robolectric 4.18.1 native runtime (nativeruntime-dist 1.0.20 libandroid_runtime.dylib) aborts under the project JDK 25 + macOS arm64 toolchain."
+
+  - id: AI-wxxsfxyzm-0012
+    date: '2026-11-22'
+    tool: OpenCode 1.x (verify agent)
+    model: CS5351/DeepSeek-V4-Flash
+    role: verify
+    operator: wxxsfxyzm (project lead)
+    task: Record the outcome of the deferred ADR-002.3 persistence slice in the bug diary and debt register.
+    requirements:
+    - ADR-002.3
+    - REQ-IX-REL-002
+    - REQ-IX-REL-003
+    - REQ-IX-REL-004
+    - REQ-IX-INV-005
+    - REQ-IX-FR-009
+    - REQ-IX-DATA-001
+    artifacts:
+    - docs/bug-diary.md
+    - docs/debt-register.md
+    - docs/ai-use-log.yaml
+    human_decisions:
+    - Lead directed this verify-role session to record the deferred slice outcome, limited to the bug diary (BUG-003), debt register (DEBT-003), and this log entry; no other files, no commit.
+    verification:
+    - BUG-003 records the Robolectric 4.18.1 native-runtime abort (exit 134, "could not find method serverCertificateRequested") under JDK 25 / macOS arm64, the flags tried, and the working step 2 stop rule.
+    - DEBT-003 records the in-memory-only ApprovalStateStore/SubmissionLedger and missing DecisionAuditRecorder, impact on REL-002/003/004, INV-005, FR-009, DATA-001, and the resolution to resume the approved plan from step 2.
+    - No build, test, or Gradle command was run; this is a documentation-only session.
+    evidence:
+    - docs/plans/2026-11-22-approval-persistence-slice.md (approved rev.3; build blocked at step 2, deferred)
+    - docs/ai-use-log.yaml (AI-wxxsfxyzm-0011)
+    notes: Documentation only. No file under app/ was modified. No commit or push performed. DEBT-002 was not previously used; DEBT-003 spans it as directed, leaving DEBT-002 unused.
+
   - id: AI-60747744-0001
     date: '2026-11-21'
     tool: Antigravity
@@ -771,7 +836,7 @@ entries:
     - transcripts/60747744-YangXinyu.md
     notes: Test-only additions under app/src/test/java/com/rosan/installer/verification/. No production files under app/src/main/ were modified.
 
-  - id: AI-wxxsfxyzm-0011
+  - id: AI-wxxsfxyzm-0013
     date: '2026-11-22'
     tool: Claude Code
     model: claude-opus-5-5
@@ -793,4 +858,4 @@ entries:
     - Ran ./gradlew spotlessCheck and ./gradlew :app:testUnstableDebugUnitTest --rerun on the result.
     evidence:
     - docs/debt-register.md
-    notes: The removed suites remain in commit a6cc5ca5 for reuse. Member D authorship of the original commit is preserved.
+    notes: The removed suites remain in commit a6cc5ca5 for reuse. Member D authorship of the original commit is preserved. (Renumbered from AI-wxxsfxyzm-0011 after merging PR #28 to avoid ID collision.)
