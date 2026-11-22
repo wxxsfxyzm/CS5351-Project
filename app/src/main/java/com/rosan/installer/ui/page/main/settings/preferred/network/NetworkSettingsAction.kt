@@ -13,4 +13,11 @@ sealed interface NetworkSettingsAction {
     data class ChangeHttpProfile(val profile: HttpProfile) : NetworkSettingsAction
     data class ChangeGithubUpdateChannel(val channel: GithubUpdateChannel) : NetworkSettingsAction
     data class ChangeCustomGithubProxyUrl(val url: String) : NetworkSettingsAction
+
+    // AI install-risk advisor
+    data class SetAiAdvisorEnabled(val enabled: Boolean) : NetworkSettingsAction
+    data class SetAiConsent(val granted: Boolean) : NetworkSettingsAction
+    data class SaveAiEndpoint(val endpoint: String) : NetworkSettingsAction
+    data class SaveAiApiKey(val apiKey: String) : NetworkSettingsAction
+    data object ClearAiConfiguration : NetworkSettingsAction
 }

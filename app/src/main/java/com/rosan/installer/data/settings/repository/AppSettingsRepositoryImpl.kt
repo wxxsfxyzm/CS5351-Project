@@ -132,6 +132,8 @@ class AppSettingsRepositoryImpl(
             allowInternetAccess = prefs[AppDataStore.ALLOW_INTERNET_ACCESS] ?: true,
             githubUpdateChannel = githubUpdateChannel,
             customGithubProxyUrl = customGithubProxyUrl,
+            aiAdvisorEnabled = prefs[AppDataStore.AI_ADVISOR_ENABLED] ?: false,
+            aiAdvisorConsent = prefs[AppDataStore.AI_ADVISOR_CONSENT] ?: false,
             // Lab
             labRootEnableModuleFlash = prefs[AppDataStore.LAB_ENABLE_MODULE_FLASH] ?: false,
             labRootShowModuleArt = prefs[AppDataStore.LAB_MODULE_FLASH_SHOW_ART] ?: true,
@@ -348,6 +350,10 @@ class AppSettingsRepositoryImpl(
         BooleanSetting.QuickOpenLSPosed -> AppDataStore.QUICK_OPEN_LSPOSED
 
         BooleanSetting.EnableFileLogging -> AppDataStore.ENABLE_FILE_LOGGING
+
+        BooleanSetting.AiInstallRiskAdvisorEnabled -> AppDataStore.AI_ADVISOR_ENABLED
+
+        BooleanSetting.AiInstallRiskAdvisorConsent -> AppDataStore.AI_ADVISOR_CONSENT
     }
 
     private fun namedPackageListKey(setting: NamedPackageListSetting): Preferences.Key<String> = when (setting) {

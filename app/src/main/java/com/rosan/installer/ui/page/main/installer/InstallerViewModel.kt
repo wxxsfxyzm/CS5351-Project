@@ -36,6 +36,7 @@ import com.rosan.installer.domain.settings.model.config.InstallMode
 import com.rosan.installer.domain.settings.model.config.InstallerMode
 import com.rosan.installer.domain.settings.repository.AppSettingsRepository
 import com.rosan.installer.domain.settings.repository.BooleanSetting
+import com.rosan.installer.ui.page.main.installer.mapper.AiDecisionUiMapper
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -52,6 +53,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.koin.core.component.get
+import org.koin.core.parameter.parametersOf
 import timber.log.Timber
 
 class InstallerViewModel(
@@ -63,7 +66,10 @@ class InstallerViewModel(
     private val getAppLabel: GetAppLabelUseCase,
     private val deviceCapabilityProvider: DeviceCapabilityProvider,
     private val installedPackageSignatureProvider: InstalledPackageSignatureProvider,
-) : ViewModel() {
+    private val prepareApproval: com.rosan.installer.domain.engine.approval.PrepareApprovalUseCase,
+    private val aiEndpointConfig: com.rosan.installer.data.ai.provider.AiEndpointConfigSource,
+) : ViewModel(),
+    org.koin.core.component.KoinComponent {
 
     // Event channel for one-off side effects (e.g. Toasts)
     private val _uiEvents = MutableSharedFlow<InstallerViewEvent>(
@@ -116,6 +122,7 @@ class InstallerViewModel(
             ),
             rootMode = prefs.labRootMode,
             managedInstallerPackages = prefs.managedInstallerPackages,
+            aiAdvisorEnabled = prefs.aiAdvisorEnabled,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -139,6 +146,15 @@ class InstallerViewModel(
     private val settingsLoadingJob: Job
     private var collectRepoJob: Job? = null
     private var unknownSourcePermissionLabelPackageName: String? = null
+
+    // Advisory session state (checkpoint C). The per-session coordinator and
+    // the policy input that produced the current review, so Continue can
+    // revalidate without a second model call (FR-006, COST-001).
+    private var advisorCoordinator: com.rosan.installer.domain.engine.approval.ApprovalCoordinator? = null
+    private var advisorBaseInput: com.rosan.installer.domain.engine.policy.PolicyInput? = null
+    private var advisorOperationId: String? = null
+    private var advisorAttemptId: String? = null
+    private var advisorJob: Job? = null
 
     init {
         settingsLoadingJob = loadInitialSettings()
@@ -199,6 +215,10 @@ class InstallerViewModel(
             is InstallerViewAction.InstallMultiple -> installMultiple()
 
             is InstallerViewAction.Install -> install()
+
+            is InstallerViewAction.RunAdvisor -> runAdvisor()
+
+            is InstallerViewAction.AdvisorCancel -> advisorCancel()
 
             is InstallerViewAction.RequestUnknownSourcePermission -> requestUnknownSourcePermission()
 
@@ -467,7 +487,19 @@ class InstallerViewModel(
 
                         is ProgressEntity.UninstallSuccess -> {
                             isRetryingInstall = false
-                            session.install(false)
+                            // Fact change: the installed app and signature are
+                            // gone, so an advisor-on retry must re-assess rather
+                            // than submit the stale decision. Routed through the
+                            // pure AdvisorDecision so it stays testable.
+                            when (AdvisorDecision.forRetry(isAdvisorActive())) {
+                                AdvisorDecision.RetryAssessment -> retryAdvisorAfterUninstall()
+
+                                AdvisorDecision.BaselineInstall -> baselineInstall(triggerAuth = false)
+
+                                // Fail closed: any future AdvisorDecision value must
+                                // not fall through to a direct install.
+                                else -> Unit
+                            }
                         }
 
                         else -> {}
@@ -817,7 +849,210 @@ class InstallerViewModel(
     private fun install() {
         autoInstallJob?.cancel()
         Timber.d("Standard foreground installation triggered. Contains Module: $isInstallingModule")
-        session.install(true)
+
+        // In an advisory review, the Install button acts as Continue (revalidate +
+        // submit). Otherwise enter the prepare decision, which yields the single
+        // BaselineInstall branch (advisor off / not AutoDialog / out of scope) or
+        // an advisory state. There is no other session.install call in this class.
+        val stage = _localState.value.stage
+        if (stage is InstallerStage.AiReview) {
+            continueFromAdvisor(stage.uiState)
+            return
+        }
+
+        runAdvisor()
+    }
+
+    /** True when the advisor switch is on, the mode is AutoDialog, and the analysis is in scope. */
+    private fun isAdvisorActive(): Boolean = uiState.value.aiAdvisorEnabled &&
+        session.config.installMode == InstallMode.AutoDialog &&
+        _localState.value.analysisResults.isNotEmpty()
+
+    /**
+     * The prepare decision. When the advisor is off, the mode is not AutoDialog,
+     * or the analysis is empty/out of scope, the decision is
+     * [AdvisorDecision.BaselineInstall] and **no** assessment runs (0 AI calls).
+     * Otherwise [PrepareApprovalUseCase] runs once and its outcome is mapped by
+     * the pure [AdvisorDecision]. The only `session.install` call is the
+     * BaselineInstall branch.
+     */
+
+    /**
+     * The one baseline install call in this class. All advisor-off / out-of-scope
+     * paths funnel here, so the choke point scan sees exactly one `session.install`
+     * site and it is the baseline path.
+     */
+    private fun baselineInstall(triggerAuth: Boolean = true) {
+        session.install(triggerAuth)
+    }
+
+    /**
+     * Advisor-on retry after uninstall: discard the stale advisory state and
+     * start a fresh assessment for a **new operation**, because the facts
+     * changed (the installed app and signature are gone). A new operationId is
+     * required: the first operation's `started` guard is consumed and its
+     * submission permit was spent, so reusing it would return `AlreadyStarted`
+     * and never re-assess. The new operation starts at attempt-1 (FR-001: the
+     * two-attempt limit is per operation). Never submits directly; the user sees
+     * a new card.
+     */
+    private fun retryAdvisorAfterUninstall() {
+        advisorJob?.cancel()
+        advisorCoordinator = null
+        advisorBaseInput = null
+        advisorOperationId = null
+        advisorAttemptId = null
+        runAdvisor(attemptId = "attempt-1", operationSuffix = "-retry-1")
+    }
+
+    private fun runAdvisor(
+        attemptId: String = "attempt-1",
+        operationSuffix: String = "",
+    ) {
+        if (advisorJob?.isActive == true) return
+
+        // Fix 5: only AutoDialog ever runs the advisor; everything else is baseline.
+        if (!isAdvisorActive()) {
+            baselineInstall()
+            return
+        }
+
+        val analysis = _localState.value.analysisResults.firstOrNull() ?: run {
+            baselineInstall()
+            return
+        }
+        val selectedApk = analysis.appEntities.firstOrNull { it.selected }?.app as? AppEntity.BaseEntity
+
+        val coordinator = get<com.rosan.installer.domain.engine.approval.ApprovalCoordinator> {
+            parametersOf(session)
+        }
+        // FR-001: one operation ID per request. The retry is a NEW operation
+        // (the facts changed and the prior permit is spent), so it gets a
+        // distinct operationId and starts again at attempt-1.
+        val operationId =
+            "op-${session.id}-${analysis.packageName}-${analysis.appEntities.size}$operationSuffix"
+        advisorCoordinator = coordinator
+        advisorOperationId = operationId
+        advisorAttemptId = attemptId
+        advisorBaseInput = null
+        _localState.update {
+            it.copy(stage = InstallerStage.AiReview(AiDecisionUiMapper.loading()))
+        }
+
+        advisorJob = viewModelScope.launch {
+            val prefs = appSettingsRepo.preferencesFlow.first()
+            val gate = com.rosan.installer.domain.ai.usecase.GateInput(
+                advisorEnabled = prefs.aiAdvisorEnabled,
+                networkAllowed = prefs.allowInternetAccess,
+                endpointConfigured = aiEndpointConfig.current().isComplete,
+                consentGranted = prefs.aiAdvisorConsent,
+            )
+            var thrown: Throwable? = null
+            val outcome = runCatching {
+                prepareApproval.prepare(
+                    operationId = operationId,
+                    attemptId = attemptId,
+                    advisorEnabled = prefs.aiAdvisorEnabled,
+                    gate = gate,
+                    analysis = analysis,
+                    selectedApk = selectedApk,
+                    coordinator = coordinator,
+                )
+            }.getOrElse { error ->
+                Timber.w(error, "AI advisor prepare failed")
+                thrown = error
+                null
+            }
+
+            when (val decision = AdvisorDecision.from(outcome, thrown)) {
+                AdvisorDecision.BaselineInstall -> {
+                    // The single baseline path (advisor off / not AutoDialog / out of scope).
+                    _localState.update { it.copy(stage = InstallerStage.InstallPrepare) }
+                    baselineInstall()
+                }
+
+                AdvisorDecision.AlreadyStarted -> {
+                    // A prior trigger owns the assessment; keep the current stage.
+                }
+
+                AdvisorDecision.RetryAssessment -> {
+                    // Only produced by forRetry(); not reachable from a prepare outcome.
+                }
+
+                is AdvisorDecision.Show -> applyAdvisorState(decision.uiState, coordinator, operationId, attemptId, outcome)
+            }
+        }
+    }
+
+    /** Applies a decided UI state, capturing the base input and honouring DR-05 auto-submit. */
+    private fun applyAdvisorState(
+        ui: com.rosan.installer.domain.ai.model.AiUiState,
+        coordinator: com.rosan.installer.domain.engine.approval.ApprovalCoordinator,
+        operationId: String,
+        attemptId: String,
+        outcome: com.rosan.installer.domain.engine.approval.PrepareApprovalUseCase.Outcome?,
+    ) {
+        if (outcome is com.rosan.installer.domain.engine.approval.PrepareApprovalUseCase.Outcome.Decided) {
+            advisorBaseInput = outcome.baseInput
+            // DR-05: ALLOW_AUTO auto-executes through the coordinator+gateway.
+            if (ui is com.rosan.installer.domain.ai.model.AiUiState.Executing &&
+                outcome.state == com.rosan.installer.domain.engine.approval.ApprovalState.EXECUTE_ONCE
+            ) {
+                _localState.update { it.copy(stage = InstallerStage.AiReview(ui)) }
+                viewModelScope.launch { coordinator.autoSubmit(operationId, attemptId) }
+                return
+            }
+        }
+        _localState.update { it.copy(stage = InstallerStage.AiReview(ui)) }
+    }
+
+    /**
+     * The Install button as Continue for a reviewable advisory state: revalidate
+     * and submit exactly once through the coordinator (no model call, no direct
+     * session.install).
+     */
+    private fun continueFromAdvisor(uiState: com.rosan.installer.domain.ai.model.AiUiState) {
+        // Only a reviewable state may proceed; BLOCK/RECOLLECT/INVALIDATED/
+        // Loading/Error/PersistenceFailed are disabled.
+        if (!uiState.continueEnabled) return
+
+        val coordinator = advisorCoordinator
+        val operationId = advisorOperationId
+        val attemptId = advisorAttemptId
+        val baseInput = advisorBaseInput
+        // Fail closed: without the decision context there is no submission.
+        if (coordinator == null || operationId == null || attemptId == null || baseInput == null) {
+            return
+        }
+
+        viewModelScope.launch {
+            when (val outcome = coordinator.onContinue(operationId, attemptId, baseInput)) {
+                is com.rosan.installer.domain.engine.approval.ApprovalCoordinator.Outcome.Submitted -> Unit
+
+                is com.rosan.installer.domain.engine.approval.ApprovalCoordinator.Outcome.Invalidated -> {
+                    val ui = AiDecisionUiMapper.toUiState(
+                        state = com.rosan.installer.domain.engine.approval.ApprovalState.INVALIDATED,
+                        result = outcome.result,
+                        model = null,
+                        unavailable = null,
+                    )
+                    _localState.update { it.copy(stage = InstallerStage.AiReview(ui)) }
+                }
+
+                else -> Unit
+            }
+        }
+    }
+
+    private fun advisorCancel() {
+        advisorJob?.cancel()
+        val coordinator = advisorCoordinator
+        val operationId = advisorOperationId
+        val attemptId = advisorAttemptId
+        if (coordinator != null && operationId != null && attemptId != null) {
+            viewModelScope.launch { coordinator.onCancel(operationId, attemptId) }
+        }
+        session.cancel()
     }
 
     private fun requestUnknownSourcePermission() {

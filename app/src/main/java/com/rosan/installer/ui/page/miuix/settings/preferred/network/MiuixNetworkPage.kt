@@ -40,7 +40,10 @@ import com.rosan.installer.domain.settings.model.preferences.GithubUpdateChannel
 import com.rosan.installer.domain.settings.model.preferences.HttpProfile
 import com.rosan.installer.ui.navigation.LocalNavigator
 import com.rosan.installer.ui.page.main.settings.preferred.network.NetworkSettingsAction
+import com.rosan.installer.ui.page.main.settings.preferred.network.NetworkSettingsEvent
 import com.rosan.installer.ui.page.main.settings.preferred.network.NetworkSettingsViewModel
+import com.rosan.installer.ui.page.miuix.widgets.MiuixAiAdvisorConfigDialog
+import com.rosan.installer.ui.page.miuix.widgets.MiuixAiAdvisorConsentDialog
 import com.rosan.installer.ui.page.miuix.widgets.MiuixBackButton
 import com.rosan.installer.ui.page.miuix.widgets.MiuixCustomGithubProxyUrlDialog
 import com.rosan.installer.ui.page.miuix.widgets.MiuixGithubUpdateChannelSelectionDialog
@@ -77,8 +80,40 @@ fun MiuixNetworkPage(useBlur: Boolean, viewModel: NetworkSettingsViewModel = koi
     val topBarBackdrop = rememberMiuixBlurBackdrop(useBlur)
     val showChannelDialog = remember { mutableStateOf(false) }
     val showCustomProxyDialog = remember { mutableStateOf(false) }
+    val showAiConfigDialog = remember { mutableStateOf(false) }
+    val showAiConsentDialog = remember { mutableStateOf(false) }
     var pendingNetworkSourceMode by rememberSaveable { mutableStateOf<NetworkSourceMode?>(null) }
     var exitAfterInternetDisable by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(viewModel) {
+        viewModel.eventFlow.collect { event ->
+            when (event) {
+                NetworkSettingsEvent.OpenAiConfiguration -> showAiConfigDialog.value = true
+                NetworkSettingsEvent.ShowAiConsentAllowlist -> showAiConsentDialog.value = true
+                is NetworkSettingsEvent.AiConfigurationError -> Unit
+            }
+        }
+    }
+
+    MiuixAiAdvisorConfigDialog(
+        showState = showAiConfigDialog,
+        initialEndpoint = uiState.aiEndpoint,
+        hasStoredKey = uiState.aiKeyMasked.isNotEmpty(),
+        onDismiss = { showAiConfigDialog.value = false },
+        onSave = { endpoint, apiKey ->
+            viewModel.dispatch(NetworkSettingsAction.SaveAiEndpoint(endpoint))
+            if (apiKey != null) {
+                viewModel.dispatch(NetworkSettingsAction.SaveAiApiKey(apiKey))
+            }
+        },
+    )
+
+    MiuixAiAdvisorConsentDialog(
+        showState = showAiConsentDialog,
+        recipientHost = uiState.aiEndpointHostSummary,
+        onDismiss = { showAiConsentDialog.value = false },
+        onConfirm = { viewModel.confirmAiConsent() },
+    )
 
     LaunchedEffect(exitAfterInternetDisable, uiState.allowInternetAccess) {
         if (exitAfterInternetDisable && !uiState.allowInternetAccess) {
@@ -260,6 +295,57 @@ fun MiuixNetworkPage(useBlur: Boolean, viewModel: NetworkSettingsViewModel = koi
                             onClick = { showChannelDialog.value = true },
                         )
                     }
+                }
+            }
+            item { Spacer(modifier = Modifier.size(12.dp)) }
+            item { SmallTitle(stringResource(R.string.ai_advisor_settings_title)) }
+            item {
+                Card(
+                    modifier = Modifier
+                        .padding(horizontal = 12.dp)
+                        .padding(bottom = 12.dp),
+                ) {
+                    if (!uiState.allowInternetAccess) {
+                        BasicComponent(
+                            title = stringResource(R.string.ai_advisor_requires_network),
+                            enabled = false,
+                            onClick = {},
+                        )
+                    }
+                    SwitchPreference(
+                        checked = uiState.aiAdvisorEnabled,
+                        onCheckedChange = {
+                            viewModel.dispatch(NetworkSettingsAction.SetAiAdvisorEnabled(it))
+                        },
+                        title = stringResource(R.string.ai_advisor_enable_title),
+                        summary = stringResource(R.string.ai_advisor_enable_desc),
+                        enabled = uiState.allowInternetAccess,
+                    )
+                    SwitchPreference(
+                        checked = uiState.aiConsentGranted,
+                        onCheckedChange = {
+                            viewModel.dispatch(NetworkSettingsAction.SetAiConsent(it))
+                        },
+                        title = stringResource(R.string.ai_advisor_consent_title),
+                        summary = stringResource(R.string.ai_advisor_consent_desc),
+                        enabled = uiState.allowInternetAccess,
+                    )
+                    BasicComponent(
+                        title = stringResource(R.string.ai_advisor_configure_title),
+                        summary = uiState.aiEndpointHostSummary.ifBlank {
+                            stringResource(R.string.ai_advisor_not_configured)
+                        },
+                        enabled = uiState.allowInternetAccess,
+                        onClick = { showAiConfigDialog.value = true },
+                    )
+                    BasicComponent(
+                        title = stringResource(R.string.ai_advisor_model_prompt_title),
+                        summary = uiState.aiModelPromptSummary.ifBlank {
+                            stringResource(R.string.ai_advisor_key_masked_none)
+                        },
+                        enabled = false,
+                        onClick = {},
+                    )
                 }
             }
             item { Spacer(Modifier.navigationBarsPadding()) }

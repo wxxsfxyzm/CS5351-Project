@@ -98,6 +98,7 @@ fun InstallPrepareContent(
     val currentPackageName = uiState.currentPackageName
     val currentPackage = uiState.analysisResults.find { it.packageName == currentPackageName }
     val settings = uiState.viewSettings
+    val aiUiState = (uiState.stage as? com.rosan.installer.ui.page.main.installer.InstallerStage.AiReview)?.uiState
 
     var isExpanded by remember { mutableStateOf(false) }
 
@@ -630,10 +631,19 @@ fun InstallPrepareContent(
 
         val canInstall = !installStateResult.isOplusOsdkIncompatible &&
             (canInstallBaseEntity || canInstallModuleEntity || canInstallSplitEntity)
+        // The install button is Continue when the advisor is on: disabled for
+        // BLOCK/Recollect/Invalidated/Loading (AI can never override BLOCK).
+        val canProceed = canInstall && (aiUiState?.continueEnabled ?: true)
 
         // Even if we can't install (e.g. because Base is deselected), we might want to expand the menu to fix the selection.
         // We show the button if rawBaseEntity exists (Bundle/APK) and settings allow it.
         val showExpandButton = rawBaseEntity != null && settings.showExtendedMenu
+
+        if (aiUiState != null) {
+            item {
+                MiuixAiAdvisoryCard(uiState = aiUiState)
+            }
+        }
 
         item {
             val interactionSource = remember { MutableInteractionSource() }
@@ -676,7 +686,14 @@ fun InstallPrepareContent(
                     )
                 } else {
                     TextButton(
-                        onClick = onCancel,
+                        onClick = {
+                            if (aiUiState != null) {
+                                // Advisory review Cancel: no submission, no reuse.
+                                viewModel.dispatch(com.rosan.installer.ui.page.main.installer.InstallerViewAction.AdvisorCancel)
+                            } else {
+                                onCancel()
+                            }
+                        },
                         text = stringResource(R.string.cancel),
                         colors = ButtonDefaults.textButtonColors(
                             color = if (isDynamicColor) MiuixTheme.colorScheme.secondaryContainer else MiuixTheme.colorScheme.secondaryVariant,
@@ -690,7 +707,7 @@ fun InstallPrepareContent(
                         // Only trigger normal install if long press didn't happen
                         if (!hasLongPressed) onInstall()
                     },
-                    enabled = canInstall,
+                    enabled = canProceed,
                     text = stringResource(buttonTextId),
                     colors = ButtonDefaults.textButtonColorsPrimary(),
                     modifier = Modifier.weight(1f),

@@ -14,9 +14,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -35,6 +32,11 @@ import okhttp3.Response
  * the assessment's current consent immediately before dispatch (REQ-IX-FR-012).
  * Withdrawal cannot recall an in-flight request.
  *
+ * **Host-only egress.** The request URL is built only from a [baseUrl] that
+ * passed [AiEndpointValidator] (HTTPS, well-formed, no userinfo). The
+ * transport never accepts a caller-supplied full URL, so only the configured
+ * host is reachable. A rejected endpoint fails closed before dispatch.
+ *
  * **Secrets.** The API key is read through a lambda and is never logged,
  * stored in the request object, or included in failure messages
  * (REQ-IX-FR-009).
@@ -48,9 +50,7 @@ import okhttp3.Response
  * advisory path adds no second HTTP stack and no new framework.
  */
 class OkHttpAiTransport(
-    private val baseUrl: String = GroqAiModelClient.BASE_URL,
-    private val modelId: String = GroqAiModelClient.DEFAULT_MODEL,
-    private val apiKeyProvider: () -> String?,
+    private val apiKeyProvider: suspend () -> String?,
     private val egressAllowed: suspend () -> Boolean = { true },
     baseClient: OkHttpClient? = null,
     readTimeoutSeconds: Long = READ_TIMEOUT_SECONDS,
@@ -66,15 +66,21 @@ class OkHttpAiTransport(
         .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
         .build()
 
-    override suspend fun post(path: String, body: String): String = withContext(Dispatchers.IO) {
+    override suspend fun post(baseUrl: String, path: String, body: String): String = withContext(Dispatchers.IO) {
         if (!egressAllowed()) {
             throw AiAdvisorFailure.NetworkDisabled("network egress is disabled in app settings")
         }
 
+        // Build the URL only from a validated endpoint. The transport
+        // never accepts a caller-supplied full URL, so only the
+        // configured HTTPS host is reachable (REQ-IX-SEC-004).
+        val validatedBase = AiEndpointValidator.normalizeOrNull(baseUrl)
+            ?: throw AiAdvisorFailure.ServiceError(0, "endpoint is not a valid HTTPS URL")
+
         val apiKey = readApiKey()
 
         val request = Request.Builder()
-            .url("${baseUrl.trimEnd('/')}/$path")
+            .url("$validatedBase/$path")
             .header("Authorization", "Bearer $apiKey")
             .header("Content-Type", "application/json")
             .post(body.toRequestBody(JSON_MEDIA_TYPE))
@@ -117,7 +123,7 @@ class OkHttpAiTransport(
                         if (read.size > maxResponseBytes) {
                             throw AiAdvisorFailure.OutputOversize(read.size, maxResponseBytes)
                         }
-                        extractContent(read.decodeToString(), modelId)
+                        read.decodeToString()
                     }
                 }
             }
@@ -129,7 +135,7 @@ class OkHttpAiTransport(
     }
 
     /** Reads a usable Bearer credential without exposing the key or the source error (REQ-IX-FR-009). */
-    private fun readApiKey(): String {
+    private suspend fun readApiKey(): String {
         val key = try {
             apiKeyProvider()
         } catch (cancelled: CancellationException) {
@@ -157,26 +163,6 @@ class OkHttpAiTransport(
             TOKEN_LIMIT_MARKERS.any { value.contains(it) }
         }
     }.getOrDefault(false)
-
-    /**
-     * Pulls `choices[0].message.content` out of the envelope and validates
-     * that the reply came from the requested model.
-     */
-    internal fun extractContent(raw: String, expectedModelId: String): String {
-        val root = runCatching { json.parseToJsonElement(raw) as? JsonObject }.getOrNull()
-            ?: throw AiAdvisorFailure.InvalidOutput("envelope is not JSON")
-        val reportedModel = (root["model"] as? JsonPrimitive)?.contentOrNull
-        if (reportedModel != null && reportedModel != expectedModelId) {
-            throw AiAdvisorFailure.InvalidOutput("unexpected model in response: $reportedModel")
-        }
-        val content = runCatching {
-            root["choices"]!!.jsonArray[0].jsonObject["message"]!!.jsonObject["content"]!!.jsonPrimitive.content
-        }.getOrNull() ?: throw AiAdvisorFailure.InvalidOutput("response has no choices[0].message.content")
-        if (content.isBlank()) {
-            throw AiAdvisorFailure.InvalidOutput("assistant content is empty")
-        }
-        return content
-    }
 
     companion object {
         const val MAX_RESPONSE_BYTES = 64 * 1024

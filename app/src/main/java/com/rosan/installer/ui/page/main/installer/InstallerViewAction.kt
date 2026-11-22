@@ -28,6 +28,15 @@ sealed interface InstallerViewAction {
     data object InstallPrepare : InstallerViewAction
 
     /**
+     * Runs the AI advisory assessment for the current single-APK prepare (the
+     * one trigger). With the advisor off this is a no-op (baseline path).
+     */
+    data object RunAdvisor : InstallerViewAction
+
+    /** Cancel from the advisory review: no submission, no approval reuse. */
+    data object AdvisorCancel : InstallerViewAction
+
+    /**
      * Install single module/apk
      *
      * **This ViewAction will forward to ActionHandler to actually process**
