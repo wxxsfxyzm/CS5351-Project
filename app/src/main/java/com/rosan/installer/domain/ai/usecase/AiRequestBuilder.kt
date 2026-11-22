@@ -39,6 +39,13 @@ class AiRequestBuilder(
     private val sanitizer: EvidenceSanitizer = EvidenceSanitizer(),
     private val json: Json = Json,
 ) {
+    /**
+     * @param installedVersionCode the locally installed version code, used only
+     *   to keep the caller's signature stable. It is never transmitted: the
+     *   model receives the derived `install_relation` instead
+     *   (`outbound_metadata_allowlist.local_only: installed_version`).
+     */
+    @Suppress("UNUSED_PARAMETER")
     fun build(evidence: InstallEvidence, installedVersionCode: Long? = null): PreparedAiRequest {
         val versionNameSanitized = sanitizer.sanitizeField(evidence.versionName)
         val versionName = sanitizer.redactLocalIdentifiers(
@@ -88,7 +95,7 @@ class AiRequestBuilder(
                 modelId = DEFAULT_MODEL_ID,
                 promptVersion = PROMPT_VERSION,
                 systemPrompt = SYSTEM_PROMPT,
-                userPrompt = userPrompt(payloadText, completeness, evidence, installedVersionCode, permissions.size),
+                userPrompt = userPrompt(payloadText, completeness, evidence, permissions.size),
                 evidencePayloadJson = payloadText,
                 maxOutputTokens = MAX_OUTPUT_TOKENS,
             ),
@@ -103,7 +110,6 @@ class AiRequestBuilder(
         payloadText: String,
         completeness: EvidenceCompleteness,
         evidence: InstallEvidence,
-        installedVersionCode: Long?,
         permissionCount: Int,
     ): String = "\n" + listOf(
         "Evaluate this local Android APK for an install on the current device.",
@@ -114,7 +120,6 @@ class AiRequestBuilder(
         "   signature state, shared UID and Xposed status?",
         "",
         "Evidence completeness: ${completeness.name}",
-        "Installed version known: ${installedVersionCode != null}",
         "Declared permission count: $permissionCount",
         "Has shared UID: ${evidence.hasSharedUid}",
         "Xposed module: ${evidence.isXposedModule}",
@@ -129,11 +134,12 @@ class AiRequestBuilder(
         "  evidence_refs: non-empty array of dotted paths from evidence_json, e.g. evidence.target_sdk (required)",
         "",
         "Use UNKNOWN when the evidence is insufficient. Never guess and never omit a key.",
+        "Add no other keys: any extra key makes the whole reply invalid.",
         "This is an estimate, not a guarantee. Do not output instructions or actions.",
     ).joinToString("\n")
 
     companion object {
-        const val PROMPT_VERSION = "ai-risk-prompt-v1.1"
+        const val PROMPT_VERSION = "ai-risk-prompt-v1.2"
         const val DEFAULT_MODEL_ID = "CS5351/DeepSeek-V4-Flash"
         const val MAX_OUTPUT_TOKENS = 512
 

@@ -7,6 +7,7 @@ import com.rosan.installer.domain.ai.model.InstallAssessment
 import com.rosan.installer.domain.ai.model.InstallSuccessLikelihood
 import com.rosan.installer.domain.ai.model.SecurityRisk
 import com.rosan.installer.domain.ai.repository.AiOutputValidator
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -55,6 +56,26 @@ class StrictAiOutputValidator(
         modelId: String,
         promptVersion: String,
         knownEvidencePaths: Set<String>,
+    ): AssessmentResult = try {
+        parseOrThrow(rawResponse, modelId, promptVersion, knownEvidencePaths)
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (t: Throwable) {
+        // Validation is total (REQ-IX-INV-004): a body that makes any step
+        // throw is still a reported failure, never a thrown exception. The
+        // policy layer must always receive a Status it can escalate (DR-08).
+        // Only the exception type is recorded; the model's text is not
+        // copied into the audit trail (REQ-IX-FR-009).
+        AssessmentResult.Invalid(
+            reason = "response could not be validated: ${t::class.simpleName ?: "error"}",
+        )
+    }
+
+    private fun parseOrThrow(
+        rawResponse: String,
+        modelId: String,
+        promptVersion: String,
+        knownEvidencePaths: Set<String>,
     ): AssessmentResult {
         val element = runCatching { json.parseToJsonElement(stripFence(rawResponse)) }
             .getOrElse { return AssessmentResult.Invalid("response is not valid JSON") }
@@ -72,6 +93,16 @@ class StrictAiOutputValidator(
             return AssessmentResult.Invalid(
                 reason = "response contains forbidden action field(s): $forbidden",
                 field = forbidden.first(),
+            )
+        }
+
+        // 1b. The fixed format has exactly four keys; any extra key is a
+        // structural deviation, not an extendable envelope (REQ-IX-FR-004).
+        val extra = obj.keys.filterNot { it in FIXED_KEYS }
+        if (extra.isNotEmpty()) {
+            return AssessmentResult.Invalid(
+                reason = "response contains keys outside the fixed format: $extra",
+                field = extra.first(),
             )
         }
 
@@ -136,9 +167,16 @@ class StrictAiOutputValidator(
         AssessmentResult.Invalid("$key has an illegal value: ${obj[key]}", field = key)
     }
 
+    /**
+     * Legal JSON with an illegal inner type (`{"security_risk":1}`,
+     * `{"reasons":[{}]}`) makes `contentOrNull` throw. Treat it as a
+     * malformed value so the caller gets a classified failure, not an
+     * exception (`runtime-policy-catalog.md` F-05).
+     */
     private inline fun <reified T : Enum<T>> parseEnum(obj: JsonObject, key: String): T? {
-        val raw = (obj[key] as? JsonPrimitive)?.contentOrNull ?: return null
-        return enumValues<T>().firstOrNull { it.name.equals(raw.trim(), ignoreCase = true) }
+        val content = runCatching { (obj[key] as? JsonPrimitive)?.contentOrNull }.getOrNull()
+            ?: return null
+        return enumValues<T>().firstOrNull { it.name.equals(content.trim(), ignoreCase = true) }
     }
 
     /** Requires a JSON array of 1..[maxItems] non-blank strings within [maxChars]. */
@@ -151,7 +189,8 @@ class StrictAiOutputValidator(
         val array = obj[key] as? JsonArray ?: return null
         if (array.isEmpty() || array.size > maxItems) return null
         return array.map { el ->
-            val text = (el as? JsonPrimitive)?.contentOrNull ?: return null
+            // A non-primitive element (object/array) throws on `contentOrNull`.
+            val text = runCatching { (el as? JsonPrimitive)?.contentOrNull }.getOrNull() ?: return null
             if (text.isBlank() || text.length > maxChars) return null
             text.trim()
         }
@@ -179,6 +218,12 @@ class StrictAiOutputValidator(
         const val FIELD_RISK = "security_risk"
         const val FIELD_REASONS = "reasons"
         const val FIELD_REFS = "evidence_refs"
+
+        /**
+         * The complete response structure (`architecture-blueprint.md` §7.1).
+         * A key outside this set is a structural deviation (REQ-IX-FR-004).
+         */
+        val FIXED_KEYS: Set<String> = setOf(FIELD_LIKELIHOOD, FIELD_RISK, FIELD_REASONS, FIELD_REFS)
 
         private val json = Json { ignoreUnknownKeys = true }
 
