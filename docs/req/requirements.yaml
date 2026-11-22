@@ -8,7 +8,7 @@ notes: Revision 6 is an English D1 revision awaiting human approval. It preserve
   folded into FR-002 and FR-005, completeness-aware outbound evidence, separate attempt and provider-dispatch accounting, and corrected Continue/Retry semantics. FR-012 remains AI-toggle
   semantics. AI-use log updates are recorded separately; no verification result is claimed here. Match decision rules in listed order. VALID_ANY matches a validated two-axis assessment.
   VALID_HIGH_SUCCESS_LOW_RISK is its favorable subset. AUTO_RULES_MET includes a permissive base policy. An unreadable APK is UNREADABLE. An active prohibition dominates every outcome.
-  AI-off and out-of-scope flows use the baseline.
+  AI-off and out-of-scope flows use the baseline. On 2026-11-22, REQ-IX-ARCH-001 was narrowed for v1 to AI-evaluated requests (lead decision; see its note).
 prioritization:
   method: MoSCoW
   tradeoff: "If time is short, reduce Should-level presentation items first and retain INV-001 through INV-007 and REL-002 through REL-004. Changing a Must requires re-review of scope and acceptance."
@@ -1301,11 +1301,16 @@ requirements:
   type: architectural_constraint
   priority: Must
   title: Single authorization choke point
-  statement: For the single local APK path specified by SCOPE-001, including both AutoDialog and AutoNotification, every installation submission shall pass through the single ApprovalCoordinator
-    -> InstallationGateway choke point; the installation backend interface on this path shall not be called directly by AI, UI, or policy. Out-of-scope paths need not use the choke point
-    but shall not call the AI component.
-  fit_criterion: In-scope positive tests for both modes pass through the Gateway; out-of-scope paths make 0 AI calls; static checks constrain backend injection only within scope; dynamic
-    spying detects 0 calls that bypass the Coordinator; the architecture review records the choke-point diagram with both modes.
+  statement: For the single local APK path specified by SCOPE-001, every installation submission for a request that the AI component evaluates (AI switch on) shall pass through the single
+    ApprovalCoordinator -> InstallationGateway choke point; the installation backend interface on this path shall not be called directly by AI, UI, or policy. When the AI switch is off
+    (REQ-IX-FR-012), and for an in-scope mode that the current version does not evaluate with AI, the baseline installation path is kept and makes 0 AI calls. Out-of-scope paths need
+    not use the choke point but shall not call the AI component.
+  fit_criterion: Positive tests for every AI-evaluated in-scope mode pass through the Gateway; AI-off, not-yet-evaluated, and out-of-scope paths make 0 AI calls and construct no
+    ApprovalCoordinator; static checks constrain backend injection only within scope; dynamic spying detects 0 calls that bypass the Coordinator on an AI-evaluated request; the
+    architecture review records the choke-point diagram and which modes v1 evaluates with AI.
+  note: '2026-11-22 (v1 scope, lead decision Q9 in docs/plans/2026-11-22-ai-advisor-end-to-end-slice.md): narrowed from every in-scope submission to AI-evaluated requests, aligning
+    the statement with FR-012 and the registry note that AI-off and out-of-scope flows use the baseline. v1 evaluates AutoDialog only; AutoNotification keeps the baseline and makes 0
+    AI calls until it is evaluated.'
   source: V0.2 §4.2 + baseline architecture
   depends_on:
   - REQ-IX-FR-007

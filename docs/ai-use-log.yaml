@@ -747,3 +747,28 @@ entries:
     - docs/ai-use-log.yaml (AI-wxxsfxyzm-0011)
     notes: Documentation only. No file under app/ was modified. No commit or push performed. DEBT-002 was not previously used; DEBT-003 spans it as directed, leaving DEBT-002 unused.
 
+
+  - id: AI-wxxsfxyzm-0014
+    date: '2026-11-22'
+    tool: Claude Code
+    model: claude-opus-5-5
+    role: plan
+    operator: wxxsfxyzm (project lead)
+    task: Draft the v1 scope narrowing of REQ-IX-ARCH-001 and the matching ADR-002.6 note for human review.
+    requirements:
+    - REQ-IX-ARCH-001
+    - REQ-IX-FR-012
+    - ADR-002.6
+    artifacts:
+    - docs/req/requirements.yaml
+    - docs/architecture/adr/002-later-important-arch-decisions.md
+    - docs/ai-use-log.yaml
+    human_decisions:
+    - Lead chose option (b) for Q9 in docs/plans/2026-11-22-ai-advisor-end-to-end-slice.md. The choke point applies to AI-evaluated requests only; AI-off and not-yet-evaluated modes keep the baseline path with 0 AI calls.
+    - Lead reviewed the drafted statement, fit criterion, note, and ADR-002.6 bullet and approved them on 2026-11-22.
+    verification:
+    - Requirements schema gate passes on the edited docs/req/requirements.yaml.
+    - git diff --check clean.
+    evidence:
+    - docs/plans/2026-11-22-ai-advisor-end-to-end-slice.md (Q9 decision, section 13 approval)
+    notes: Documentation only; no source or test changes. The agent drafted; the lead approved. Must merge before the AI advisor end-to-end PR, which relies on the narrowed wording. ID 0013 is used by the AI advisor build branch, so this entry takes 0014.
