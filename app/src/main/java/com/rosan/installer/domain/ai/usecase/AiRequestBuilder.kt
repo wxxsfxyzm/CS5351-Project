@@ -139,7 +139,7 @@ class AiRequestBuilder(
     ).joinToString("\n")
 
     companion object {
-        const val PROMPT_VERSION = "ai-risk-prompt-v1.1"
+        const val PROMPT_VERSION = "ai-risk-prompt-v1.2"
         const val DEFAULT_MODEL_ID = "CS5351/DeepSeek-V4-Flash"
         const val MAX_OUTPUT_TOKENS = 512
 

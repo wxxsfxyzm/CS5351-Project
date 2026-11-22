@@ -998,3 +998,29 @@ entries:
     evidence:
     - transcripts/transcriptE-Chengqian He-60267540.md
     notes: "PR prepared on branch feat/fixed-response-advisor from main e8420f8c. Pull request body written following the eight template sections. Aborted console output rendered as '?' inside the transcript; the console encoding on this machine is GBK and mangled non-ASCII shell output. docs/plans/ left untracked on purpose. PR body text is stored locally at the temp path and is pasted by the operator because the GitHub CLI is not installed here."
+
+  - id: AI-wxxsfxyzm-0015
+    date: '2026-11-22'
+    tool: Claude Code
+    model: claude-opus-5-5
+    role: build
+    operator: wxxsfxyzm (project lead)
+    task: Review PR #29 and bring it up to date with main, including the prompt version bump its user-prompt change requires.
+    requirements:
+    - REQ-IX-FR-003
+    - REQ-IX-FR-004
+    - REQ-IX-INV-004
+    artifacts:
+    - prompts/prompt_v1.2.yaml
+    - prompts/prompt_v1.1.yaml
+    - app/src/main/java/com/rosan/installer/domain/ai/usecase/AiRequestBuilder.kt
+    - docs/ai-use-log.yaml
+    human_decisions:
+    - Lead decided to keep PR #29 and asked the agent to fix any problems on top of the contributor's branch and push.
+    verification:
+    - Merged origin/main into the branch; the only conflict was docs/ai-use-log.yaml, resolved by keeping every entry (main entries first). Five list items that YAML parsed as key/value pairs were reworded to plain strings.
+    - PR #29 changed the user prompt template without a new prompt version, against the change policy in prompts/prompt_v1.1.yaml. Added prompts/prompt_v1.2.yaml with the new template, set PROMPT_VERSION to ai-risk-prompt-v1.2, and marked v1.1 superseded.
+    - Unit tests, spotless, gates, and the live course-service suite were re-run after the change (results in the PR comment).
+    evidence:
+    - PR 29
+    notes: Contributor history kept (merge, no rebase or force-push). No change to the contributor's advisor, validator, or tests.
