@@ -12,7 +12,7 @@
 
 prompt_version: ai-risk-prompt-v1.1
 file_version: "1.1"
-status: active
+status: superseded
 model_id: CS5351/DeepSeek-V4-Flash
 max_output_tokens: 512
 requirements:
