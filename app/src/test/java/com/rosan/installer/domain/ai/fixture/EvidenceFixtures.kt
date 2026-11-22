@@ -170,6 +170,84 @@ object EvidenceFixtures {
      * Every scenario in one list, ordered from unremarkable to degraded.
      * `AdvisorScenarioTest` and the live test both iterate this.
      */
+
+    /**
+     * K: A routine update of a permission-heavy app that adds no permission
+     * (prompt v1.3). The user already runs the installed version with all of
+     * these, so the risk is judged on what changed.
+     */
+    val heavyUpdateNoNewPermissions = normalUpdate.copy(
+        versionCode = 26030100,
+        versionName = "6.8.5",
+        declaredPermissions = listOf(
+            "android.permission.INTERNET",
+            "android.permission.CAMERA",
+            "android.permission.RECORD_AUDIO",
+            "android.permission.READ_CONTACTS",
+            "android.permission.ACCESS_FINE_LOCATION",
+            "android.permission.SYSTEM_ALERT_WINDOW",
+            "android.permission.REQUEST_INSTALL_PACKAGES",
+            "android.permission.READ_PHONE_STATE",
+            "android.permission.POST_NOTIFICATIONS",
+        ),
+        permissionsAddedSinceInstalled = emptyList(),
+        installedIsSystemApp = false,
+        targetPackageName = "com.example.community",
+    )
+
+    /**
+     * L: An update of a preinstalled system/vendor component with a matching
+     * signature and no added permission (prompt v1.3).
+     */
+    val systemAppUpdate = normalUpdate.copy(
+        versionCode = 15000210,
+        versionName = "15.0.2.10",
+        declaredPermissions = listOf(
+            "android.permission.INTERNET",
+            "android.permission.READ_LOGS",
+            "android.permission.READ_PRIVILEGED_PHONE_STATE",
+            "android.permission.WRITE_SECURE_SETTINGS",
+            "android.permission.INTERACT_ACROSS_USERS",
+            "miui.permission.USE_INTERNAL_GENERAL_API",
+        ),
+        permissionsAddedSinceInstalled = emptyList(),
+        installedIsSystemApp = true,
+        targetPackageName = "com.example.vendor.service",
+    )
+
+    /**
+     * M: A vendor utility (calculator-shaped) reinstalled from /data/app. It
+     * declares privileged permissions it is never granted and adds none.
+     */
+    val vendorUtilityReinstall = normalUpdate.copy(
+        versionCode = 317000041,
+        versionName = "17.4.1",
+        minSdk = 29,
+        declaredPermissions = listOf(
+            "android.permission.ACCESS_COARSE_LOCATION",
+            "android.permission.ACCESS_NETWORK_STATE",
+            "android.permission.FOREGROUND_SERVICE",
+            "android.permission.GET_TASKS",
+            "android.permission.INTERACT_ACROSS_USERS_FULL",
+            "android.permission.INTERNET",
+            "android.permission.SYSTEM_ALERT_WINDOW",
+            "android.permission.VIBRATE",
+            "android.permission.WRITE_SECURE_SETTINGS",
+            "com.miui.securitycenter.permission.SYSTEM_PERMISSION_DECLARE",
+        ),
+        apkIdentity = ApkIdentity.IDENTICAL,
+        permissionsAddedSinceInstalled = emptyList(),
+        installedIsSystemApp = false,
+        targetPackageName = "com.example.calculator",
+    )
+
+    /** Update-relative scenarios for prompt v1.3; kept separate from [all] so its counts stay fixed. */
+    val updateRelative: List<Scenario> = listOf(
+        Scenario("K: heavy update, no new permissions", heavyUpdateNoNewPermissions),
+        Scenario("L: system app update", systemAppUpdate),
+        Scenario("M: vendor utility reinstall", vendorUtilityReinstall),
+    )
+
     val all: List<Scenario> = listOf(
         Scenario("A: normal update", normalUpdate),
         Scenario("B: normal new install", normalNewInstall),

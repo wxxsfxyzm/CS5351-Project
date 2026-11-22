@@ -5,7 +5,6 @@
 package com.rosan.installer.ui.page.main.settings.preferred.network
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -65,6 +64,7 @@ import com.rosan.installer.ui.page.main.widget.setting.BaseWidget
 import com.rosan.installer.ui.page.main.widget.setting.DropDownMenuWidget
 import com.rosan.installer.ui.page.main.widget.setting.ExpressiveBackButton
 import com.rosan.installer.ui.page.main.widget.setting.SegmentedColumn
+import com.rosan.installer.ui.page.main.widget.setting.SwitchWidget
 import com.rosan.installer.ui.theme.getMaterial3AppBarColor
 import com.rosan.installer.ui.theme.installerMaterial3BlurEffect
 import com.rosan.installer.ui.theme.rememberMaterial3BlurBackdrop
@@ -106,13 +106,13 @@ fun NetworkPage(useBlur: Boolean, viewModel: NetworkSettingsViewModel = koinView
         AiAdvisorConfigDialog(
             initialEndpoint = uiState.aiEndpoint,
             hasStoredKey = uiState.aiKeyMasked.isNotEmpty(),
-            onDismiss = { showAiConfigDialog = false },
+            onDismiss = {
+                showAiConfigDialog = false
+                viewModel.dispatch(NetworkSettingsAction.CancelAiSetup)
+            },
             onSave = { endpoint, apiKey ->
                 showAiConfigDialog = false
-                viewModel.dispatch(NetworkSettingsAction.SaveAiEndpoint(endpoint))
-                if (apiKey != null) {
-                    viewModel.dispatch(NetworkSettingsAction.SaveAiApiKey(apiKey))
-                }
+                viewModel.dispatch(NetworkSettingsAction.SaveAiConfiguration(endpoint, apiKey))
             },
         )
     }
@@ -120,7 +120,10 @@ fun NetworkPage(useBlur: Boolean, viewModel: NetworkSettingsViewModel = koinView
     if (showAiConsentDialog) {
         AiAdvisorConsentDialog(
             recipientHost = uiState.aiEndpointHostSummary,
-            onDismiss = { showAiConsentDialog = false },
+            onDismiss = {
+                showAiConsentDialog = false
+                viewModel.dispatch(NetworkSettingsAction.CancelAiSetup)
+            },
             onConfirm = {
                 showAiConsentDialog = false
                 viewModel.confirmAiConsent()
@@ -307,17 +310,16 @@ fun NetworkPage(useBlur: Boolean, viewModel: NetworkSettingsViewModel = koinView
                     }
                 }
             }
-            item {
-                AiAdvisorSettingsGroup(
-                    state = uiState,
-                    onAdvisorToggle = {
-                        viewModel.dispatch(NetworkSettingsAction.SetAiAdvisorEnabled(it))
-                    },
-                    onConsentToggle = {
-                        viewModel.dispatch(NetworkSettingsAction.SetAiConsent(it))
-                    },
-                    onConfigure = { showAiConfigDialog = true },
-                )
+            if (uiState.allowInternetAccess) {
+                item {
+                    AiAdvisorSettingsGroup(
+                        state = uiState,
+                        onAdvisorToggle = {
+                            viewModel.dispatch(NetworkSettingsAction.SetAiAdvisorEnabled(it))
+                        },
+                        onConfigure = { showAiConfigDialog = true },
+                    )
+                }
             }
         }
     }
@@ -327,100 +329,40 @@ fun NetworkPage(useBlur: Boolean, viewModel: NetworkSettingsViewModel = koinView
 private fun AiAdvisorSettingsGroup(
     state: NetworkSettingsState,
     onAdvisorToggle: (Boolean) -> Unit,
-    onConsentToggle: (Boolean) -> Unit,
     onConfigure: () -> Unit,
 ) {
-    val groupEnabled = state.allowInternetAccess
     val modelPrompt = state.aiModelPromptSummary.ifBlank {
         stringResource(R.string.ai_advisor_key_masked_none)
     }
     SegmentedColumn(
         title = stringResource(R.string.ai_advisor_settings_title),
     ) {
-        if (!groupEnabled) {
-            item {
-                BaseWidget(
-                    title = stringResource(R.string.ai_advisor_requires_network),
-                    description = "",
-                    onClick = {},
-                    enabled = false,
-                ) {}
-            }
-        }
         item {
-            AiToggleRow(
+            SwitchWidget(
+                icon = AppIcons.Suggestion,
                 title = stringResource(R.string.ai_advisor_enable_title),
                 description = stringResource(R.string.ai_advisor_enable_desc),
                 checked = state.aiAdvisorEnabled,
-                enabled = groupEnabled,
                 onCheckedChange = onAdvisorToggle,
             )
         }
         item {
-            AiToggleRow(
-                title = stringResource(R.string.ai_advisor_consent_title),
-                description = stringResource(R.string.ai_advisor_consent_desc),
-                checked = state.aiConsentGranted,
-                enabled = groupEnabled,
-                onCheckedChange = onConsentToggle,
-            )
-        }
-        item {
             BaseWidget(
+                icon = AppIcons.Customize,
                 title = stringResource(R.string.ai_advisor_configure_title),
                 description = state.aiEndpointHostSummary.ifBlank {
                     stringResource(R.string.ai_advisor_not_configured)
                 },
                 onClick = onConfigure,
-                enabled = groupEnabled,
             ) {}
         }
         item {
             BaseWidget(
+                icon = AppIcons.Info,
                 title = stringResource(R.string.ai_advisor_model_prompt_title),
                 description = modelPrompt,
-                onClick = {},
-                enabled = false,
             ) {}
         }
-    }
-}
-
-@Composable
-private fun AiToggleRow(
-    title: String,
-    description: String,
-    checked: Boolean,
-    enabled: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 56.dp)
-            .toggleable(
-                value = checked,
-                enabled = enabled,
-                role = Role.Switch,
-                onValueChange = onCheckedChange,
-            )
-            .padding(horizontal = 20.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.titleMedium)
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Switch(
-            modifier = Modifier.clearAndSetSemantics {},
-            checked = checked,
-            onCheckedChange = null,
-            enabled = enabled,
-        )
     }
 }
 

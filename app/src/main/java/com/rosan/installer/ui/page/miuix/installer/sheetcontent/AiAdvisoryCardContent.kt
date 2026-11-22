@@ -14,6 +14,8 @@ import com.rosan.installer.R
 import com.rosan.installer.domain.ai.model.AiReviewModel
 import com.rosan.installer.domain.ai.model.AiUiState
 import com.rosan.installer.domain.ai.model.AiUnavailable
+import com.rosan.installer.ui.page.main.installer.dialog.inner.blockCauseTexts
+import com.rosan.installer.ui.page.main.installer.dialog.inner.modelFailureText
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
@@ -62,17 +64,21 @@ fun MiuixAiAdvisoryCard(uiState: AiUiState, modifier: Modifier = Modifier) {
                         text = stringResource(R.string.ai_advisor_policy_blocked),
                         color = MiuixTheme.colorScheme.error,
                     )
-                    Text(text = uiState.reason)
+                    blockCauseTexts(uiState).forEach { Text(text = it) }
+                    Text(
+                        text = stringResource(R.string.ai_advisor_block_not_overridable),
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
                 }
 
                 is AiUiState.Recollect -> {
                     Text(text = stringResource(R.string.ai_advisor_policy_recollect))
-                    Text(text = uiState.reason)
+                    Text(text = stringResource(R.string.ai_advisor_recollect_detail))
                 }
 
                 is AiUiState.Invalidated -> {
                     Text(text = stringResource(R.string.ai_advisor_policy_invalidated))
-                    Text(text = uiState.reason)
+                    Text(text = stringResource(R.string.ai_advisor_invalidated_detail))
                 }
 
                 is AiUiState.AutoExecute -> Text(text = stringResource(R.string.ai_advisor_policy_auto))
@@ -111,16 +117,10 @@ private fun AdvisoryContent(model: AiReviewModel) {
 private fun UnavailableText(reason: AiUnavailable) {
     val text = when (reason) {
         AiUnavailable.ConsentOff -> stringResource(R.string.ai_advisor_unavailable_consent_off)
-
         AiUnavailable.Unconfigured -> stringResource(R.string.ai_advisor_unavailable_unconfigured)
-
         AiUnavailable.NetworkOff -> stringResource(R.string.ai_advisor_unavailable_network_off)
-
-        is AiUnavailable.ModelFailure ->
-            stringResource(R.string.ai_advisor_unavailable_model_failure) + " (" + reason.code.name + ")"
-
+        is AiUnavailable.ModelFailure -> modelFailureText(reason.code)
         AiUnavailable.InvalidOutput -> stringResource(R.string.ai_advisor_unavailable_invalid_output)
-
         AiUnavailable.PersistenceFailed -> stringResource(R.string.ai_advisor_unavailable_model_failure)
     }
     Text(text = text)

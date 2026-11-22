@@ -53,6 +53,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.core.component.get
 import org.koin.core.parameter.parametersOf
 import timber.log.Timber
@@ -629,7 +630,10 @@ class InstallerViewModel(
                 autoInstallJob?.cancel()
                 if (newStage is InstallerStage.InstallPrepare && session.config.installMode == InstallMode.AutoDialog) {
                     autoInstallJob = viewModelScope.launch {
-                        delay(500.milliseconds)
+                        // With the advisor on, start the assessment immediately so the
+                        // sheet goes straight to the loading state and no action button
+                        // is live before the decision exists. The baseline keeps its delay.
+                        if (!isAdvisorActive()) delay(500.milliseconds)
                         if (_localState.value.stage is InstallerStage.InstallPrepare) install()
                     }
                 }
@@ -949,21 +953,44 @@ class InstallerViewModel(
             )
             var thrown: Throwable? = null
             val outcome = runCatching {
-                prepareApproval.prepare(
-                    operationId = operationId,
-                    attemptId = attemptId,
-                    advisorEnabled = prefs.aiAdvisorEnabled,
-                    gate = gate,
-                    analysis = analysis,
-                    selectedApk = selectedApk,
-                    coordinator = coordinator,
-                )
+                // The model may only be called inside a ModelRequestGate that re-reads
+                // the persisted switch and consent on every check (FR-011, ADR-001 DR-02).
+                // Without it the request builder and transport refuse every call.
+                withContext(
+                    com.rosan.installer.domain.ai.repository.ModelRequestGate {
+                        appSettingsRepo.preferencesFlow.first().let { it.aiAdvisorEnabled && it.aiAdvisorConsent }
+                    },
+                ) {
+                    prepareApproval.prepare(
+                        operationId = operationId,
+                        attemptId = attemptId,
+                        advisorEnabled = prefs.aiAdvisorEnabled,
+                        gate = gate,
+                        analysis = analysis,
+                        selectedApk = selectedApk,
+                        coordinator = coordinator,
+                        targetUserId = session.config.targetUserId,
+                    )
+                }
             }.getOrElse { error ->
                 Timber.w(error, "AI advisor prepare failed")
                 thrown = error
                 null
             }
 
+            (outcome as? com.rosan.installer.domain.engine.approval.PrepareApprovalUseCase.Outcome.Decided)?.let {
+                Timber.d(
+                    "AI advisor decision: rule=%s reason=%s state=%s advice=%s policyAdvice=%s evidence=%s compat=%s unavailable=%s",
+                    it.decision.ruleId,
+                    it.decision.reasonCode,
+                    it.state,
+                    it.model?.let { m -> "${m.likelihood}/${m.risk}" } ?: "none",
+                    it.baseInput.advice.let { a -> if (a is com.rosan.installer.domain.engine.policy.PolicyAdvice.Valid) "Valid" else a.toString() },
+                    it.baseInput.evidence,
+                    it.baseInput.compatibility,
+                    it.unavailable,
+                )
+            }
             when (val decision = AdvisorDecision.from(outcome, thrown)) {
                 AdvisorDecision.BaselineInstall -> {
                     // The single baseline path (advisor off / not AutoDialog / out of scope).

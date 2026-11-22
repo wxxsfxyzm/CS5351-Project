@@ -19,4 +19,6 @@ data class InstalledAppInfo(
     val isArchived: Boolean = false,
     val packageSize: Long = 0L,
     val sourceDir: String? = null,
+    /** Permissions the installed version requests; null when not read. */
+    val requestedPermissions: List<String>? = null,
 )

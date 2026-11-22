@@ -2,6 +2,7 @@
 // Copyright (C) 2025-2026 InstallerX Revived contributors
 package com.rosan.installer.domain.engine.approval
 
+import com.rosan.installer.domain.ai.model.HardBlockCause
 import com.rosan.installer.domain.ai.model.InstallEvidence
 import com.rosan.installer.domain.ai.model.InstallRelation
 import com.rosan.installer.domain.ai.model.InstalledSignatureMatch
@@ -29,9 +30,16 @@ object EvaluatedPolicyFactory {
 
     const val POLICY_VERSION = "policy-v1"
 
+    /** The hard-block rules that fire for [evidence]; empty exactly when `hardBlock` is false. */
+    fun hardBlockCauses(evidence: InstallEvidence): List<HardBlockCause> = buildList {
+        if (evidence.installedSignatureMatch == InstalledSignatureMatch.MISMATCH) add(HardBlockCause.SIGNATURE_MISMATCH)
+        if (evidence.signatureVerificationStatus == SignatureVerificationStatus.FAILED) {
+            add(HardBlockCause.SIGNATURE_VERIFICATION_FAILED)
+        }
+    }
+
     fun from(evidence: InstallEvidence): EvaluatedPolicy {
-        val hardBlock = evidence.installedSignatureMatch == InstalledSignatureMatch.MISMATCH ||
-            evidence.signatureVerificationStatus == SignatureVerificationStatus.FAILED
+        val hardBlock = hardBlockCauses(evidence).isNotEmpty()
 
         val autoRulesSatisfied =
             evidence.signatureVerificationStatus == SignatureVerificationStatus.VERIFIED &&

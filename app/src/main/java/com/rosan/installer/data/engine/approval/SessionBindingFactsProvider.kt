@@ -3,9 +3,11 @@
 package com.rosan.installer.data.engine.approval
 
 import com.rosan.installer.domain.ai.model.InstallModeSignal
+import com.rosan.installer.domain.ai.usecase.ApkContentHasher
 import com.rosan.installer.domain.engine.approval.BindingFacts
 import com.rosan.installer.domain.engine.approval.BindingFactsProvider
 import com.rosan.installer.domain.engine.model.packageinfo.AppEntity
+import com.rosan.installer.domain.engine.model.source.DataEntity
 import com.rosan.installer.domain.session.repository.InstallerSessionRepository
 import com.rosan.installer.domain.settings.model.config.ConfigModel
 import java.security.MessageDigest
@@ -25,6 +27,8 @@ import java.security.MessageDigest
  */
 class SessionBindingFactsProvider(
     private val session: InstallerSessionRepository,
+    /** Re-reads the APK bytes on every call so a replaced file fails revalidation. */
+    private val apkHasher: suspend (DataEntity) -> String? = ApkContentHasher::sha256,
 ) : BindingFactsProvider {
 
     override suspend fun currentFacts(operationId: String): BindingFacts? {
@@ -32,7 +36,7 @@ class SessionBindingFactsProvider(
         val base = selectedBaseEntity(analysis.appEntities) ?: return null
         val config = session.config
         return BindingFacts(
-            apkSha256 = base.fileHash?.takeIf { SHA256_HEX.matches(it) },
+            apkSha256 = (apkHasher(base.data) ?: base.fileHash)?.takeIf { SHA256_HEX.matches(it) },
             targetPackageName = base.packageName.takeIf { it.isNotBlank() },
             targetUserId = config.targetUserId,
             installMode = InstallModeSignal.AutoDialog,

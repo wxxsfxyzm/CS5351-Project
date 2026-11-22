@@ -16,18 +16,26 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class NetworkSettingsViewModel(
-    appSettingsRepo: AppSettingsRepository,
+    private val appSettingsRepo: AppSettingsRepository,
     private val updateSetting: UpdateSettingUseCase,
     private val credentialStore: AiCredentialStore,
 ) : ViewModel() {
 
     private val events = Channel<NetworkSettingsEvent>(Channel.BUFFERED)
+
+    /**
+     * True while the user is walking through enable -> configure -> consent.
+     * Each step continues to the next missing one; the advisor is switched on
+     * only after every precondition is persisted.
+     */
+    private var pendingEnable = false
     val eventFlow: Flow<NetworkSettingsEvent> = events.receiveAsFlow()
 
     /**
@@ -99,20 +107,18 @@ class NetworkSettingsViewModel(
 
             is NetworkSettingsAction.SetAiAdvisorEnabled -> viewModelScope.launch {
                 if (!action.enabled) {
+                    // Turning the advisor off also withdraws consent (REQ-IX-FR-011),
+                    // so the next enable shows the allowlist again.
+                    pendingEnable = false
                     updateSetting(BooleanSetting.AiInstallRiskAdvisorEnabled, false)
+                    updateSetting(BooleanSetting.AiInstallRiskAdvisorConsent, false)
                     return@launch
                 }
-                // Enable only when configured, consented, and online; otherwise
-                // ask the UI to open the configuration flow and leave it off.
-                val current = state.value
-                val ready = current.allowInternetAccess &&
-                    current.aiEndpointConfigured &&
-                    current.aiConsentGranted
-                if (ready) {
-                    updateSetting(BooleanSetting.AiInstallRiskAdvisorEnabled, true)
-                } else {
-                    events.send(NetworkSettingsEvent.OpenAiConfiguration)
-                }
+                // Consent is asked on every enable: clear any stale grant first so
+                // continueEnable always reaches the allowlist dialog.
+                updateSetting(BooleanSetting.AiInstallRiskAdvisorConsent, false)
+                pendingEnable = true
+                continueEnable()
             }
 
             is NetworkSettingsAction.SetAiConsent -> viewModelScope.launch {
@@ -124,6 +130,32 @@ class NetworkSettingsViewModel(
                     // Turning consent off also disables the advisor.
                     updateSetting(BooleanSetting.AiInstallRiskAdvisorEnabled, false)
                 }
+            }
+
+            is NetworkSettingsAction.SaveAiConfiguration -> {
+                // Read synchronously: the Miuix dialog calls onDismiss
+                // (CancelAiSetup) right after onSave, before this coroutine resumes.
+                val continueAfterSave = pendingEnable
+                viewModelScope.launch {
+                    val normalized = AiEndpointValidator.normalizeOrNull(action.endpoint)
+                    if (normalized == null) {
+                        pendingEnable = false
+                        events.send(
+                            NetworkSettingsEvent.AiConfigurationError(
+                                AiConfigurationErrorKind.InvalidEndpoint,
+                            ),
+                        )
+                        return@launch
+                    }
+                    // Sequential writes: the key must be stored before readiness is checked.
+                    credentialStore.saveEndpoint(normalized)
+                    action.apiKey?.trim()?.takeIf { it.isNotEmpty() }?.let { credentialStore.saveApiKey(it) }
+                    if (continueAfterSave) continueEnable()
+                }
+            }
+
+            NetworkSettingsAction.CancelAiSetup -> {
+                pendingEnable = false
             }
 
             is NetworkSettingsAction.SaveAiEndpoint -> viewModelScope.launch {
@@ -161,8 +193,40 @@ class NetworkSettingsViewModel(
 
     /** Called after the user confirms the enumerated allowlist dialog. */
     fun confirmAiConsent() {
+        // Read synchronously for the same reason as SaveAiConfiguration.
+        val continueAfterConsent = pendingEnable
         viewModelScope.launch {
             updateSetting(BooleanSetting.AiInstallRiskAdvisorConsent, true)
+            if (continueAfterConsent) continueEnable()
+        }
+    }
+
+    /**
+     * Next step of a pending enable. Reads the persisted values directly
+     * instead of [state], which may not have caught up with a write made a
+     * moment ago.
+     */
+    private suspend fun continueEnable() {
+        val prefs = appSettingsRepo.preferencesFlow.first()
+        val configured = AiEndpointValidator.normalizeOrNull(credentialStore.endpointFlow.first()) != null &&
+            !credentialStore.currentApiKey().isNullOrBlank()
+        when {
+            !prefs.allowInternetAccess -> pendingEnable = false
+
+            !configured -> {
+                pendingEnable = true
+                events.send(NetworkSettingsEvent.OpenAiConfiguration)
+            }
+
+            !prefs.aiAdvisorConsent -> {
+                pendingEnable = true
+                events.send(NetworkSettingsEvent.ShowAiConsentAllowlist)
+            }
+
+            else -> {
+                pendingEnable = false
+                updateSetting(BooleanSetting.AiInstallRiskAdvisorEnabled, true)
+            }
         }
     }
 

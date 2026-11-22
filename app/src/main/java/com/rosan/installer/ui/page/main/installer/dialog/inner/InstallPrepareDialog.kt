@@ -31,6 +31,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rosan.installer.R
 import com.rosan.installer.core.device.model.Manufacturer
 import com.rosan.installer.core.env.DeviceConfig
+import com.rosan.installer.domain.ai.model.AiUiState
 import com.rosan.installer.domain.device.provider.DeviceCapabilityProvider
 import com.rosan.installer.domain.engine.model.packageinfo.AppEntity
 import com.rosan.installer.domain.engine.model.packageinfo.sortedBest
@@ -450,6 +451,16 @@ fun installPrepareDialog(viewModel: InstallerViewModel): DialogParams {
             DialogParamsType.InstallerPrepareInstall.id,
         ) {
             // --- Use buildList to dynamically create buttons ---
+            // While the advisor is assessing, every action except Cancel is disabled:
+            // nothing may change or submit the request before the decision exists.
+            if (aiUiState is AiUiState.Loading) {
+                return@dialogButtons listOf(
+                    DialogButton(stringResource(buttonTextId), 1f, enabled = false) {},
+                    DialogButton(stringResource(R.string.cancel), 1f) {
+                        viewModel.dispatch(InstallerViewAction.AdvisorCancel)
+                    },
+                )
+            }
             buildList {
                 val isAPK =
                     containerType == DataType.APKS || containerType == DataType.XAPK || containerType == DataType.APKM ||

@@ -1194,3 +1194,50 @@ entries:
     - merged PRs 29, 30, and 31
     - docs/ai-use-log.yaml (this entry, AI-wxxsfxyzm-0018)
     notes: Documentation only. No source, test, Gradle, or prompt file was changed. No commit or push performed. No network test was run. Lead review corrected DEBT-004 after the session - the instruction wrongly listed app-data backup as an exposure path; backup is already disabled.
+
+  - id: AI-wxxsfxyzm-0019
+    date: '2026-11-23'
+    tool: Claude Code
+    model: claude-opus-5-5
+    role: build
+    operator: wxxsfxyzm (project lead)
+    task: Make the AI install-risk advisor work end to end on a real device, fix the defects found during the on-device demo run, and add update-relative evidence with prompt v1.3.
+    requirements:
+    - REQ-IX-ARCH-001
+    - REQ-IX-FR-002
+    - REQ-IX-FR-003
+    - REQ-IX-FR-006
+    - REQ-IX-FR-011
+    - REQ-IX-INV-002
+    - REQ-IX-INV-003
+    - REQ-IX-INV-004
+    - REQ-IX-PER-001
+    - REQ-IX-SEC-004
+    - ADR-002.2
+    - ADR-002.5
+    artifacts:
+    - app/src/main (advisor wiring, evidence, transport, settings and installer UI in both themes)
+    - app/src/test (12 new or extended test classes)
+    - prompts/prompt_v1.3.yaml
+    - docs/req/requirements.yaml
+    - docs/architecture/adr/002-later-important-arch-decisions.md
+    - docs/bug-diary.md
+    - docs/debt-register.md
+    - docs/ai-use-log.yaml
+    human_decisions:
+    - The lead ran the app on a device, reported each failure, and directed the agent to fix them directly rather than through an OpenCode plan, given the time left.
+    - Settings - drop the separate consent switch; show the allowlist consent dialog on every enable; turning the advisor off withdraws consent (REQ-IX-FR-011 still met).
+    - Loading state - disable every action except Cancel while the assessment runs.
+    - Evidence - approved the two new allowlist fields (permissions_added_since_installed, installed_is_system_app), the ADR-002.2 note, and prompt v1.3, after observing that routine updates and a calculator were rated MEDIUM or HIGH.
+    - Kept DR-05 unchanged (option A); the prompt was tightened instead of relaxing the deterministic rule.
+    verification:
+    - Unit suite 463 tests, 0 failures; spotlessCheck and assembleUnstableDebug pass; schema, permissions, dependencies, and prompt-sync gates pass.
+    - Negative controls - AiModuleResolutionTest fails on the old Koin module; ApkHashEvidenceTest and the DR-05 test fail without the hash and the device facts.
+    - Live course suite on prompt v1.3 - 8/10 usable (threshold 8); update-relative scenarios K, L, M rated LOW; controls E (new install, sensitive permissions, sharedUid, Xposed) and F (downgrade, signature mismatch) rated HIGH.
+    - On device (AutoDialog) - a calculator same-signature reinstall reached DR-05 and installed; Mi Community (58 permissions) was rated HIGH/MEDIUM under the first v1.3 draft and stopped at DR-07 (not re-run on the final v1.3 wording); a mismatched signature was blocked (DR-01); with no network the decision was DR-08 with a network message.
+    - Not automated - OkHttp callTimeout and the transport are verified on device only (DEBT-006).
+    evidence:
+    - docs/bug-diary.md (BUG-005 to BUG-010)
+    - docs/debt-register.md (DEBT-006)
+    - prompts/prompt_v1.3.yaml
+    notes: The agent misdiagnosed BUG-009 as a VPN or WAF problem before reading the stack trace; the lead changed phone network settings in the meantime. Diagnostic logs added to the advisor path record rule, reason, failure class, and validator rejections only, never the key or evidence. The API key was sourced from agent.env for live tests and never printed or written.

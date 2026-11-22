@@ -49,6 +49,8 @@ class AutoDialogInstallEvidenceMapperTest {
         packageSource = PackageSourceSignal.LOCAL_FILE,
         sourceConfidence = SourceConfidenceSignal.EXACT_CALLER,
         installerCapability = InstallerCapability.SYSTEM_PACKAGE_INSTALLER,
+        permissionsAddedSinceInstalled = emptyList(),
+        installedIsSystemApp = false,
     )
 
     @Test
@@ -77,6 +79,8 @@ class AutoDialogInstallEvidenceMapperTest {
                 packageSource = PackageSourceSignal.LOCAL_FILE,
                 sourceConfidence = SourceConfidenceSignal.EXACT_CALLER,
                 installerCapability = InstallerCapability.SYSTEM_PACKAGE_INSTALLER,
+                permissionsAddedSinceInstalled = emptyList(),
+                installedIsSystemApp = false,
                 targetPackageName = PACKAGE_NAME,
                 apkSha256 = APK_HASH,
             ),

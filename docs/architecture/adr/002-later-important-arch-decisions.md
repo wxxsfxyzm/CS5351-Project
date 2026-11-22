@@ -79,6 +79,16 @@ policy specified in the D2 artifact named; an entry with status
     `target_user_scope`, `package_source`, `source_confidence`,
     `installer_capability`) are implemented with rev.6 enum spellings
     and documented unknown encodings.
+- **Update-relative evidence (decided 2026-11-23):** two allowlisted
+  fields, `permissions_added_since_installed` and
+  `installed_is_system_app`, are derived locally by
+  `AutoDialogFactsDeriver` and sent with prompt `ai-risk-prompt-v1.3`,
+  so an update that adds no permissions, or a system-app update with a
+  matching signature, is judged against the installed version. Reason:
+  the model saw only the full permission list and rated routine updates
+  of permission-heavy apps HIGH, which made DR-05 unreachable for them.
+  The deterministic rules are unchanged; BLOCK on signature mismatch
+  still dominates. Lead decision; allowlist entries carry the same date.
 - **Known deviation:** `AiRequestBuilder` builds wire JSON inside
   `domain/ai`, coupling `domain` to `kotlinx.serialization`. Accepted
   under ADR-001 Option B.
@@ -115,6 +125,13 @@ policy specified in the D2 artifact named; an entry with status
 
 ## ADR-002.5 — Placement of the network gate
 
+- **Update 2026-11-23:** `InstallerViewModel` now installs
+  `ModelRequestGate` around each assessment, re-reading the persisted
+  advisor switch and consent on every check, and the consent dialog
+  exists in both UI families. Before this, no production call site
+  installed the gate, so every on-device request was refused as
+  `ConsentUnavailable` (bug diary). The text below records the earlier
+  state.
 - **Status:** decided — partially implemented. The underlying network
   and consent gates are merged (PR #16, PR #19), but the **consent UI
   and the end-to-end production wiring are not complete**. No production

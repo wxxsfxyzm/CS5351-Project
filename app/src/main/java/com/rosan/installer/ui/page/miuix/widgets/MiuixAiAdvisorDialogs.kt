@@ -21,10 +21,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.rosan.installer.R
 import com.rosan.installer.data.ai.provider.AiEndpointValidator
 import com.rosan.installer.domain.ai.usecase.AiAdvisorSettings
+import com.rosan.installer.ui.page.main.widget.dialog.STORED_KEY_PLACEHOLDER
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -76,12 +78,26 @@ fun MiuixAiAdvisorConfigDialog(
                 TextField(
                     value = apiKey,
                     onValueChange = { apiKey = it },
-                    label = stringResource(R.string.ai_advisor_api_key_label),
+                    // A stored key is never loaded into the field; dots only show that one exists.
+                    label = if (hasStoredKey) {
+                        STORED_KEY_PLACEHOLDER
+                    } else {
+                        stringResource(R.string.ai_advisor_api_key_label)
+                    },
                     useLabelAsPlaceholder = true,
                     singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = stringResource(R.string.ai_advisor_api_key_helper))
+                Text(
+                    text = stringResource(
+                        if (hasStoredKey) {
+                            R.string.ai_advisor_api_key_stored_helper
+                        } else {
+                            R.string.ai_advisor_api_key_helper
+                        },
+                    ),
+                )
                 Spacer(modifier = Modifier.height(24.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),

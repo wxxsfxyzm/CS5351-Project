@@ -1019,6 +1019,7 @@
     <string name="ai_advisor_endpoint_helper">Must be an https:// URL. The default is the course service.</string>
     <string name="ai_advisor_api_key_label">API key</string>
     <string name="ai_advisor_api_key_helper">Stored only on this device and never leaves it except in the request header.</string>
+    <string name="ai_advisor_api_key_stored_helper">A key is already saved and hidden. Leave this blank to keep it, or type a new key to replace it.</string>
     <string name="ai_advisor_endpoint_invalid">Enter a valid https:// endpoint.</string>
     <string name="ai_advisor_key_missing">Enter an API key.</string>
     <string name="ai_advisor_clear_configuration">Clear configuration</string>
@@ -1038,11 +1039,19 @@
     <string name="ai_advisor_unavailable_unconfigured">Advice unavailable: the advisor is not configured.</string>
     <string name="ai_advisor_unavailable_network_off">Advice unavailable: network access is off.</string>
     <string name="ai_advisor_unavailable_model_failure">Advice unavailable: the model call failed.</string>
+    <string name="ai_advisor_unavailable_network_error">Advice unavailable: the model service could not be reached. Check the network connection.</string>
+    <string name="ai_advisor_unavailable_timeout">Advice unavailable: the model did not reply in time.</string>
     <string name="ai_advisor_unavailable_invalid_output">Advice unavailable: the model reply was not usable.</string>
     <string name="ai_advisor_policy_blocked">Blocked by policy</string>
     <string name="ai_advisor_policy_review">Needs your review</string>
     <string name="ai_advisor_policy_recollect">Evidence incomplete; collect again</string>
     <string name="ai_advisor_policy_auto">Allowed to install</string>
     <string name="ai_advisor_policy_invalidated">Decision no longer valid</string>
+    <string name="ai_advisor_block_signature_mismatch">This APK is signed with a different key than the installed app. Installing it would replace the app with one from another signer, so it is blocked. If you trust this APK, uninstall the existing app first.</string>
+    <string name="ai_advisor_block_verification_failed">The signature of this APK could not be verified. The file may be damaged or modified, so it is blocked.</string>
+    <string name="ai_advisor_block_generic">A deterministic safety rule blocked this install.</string>
+    <string name="ai_advisor_block_not_overridable">The AI advice cannot override this decision.</string>
+    <string name="ai_advisor_recollect_detail">Some required details of this APK could not be read, so the policy cannot judge it. Close this dialog and open the APK again.</string>
+    <string name="ai_advisor_invalidated_detail">The APK or the install settings changed after you approved, so the approval no longer applies. Start the install again.</string>
     <string name="ai_advisor_error_title">Advice unavailable: the assessment could not be completed.</string>
 </resources>
