@@ -5,6 +5,7 @@
 package com.rosan.installer.ui.page.main.settings.preferred.network
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -56,6 +57,8 @@ import com.rosan.installer.domain.settings.model.preferences.GithubUpdateChannel
 import com.rosan.installer.domain.settings.model.preferences.HttpProfile
 import com.rosan.installer.ui.icons.AppIcons
 import com.rosan.installer.ui.navigation.LocalNavigator
+import com.rosan.installer.ui.page.main.widget.dialog.AiAdvisorConfigDialog
+import com.rosan.installer.ui.page.main.widget.dialog.AiAdvisorConsentDialog
 import com.rosan.installer.ui.page.main.widget.dialog.CustomGithubProxyUrlDialog
 import com.rosan.installer.ui.page.main.widget.dialog.GithubUpdateChannelSelectionDialog
 import com.rosan.installer.ui.page.main.widget.setting.BaseWidget
@@ -86,6 +89,44 @@ fun NetworkPage(useBlur: Boolean, viewModel: NetworkSettingsViewModel = koinView
     var showCustomProxyDialog by remember { mutableStateOf(false) }
     var pendingNetworkSourceMode by rememberSaveable { mutableStateOf<NetworkSourceMode?>(null) }
     var exitAfterInternetDisable by rememberSaveable { mutableStateOf(false) }
+    var showAiConfigDialog by remember { mutableStateOf(false) }
+    var showAiConsentDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(viewModel) {
+        viewModel.eventFlow.collect { event ->
+            when (event) {
+                NetworkSettingsEvent.OpenAiConfiguration -> showAiConfigDialog = true
+                NetworkSettingsEvent.ShowAiConsentAllowlist -> showAiConsentDialog = true
+                is NetworkSettingsEvent.AiConfigurationError -> Unit
+            }
+        }
+    }
+
+    if (showAiConfigDialog) {
+        AiAdvisorConfigDialog(
+            initialEndpoint = uiState.aiEndpoint,
+            hasStoredKey = uiState.aiKeyMasked.isNotEmpty(),
+            onDismiss = { showAiConfigDialog = false },
+            onSave = { endpoint, apiKey ->
+                showAiConfigDialog = false
+                viewModel.dispatch(NetworkSettingsAction.SaveAiEndpoint(endpoint))
+                if (apiKey != null) {
+                    viewModel.dispatch(NetworkSettingsAction.SaveAiApiKey(apiKey))
+                }
+            },
+        )
+    }
+
+    if (showAiConsentDialog) {
+        AiAdvisorConsentDialog(
+            recipientHost = uiState.aiEndpointHostSummary,
+            onDismiss = { showAiConsentDialog = false },
+            onConfirm = {
+                showAiConsentDialog = false
+                viewModel.confirmAiConsent()
+            },
+        )
+    }
 
     LaunchedEffect(exitAfterInternetDisable, uiState.allowInternetAccess) {
         if (exitAfterInternetDisable && !uiState.allowInternetAccess) {
@@ -266,7 +307,120 @@ fun NetworkPage(useBlur: Boolean, viewModel: NetworkSettingsViewModel = koinView
                     }
                 }
             }
+            item {
+                AiAdvisorSettingsGroup(
+                    state = uiState,
+                    onAdvisorToggle = {
+                        viewModel.dispatch(NetworkSettingsAction.SetAiAdvisorEnabled(it))
+                    },
+                    onConsentToggle = {
+                        viewModel.dispatch(NetworkSettingsAction.SetAiConsent(it))
+                    },
+                    onConfigure = { showAiConfigDialog = true },
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun AiAdvisorSettingsGroup(
+    state: NetworkSettingsState,
+    onAdvisorToggle: (Boolean) -> Unit,
+    onConsentToggle: (Boolean) -> Unit,
+    onConfigure: () -> Unit,
+) {
+    val groupEnabled = state.allowInternetAccess
+    val modelPrompt = state.aiModelPromptSummary.ifBlank {
+        stringResource(R.string.ai_advisor_key_masked_none)
+    }
+    SegmentedColumn(
+        title = stringResource(R.string.ai_advisor_settings_title),
+    ) {
+        if (!groupEnabled) {
+            item {
+                BaseWidget(
+                    title = stringResource(R.string.ai_advisor_requires_network),
+                    description = "",
+                    onClick = {},
+                    enabled = false,
+                ) {}
+            }
+        }
+        item {
+            AiToggleRow(
+                title = stringResource(R.string.ai_advisor_enable_title),
+                description = stringResource(R.string.ai_advisor_enable_desc),
+                checked = state.aiAdvisorEnabled,
+                enabled = groupEnabled,
+                onCheckedChange = onAdvisorToggle,
+            )
+        }
+        item {
+            AiToggleRow(
+                title = stringResource(R.string.ai_advisor_consent_title),
+                description = stringResource(R.string.ai_advisor_consent_desc),
+                checked = state.aiConsentGranted,
+                enabled = groupEnabled,
+                onCheckedChange = onConsentToggle,
+            )
+        }
+        item {
+            BaseWidget(
+                title = stringResource(R.string.ai_advisor_configure_title),
+                description = state.aiEndpointHostSummary.ifBlank {
+                    stringResource(R.string.ai_advisor_not_configured)
+                },
+                onClick = onConfigure,
+                enabled = groupEnabled,
+            ) {}
+        }
+        item {
+            BaseWidget(
+                title = stringResource(R.string.ai_advisor_model_prompt_title),
+                description = modelPrompt,
+                onClick = {},
+                enabled = false,
+            ) {}
+        }
+    }
+}
+
+@Composable
+private fun AiToggleRow(
+    title: String,
+    description: String,
+    checked: Boolean,
+    enabled: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .toggleable(
+                value = checked,
+                enabled = enabled,
+                role = Role.Switch,
+                onValueChange = onCheckedChange,
+            )
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(
+            modifier = Modifier.clearAndSetSemantics {},
+            checked = checked,
+            onCheckedChange = null,
+            enabled = enabled,
+        )
     }
 }
 

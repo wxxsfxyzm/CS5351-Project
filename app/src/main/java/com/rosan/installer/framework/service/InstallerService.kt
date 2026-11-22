@@ -54,6 +54,7 @@ class InstallerService : Service() {
     }
 
     private val sessionManager: InstallerSessionManagerImpl by inject()
+    private val appSettingsRepository: com.rosan.installer.domain.settings.repository.AppSettingsRepository by inject()
 
     // Lifecycle scope for the Service itself (not specific installers)
     private val serviceScope = CoroutineScope(Dispatchers.Main + Job())
@@ -157,7 +158,9 @@ class InstallerService : Service() {
 
             val handlers = listOf(
                 ActionHandler(scope, session),
-                ProgressHandler(scope, session),
+                ProgressHandler(scope, session) {
+                    appSettingsRepository.preferencesFlow.first().aiAdvisorEnabled
+                },
                 ForegroundInfoHandler(scope, session),
                 BroadcastHandler(scope, session),
             )

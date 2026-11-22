@@ -3,8 +3,10 @@
 package com.rosan.installer.domain.ai.usecase
 
 import com.rosan.installer.data.ai.advisory.DefaultAiRiskAdvisor
-import com.rosan.installer.data.ai.provider.GroqAiModelClient
+import com.rosan.installer.data.ai.provider.AiEndpointConfig
+import com.rosan.installer.data.ai.provider.AiEndpointConfigSource
 import com.rosan.installer.data.ai.provider.OkHttpAiTransport
+import com.rosan.installer.data.ai.provider.OpenAiCompatibleModelClient
 import com.rosan.installer.domain.ai.fixture.EvidenceFixtures
 import com.rosan.installer.domain.ai.model.AdvisorOutcome
 import com.rosan.installer.domain.ai.model.AiAdvisorFailure
@@ -72,7 +74,7 @@ class ModelRequestGateTest {
         val http = HttpSpy()
         val transport = http.transport()
         suspend fun assertDenied() {
-            val failure = assertFailsWith<AiAdvisorFailure> { transport.post("chat/completions", "{}") }
+            val failure = assertFailsWith<AiAdvisorFailure> { transport.post("https://model.invalid", "chat/completions", "{}") }
             assertEquals(FailureCode.CONSENT_UNAVAILABLE, failure.code)
             assertEquals("model request consent is unavailable", failure.message)
             // Coroutine stack recovery may wrap a failure in another copy.
@@ -151,7 +153,7 @@ class ModelRequestGateTest {
         val useCase = useCase(transport)
         withContext(ModelRequestGate { throw cancelled }) {
             assertSame(cancelled, assertFailsWith<CancellationException> { useCase.invoke(evidence) })
-            assertFailsWith<CancellationException> { transport.post("chat/completions", "{}") }
+            assertFailsWith<CancellationException> { transport.post("https://model.invalid", "chat/completions", "{}") }
         }
         withContext(ModelRequestGate { true }) {
             val keyCancelled = http.transport(keyProvider = { throw cancelled })
@@ -170,7 +172,17 @@ class ModelRequestGateTest {
     private fun useCase(transport: OkHttpAiTransport) = RequestInstallRiskAssessmentUseCase(
         AiRequestBuilder(),
         DefaultAiRiskAdvisor(
-            GroqAiModelClient(transport),
+            OpenAiCompatibleModelClient(
+                transport = transport,
+                configSource = AiEndpointConfigSource {
+                    AiEndpointConfig(
+                        endpoint = "https://model.invalid",
+                        apiKey = "offline-test-key",
+                        modelId = AiRequestBuilder.DEFAULT_MODEL_ID,
+                        promptVersion = AiRequestBuilder.PROMPT_VERSION,
+                    )
+                },
+            ),
             object : AiNetworkGate {
                 override suspend fun isEgressAllowed() = true
             },
@@ -194,9 +206,8 @@ class ModelRequestGateTest {
 
         fun transport(
             networkAllowed: Boolean = true,
-            keyProvider: () -> String? = { "offline-test-key" },
+            keyProvider: suspend () -> String? = { "offline-test-key" },
         ) = OkHttpAiTransport(
-            baseUrl = "https://model.invalid",
             apiKeyProvider = keyProvider,
             egressAllowed = { networkAllowed },
             baseClient = client,

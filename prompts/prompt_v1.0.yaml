@@ -12,7 +12,7 @@
 
 prompt_version: ai-risk-prompt-v1
 file_version: "1.0"
-status: active
+status: superseded
 model_id: qwen/qwen3-32b
 max_output_tokens: 512
 requirements:

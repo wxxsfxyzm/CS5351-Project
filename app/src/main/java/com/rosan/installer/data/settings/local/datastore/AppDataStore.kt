@@ -189,6 +189,11 @@ class AppDataStore(private val dataStore: DataStore<Preferences>, private val js
         val NETWORK_SOURCE_MODE_WARNING_ACKNOWLEDGED =
             register(booleanPreferencesKey("network_source_mode_warning_acknowledged"), PreferenceValueType.BOOLEAN)
 
+        // AI install-risk advisor (non-secret switch states; the endpoint and
+        // key live in the separate app-private AiCredentialStore, not here).
+        val AI_ADVISOR_ENABLED = register(booleanPreferencesKey("ai_advisor_enabled"), PreferenceValueType.BOOLEAN)
+        val AI_ADVISOR_CONSENT = register(booleanPreferencesKey("ai_advisor_consent"), PreferenceValueType.BOOLEAN)
+
         // Debug
         val ENABLE_FILE_LOGGING = register(booleanPreferencesKey("enable_file_logging"), PreferenceValueType.BOOLEAN)
 

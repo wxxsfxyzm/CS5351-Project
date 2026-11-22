@@ -37,6 +37,7 @@ import com.rosan.installer.domain.engine.model.packageinfo.sortedBest
 import com.rosan.installer.domain.engine.model.source.DataType
 import com.rosan.installer.domain.engine.usecase.AnalyzeInstallStateUseCase
 import com.rosan.installer.ui.icons.AppIcons
+import com.rosan.installer.ui.page.main.installer.InstallerStage
 import com.rosan.installer.ui.page.main.installer.InstallerViewAction
 import com.rosan.installer.ui.page.main.installer.InstallerViewModel
 import com.rosan.installer.ui.page.main.installer.components.WarningTextBlock
@@ -119,6 +120,8 @@ fun installPrepareDialog(viewModel: InstallerViewModel): DialogParams {
     val currentPackageName = uiState.currentPackageName
     val currentPackage = uiState.analysisResults.find { it.packageName == currentPackageName }
     val settings = uiState.viewSettings
+    // The advisory review state, when the advisor is on (checkpoint C/D).
+    val aiUiState = (uiState.stage as? InstallerStage.AiReview)?.uiState
 
     // If there is no specific package to prepare, show an empty/error dialog.
     if (currentPackage == null) {
@@ -341,6 +344,11 @@ fun installPrepareDialog(viewModel: InstallerViewModel): DialogParams {
             DialogParamsType.InstallerPrepareInstall.id,
         ) {
             LazyColumn(horizontalAlignment = Alignment.CenterHorizontally) {
+                if (aiUiState != null) {
+                    item {
+                        AiAdvisoryCard(uiState = aiUiState)
+                    }
+                }
                 item {
                     InstallInfoChipGroup(
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -468,15 +476,21 @@ fun installPrepareDialog(viewModel: InstallerViewModel): DialogParams {
                 val canInstall = !installStateResult.isOplusOsdkIncompatible &&
                     (canInstallBaseEntity || canInstallModuleEntity || canInstallSplitEntity)
 
+                // The Install button is Continue when the advisor is on: it may
+                // only proceed when the pure UI state allows it (BLOCK/Recollect/
+                // Invalidated/Loading disable it; AI can never override BLOCK).
+                val aiContinueEnabled = aiUiState?.continueEnabled ?: true
+                val canProceed = canInstall && aiContinueEnabled
+
                 // only when the entity is a split APK, XAPK, or APKM
-                if (canInstall && settings.showExtendedMenu && isAPK) {
+                if (canProceed && settings.showExtendedMenu && isAPK) {
                     add(
                         DialogButton(stringResource(R.string.install_choice), 1f) {
                             viewModel.dispatch(InstallerViewAction.InstallChoice)
                         },
                     )
                 }
-                if (canInstall) {
+                if (canProceed) {
                     add(
                         DialogButton(
                             text = stringResource(buttonTextId),
@@ -500,24 +514,29 @@ fun installPrepareDialog(viewModel: InstallerViewModel): DialogParams {
                     )
                 }
                 // else if app can be installed and extended menu is shown
-                if (canInstall && settings.showExtendedMenu && primaryEntity !is AppEntity.ModuleEntity) {
+                if (canProceed && settings.showExtendedMenu && primaryEntity !is AppEntity.ModuleEntity) {
                     add(
                         DialogButton(stringResource(R.string.menu), 1f) {
                             viewModel.dispatch(InstallerViewAction.InstallExtendedMenu)
                         },
                     )
                 }
-                if (canInstall && !settings.showExtendedMenu && isAPK) {
+                if (canProceed && !settings.showExtendedMenu && isAPK) {
                     add(
                         DialogButton(stringResource(R.string.install_choice), 1f) {
                             viewModel.dispatch(InstallerViewAction.InstallChoice)
                         },
                     )
                 }
-                // Cancel button always shown
+                // Cancel button always shown. In an advisory review it is the
+                // review Cancel (advisorCancel), not a plain dialog close.
                 add(
                     DialogButton(stringResource(R.string.cancel), 1f) {
-                        viewModel.dispatch(InstallerViewAction.Close)
+                        if (aiUiState != null) {
+                            viewModel.dispatch(InstallerViewAction.AdvisorCancel)
+                        } else {
+                            viewModel.dispatch(InstallerViewAction.Close)
+                        }
                     },
                 )
             }
