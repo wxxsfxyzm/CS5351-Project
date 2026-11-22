@@ -1024,3 +1024,138 @@ entries:
     evidence:
     - PR 29
     notes: Contributor history kept (merge, no rebase or force-push). No change to the contributor's advisor, validator, or tests.
+
+  - id: AI-60747744-0001
+    date: '2026-11-21'
+    tool: Antigravity
+    model: claude-opus-5-5
+    role: plan
+    operator: Yang Xinyu (60747744, Member D - Verification)
+    task: Draft the D1 rev.6 verification test plan and the static policy dependency check PolicyWithoutModelTest.
+    requirements:
+    - REQ-IX-FR-002
+    - REQ-IX-FR-003
+    - REQ-IX-FR-004
+    - REQ-IX-FR-005
+    - REQ-IX-FR-006
+    - REQ-IX-FR-007
+    - REQ-IX-FR-011
+    - REQ-IX-INV-001
+    - REQ-IX-INV-002
+    - REQ-IX-INV-003
+    - REQ-IX-INV-004
+    - REQ-IX-INV-005
+    - REQ-IX-INV-006
+    - REQ-IX-INV-007
+    - REQ-IX-VER-001
+    artifacts:
+    - docs/verification/test-plan.md
+    - app/src/test/java/com/rosan/installer/verification/PolicyWithoutModelTest.kt
+    human_decisions:
+    - Operator scoped Stage 1 to producing the D1 rev.6 test plan (P-01..P-22, C-01..C-16, A-01..A-10, S-01..S-04) and the static policy dependency test before full implementation.
+    - Operator interrupted and rejected the agent's attempt to wrap aidl.exe and override non-ASCII path checks on Windows, requiring the agent to restore the clean SDK state while the operator renamed the project folder to an ASCII path (D:\CS5351).
+    verification:
+    - Executed ./gradlew testUnstableDebugUnitTest --tests "com.rosan.installer.verification.PolicyWithoutModelTest" --no-configuration-cache; result PASS (4 of 4 tests passed against merged domain/engine/policy).
+    evidence:
+    - docs/verification/test-plan.md
+    - transcripts/60747744-YangXinyu.md
+    notes: Stage 1 test plan and static boundary check for REQ-IX-INV-006 and ADR-002.1.
+
+  - id: AI-60747744-0002
+    date: '2026-11-21'
+    tool: Antigravity
+    model: gemini-4-argon
+    role: verify
+    operator: Yang Xinyu (60747744, Member D - Verification)
+    task: Implement and run the Stage 2-4 offline verification test suites (Policy, Coordinator, Binding, Idempotency, and real AI+Policy integration).
+    requirements:
+    - REQ-IX-FR-003
+    - REQ-IX-FR-004
+    - REQ-IX-FR-005
+    - REQ-IX-FR-006
+    - REQ-IX-FR-007
+    - REQ-IX-FR-011
+    - REQ-IX-INV-001
+    - REQ-IX-INV-002
+    - REQ-IX-INV-003
+    - REQ-IX-INV-004
+    - REQ-IX-INV-005
+    - REQ-IX-INV-006
+    - REQ-IX-INV-007
+    - REQ-IX-SEC-001
+    - REQ-IX-SEC-002
+    - REQ-IX-SEC-003
+    - REQ-IX-SEC-004
+    - REQ-IX-REL-001
+    - REQ-IX-REL-002
+    - REQ-IX-REL-003
+    - REQ-IX-REL-004
+    - REQ-IX-COST-001
+    - REQ-IX-QUAL-001
+    - REQ-IX-ARCH-001
+    artifacts:
+    - app/src/test/java/com/rosan/installer/verification/VerificationContracts.kt
+    - app/src/test/java/com/rosan/installer/verification/VerificationFakesAndEngines.kt
+    - app/src/test/java/com/rosan/installer/verification/PolicyDecisionTableTest.kt
+    - app/src/test/java/com/rosan/installer/verification/HardBlockAndNoDowngradeTest.kt
+    - app/src/test/java/com/rosan/installer/verification/ApprovalCoordinatorAndInvariantsTest.kt
+    - app/src/test/java/com/rosan/installer/verification/AdvisorAndIntegrationTest.kt
+    - app/src/test/java/com/rosan/installer/verification/AiPolicyIntegrationTest.kt
+    - transcripts/60747744-YangXinyu.md
+    human_decisions:
+    - Operator approved generating the Stage 2-4 offline verification test suites and wiring AiPolicyIntegrationTest directly to the merged production classes (RequestInstallRiskAssessmentUseCase, DefaultAiRiskAdvisor, StrictAiOutputValidator, ModelRequestGate, and DeterministicPolicyEngine).
+    - Verified that AI HIGH security risk routes strictly to REQUIRE_REVIEW (DR-07) and never BLOCK (only deterministic HARD_BLOCK DR-01 produces BLOCK).
+    verification:
+    - Executed ./gradlew testUnstableDebugUnitTest --tests "com.rosan.installer.verification.*" --no-configuration-cache; result PASS (63 tests across 11 verification test classes, 0 failures, 0 errors, 0 skipped).
+    - Executed ./gradlew spotlessCheck --no-configuration-cache; result PASS.
+    - Validated docs/ai-use-log.yaml YAML syntax via PyYAML.
+    evidence:
+    - docs/verification/test-plan.md
+    - transcripts/60747744-YangXinyu.md
+    notes: Test-only additions under app/src/test/java/com/rosan/installer/verification/. No production files under app/src/main/ were modified.
+
+  - id: AI-wxxsfxyzm-0016
+    date: '2026-11-22'
+    tool: Claude Code
+    model: claude-opus-5-5
+    role: verify
+    operator: wxxsfxyzm (project lead)
+    task: Review PR #25 (Member D verification suite) and adopt the parts that verify production code.
+    requirements:
+    - REQ-IX-VER-001
+    - REQ-IX-INV-006
+    - REQ-IX-ARCH-001
+    artifacts:
+    - docs/ai-use-log.yaml
+    - docs/debt-register.md
+    human_decisions:
+    - Review found six of the eight PR #25 suites tested test-only reimplementations (DeterministicPolicyEngine, ApprovalCoordinator, ApprovalBinding, AIOutputValidator in VerificationFakesAndEngines.kt), not production code, and targeted the pre-#27 coordinator design.
+    - Operator decided to keep test-plan.md, the transcript, AiPolicyIntegrationTest and PolicyWithoutModelTest, remove the shadow suites, and rebuild them against production classes after the remaining features are implemented (DEBT-002).
+    verification:
+    - Merged origin/main into feat/d-verification-suite; resolved the ai-use-log append conflict keeping all entries.
+    - Ran ./gradlew spotlessCheck and ./gradlew :app:testUnstableDebugUnitTest --rerun on the result.
+    evidence:
+    - docs/debt-register.md
+    notes: The removed suites remain in commit a6cc5ca5 for reuse. Member D authorship of the original commit is preserved. (Renumbered from AI-wxxsfxyzm-0011 after PR #28, then to AI-wxxsfxyzm-0016 after PR #30 took 0013 and PR #29 took 0015, to avoid ID collisions.)
+
+  - id: AI-wxxsfxyzm-0017
+    date: '2026-11-22'
+    tool: Claude Code
+    model: claude-opus-5-5
+    role: verify
+    operator: wxxsfxyzm (project lead)
+    task: Bring PR #25 up to date with main after PR #30 and resolve AI-use log ID collisions.
+    requirements:
+    - REQ-IX-INV-001
+    - REQ-IX-INV-004
+    artifacts:
+    - docs/ai-use-log.yaml
+    human_decisions:
+    - Lead decided to keep PR #25 and asked the agent to fix any problems on top of the contributor's branch and push.
+    verification:
+    - Merged origin/main into the branch; the only conflict was docs/ai-use-log.yaml, resolved by keeping every entry (main entries first).
+    - The branch's review entry AI-wxxsfxyzm-0013 collided with PR #30's entry and was renumbered to AI-wxxsfxyzm-0016. List items that YAML parsed as key/value pairs were reworded to plain strings, matching the same fix on PR #29.
+    - Unit tests, spotless, and gates re-run after the merge (results in the PR comment).
+    evidence:
+    - PR 25
+    notes: Contributor history kept (merge, no rebase or force-push). No change to the contributor's tests, test plan, or transcript.
