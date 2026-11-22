@@ -58,3 +58,34 @@ root cause, fix, and the invariant or guard gap it exposed.
 - **Gap exposed:** Guard rules G1–G3 were enforced only through `read`
   and `edit` rules; shell allow rules were not checked for file writes
   or reads.
+
+## BUG-003 — Robolectric native runtime aborts under JDK 25 on macOS arm64
+
+- **Date / reporter:** 2026-11-22, detected by the build agent at plan
+  step 2 of the ADR-002.3 persistence slice.
+- **Status:** Open (environment).
+- **Symptom:** Robolectric 4.18.1 aborts the JVM with exit 134 (SIGABRT)
+  while loading its native runtime (`libandroid_runtime.dylib`), before
+  any test logic runs.
+- **Reproduction:** Add `org.robolectric:robolectric:4.18.1` and
+  `androidx.room3:room3-testing:3.0.3` as `testImplementation`, then run
+  a Robolectric Room smoke test under `:app:testUnstableDebugUnitTest`
+  with the project toolchain (JDK 25, macOS arm64). The test is reported
+  SKIPPED before the JVM aborts.
+- **Classification:** Environment / test-runtime defect (JDK 25 + macOS
+  arm64 incompatibility with the Robolectric native runtime).
+- **Root cause:** A minimal Robolectric-only probe with no Room also
+  aborts, so the failure is the Robolectric native runtime itself, not
+  Room or the new code. A direct JVM run prints "Loading android native
+  library from ... libandroid_runtime.dylib", then "could not find method
+  serverCertificateRequested", then aborts with no `hs_err` written
+  (C-level `abort()` / `JNI_OnLoad` failure).
+- **Flags tried (none resolved the abort):** `--enable-native-access=ALL-UNNAMED`,
+  `-Xmx2g`, `sdk=35`, `sdk=37`, `-Drobolectric.nativeruntime=false`.
+- **Fix:** None yet. The plan's step 2 stop rule worked as designed: the
+  build stopped and reported instead of proceeding on unverified Room
+  behavior, and the slice was deferred (see DEBT-003).
+- **Gap exposed:** The approved test strategy assumed Robolectric could
+  run real SQLite on the JVM under the project JDK 25 toolchain; that
+  assumption was not proven before the slice depended on it. A test
+  runtime compatible with the toolchain was not confirmed up front.
