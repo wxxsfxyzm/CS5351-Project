@@ -747,7 +747,7 @@ entries:
     - docs/ai-use-log.yaml (AI-wxxsfxyzm-0011)
     notes: Documentation only. No file under app/ was modified. No commit or push performed. DEBT-002 was not previously used; DEBT-003 spans it as directed, leaving DEBT-002 unused.
 
-  - id: AI-wxxsfxyzm-0013
+  - id: AI-yuki11111111111-0003
     date: '2026-11-22'
     tool: OpenCode 1.x (build agent)
     model: CS5351/DeepSeek-V4-Flash
@@ -785,7 +785,7 @@ entries:
     - app/build/test-results/testUnstableDebugUnitTest/TEST-com.rosan.installer.data.ai.advisory.FixedResponseAdvisorIntegrationTest.xml
     notes: Review found no existing FixedResponseAdvisor (only inline per-test stubs and the network-backed DefaultAiRiskAdvisor), so the capability was missing. The new advisor is an AIRiskAdvisor implementation with fixtures highSuccessLowRisk, lowSuccess, highRisk, unassessable (UNKNOWN), invalid, missing, unavailable, plus scripted() and of(). No domain/ai file, Koin module, provider, prompt, or workflow was changed. Not committed or pushed.
 
-  - id: AI-wxxsfxyzm-0014
+  - id: AI-yuki11111111111-0004
     date: '2026-11-22'
     tool: OpenCode 1.x (build agent)
     model: CS5351/DeepSeek-V4-Flash
@@ -821,39 +821,7 @@ entries:
     evidence:
     - app/build/test-results/testUnstableDebugUnitTest/TEST-com.rosan.installer.domain.ai.usecase.AdapterContractTest.xml
     notes: G-1 adds a strict structural check in StrictAiOutputValidator (FIXED_KEYS) after the action-field check, so an action key still reports the more specific reason. G-3 removes the local installed-version hint from the prompt and documents the installedVersionCode parameter as local-only, so no prompt text contradicts an install_relation of UNKNOWN. G-4 adds AdapterContractTest as the REQ-IX-MOD-001 adapter-swap evidence. No frozen model type, provider, transport or DI registration was changed. Not committed or pushed.
-    date: '2026-11-22'
-    tool: OpenCode 1.x (build agent)
-    model: CS5351/DeepSeek-V4-Flash
-    role: build
-    task: Audit the advisory-only guarantees and the timeout/network/consent/invalid-JSON/extra-action failure paths, then close the two real gaps found.
-    requirements:
-    - ADR-002.6
-    - REQ-IX-FR-004
-    - REQ-IX-FR-005
-    - REQ-IX-FR-011
-    - REQ-IX-INV-001
-    - REQ-IX-INV-004
-    - REQ-IX-SEC-005
-    artifacts:
-    - app/src/main/java/com/rosan/installer/domain/ai/usecase/StrictAiOutputValidator.kt
-    - app/src/test/java/com/rosan/installer/domain/ai/usecase/StrictAiOutputValidatorTest.kt
-    - app/src/test/java/com/rosan/installer/domain/ai/usecase/FailureEscalationTest.kt
-    - docs/ai-use-log.yaml
-    human_decisions:
-    - Lead approved the proposal to fix G-1 and G-3 and to report G-2 without code changes.
-    - G-2 left alone, because changing how a consent refusal is encoded would need a frozen model, AiRequestBuilder or AiAdvisorFailure edit, all outside this task; the resulting policy outcome is the same DR-08 REQUIRE_REVIEW.
-    verification:
-    - ./gradlew --offline spotlessApply then spotlessCheck - BUILD SUCCESSFUL.
-    - ./gradlew --offline :app:testUnstableDebugUnitTest (full suite) - 370 tests across 55 suites, 0 failures, 0 skipped.
-    - FailureEscalationTest - 11 tests, 0 failures. StrictAiOutputValidatorTest - 30 tests, 0 failures.
-    - Ran with JAVA_HOME set to the JDK 25 runtime and ANDROID_HOME set to the local Android SDK.
-    evidence:
-    - app/build/test-results/testUnstableDebugUnitTest/TEST-com.rosan.installer.domain.ai.usecase.FailureEscalationTest.xml
-    - app/build/test-results/testUnstableDebugUnitTest/TEST-com.rosan.installer.domain.ai.usecase.StrictAiOutputValidatorTest.xml
-    notes: "G-1 makes StrictAiOutputValidator.parse total (REQ-IX-INV-004). Before, a legal JSON body with an illegal inner type threw out of parse, past DefaultAiRiskAdvisor and the use case, so the policy layer received no status at all. parse now wraps validation, parseEnum and parseStringList guard contentOrNull, and only the exception type name is recorded, never the model text. G-3 adds FailureEscalationTest, which carries timeout, network disabled, consent refused, invalid JSON, an extra action key and an ill-typed body end to end through RequestInstallRiskAssessmentUseCase and DeterministicPolicyEngine, asserting REQUIRE_REVIEW / AWAIT_HUMAN / DR-08, plus control cases for DR-05 and DR-07. Two of my own initial assertions were wrong and were corrected against observed behaviour: a reason-only instruction string stays Valid advice, and an action key with favorable fields is Invalid and escalated. No frozen model, prompt, provider or DI registration was changed. Not committed or pushed."
-
-
-  - id: AI-wxxsfxyzm-0015
+  - id: AI-yuki11111111111-0005
     date: '2026-11-22'
     tool: OpenCode 1.x (build agent)
     model: CS5351/DeepSeek-V4-Flash
@@ -885,7 +853,7 @@ entries:
     - app/build/test-results/testUnstableDebugUnitTest/TEST-com.rosan.installer.domain.ai.usecase.FailureEscalationTest.xml
     - app/build/test-results/testUnstableDebugUnitTest/TEST-com.rosan.installer.domain.ai.usecase.StrictAiOutputValidatorTest.xml
     notes: "G-1 makes StrictAiOutputValidator.parse total (REQ-IX-INV-004). Before, a legal JSON body with an illegal inner type threw out of parse, past DefaultAiRiskAdvisor and the use case, so the policy layer received no status at all. parse now wraps validation, parseEnum and parseStringList guard contentOrNull, and only the exception type name is recorded, never the model text. G-3 adds FailureEscalationTest, which carries timeout, network disabled, consent refused, invalid JSON, an extra action key and an ill-typed body end to end through RequestInstallRiskAssessmentUseCase and DeterministicPolicyEngine, asserting REQUIRE_REVIEW / AWAIT_HUMAN / DR-08, plus control cases for DR-05 and DR-07. Two of my own initial assertions were wrong and were corrected against observed behaviour: a reason-only instruction string stays Valid advice, and an action key with favorable fields is Invalid and escalated. No frozen model, prompt, provider or DI registration was changed. Not committed or pushed."
-  - id: AI-wxxsfxyzm-0016
+  - id: AI-yuki11111111111-0006
     date: '2026-11-22'
     tool: OpenCode 1.x (build agent)
     model: CS5351/DeepSeek-V4-Flash
@@ -905,7 +873,7 @@ entries:
     human_decisions:
     - Lead instructed that all changes be submitted as a pull request following .github/pull_request_template.md.
     - Lead instructed that the AI-use log carry the usage record and that the authoring transcript be appended to transcripts/transcriptE-Chengqian He-60267540.md.
-    - Lead corrected the operator account to yuki11111111111 (Member A) for entries AI-wxxsfxyzm-0013 through -0016; the earlier wxxsfxyzm label was an agent error, not the operator's identity.
+    - Lead corrected the operator account and ID prefix for entries AI-yuki11111111111-0003 through -0006 (formerly AI-wxxsfxyzm-0013 through -0016); the earlier wxxsfxyzm label was an agent error, not the operator's identity.
     - Earlier instruction still applies: docs/plans/ is excluded from the commit.
     verification:
     - python yaml.safe_load on docs/ai-use-log.yaml - entry count and unique id check.

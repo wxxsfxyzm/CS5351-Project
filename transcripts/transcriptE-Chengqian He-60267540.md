@@ -11508,3 +11508,26 @@ Wrote file successfully: AppData/Local/Temp/opencode/export_transcript.py
 }
 ```
 
+---
+
+## Post-session correction: AI-use log entry IDs
+
+The entries written during this session were first recorded as
+`AI-wxxsfxyzm-0013` through `AI-wxxsfxyzm-0016`. The operator account and the
+ID prefix were both wrong: the operator is `yuki11111111111` (Member A), whose
+existing entries use the prefix `AI-yuki11111111111-`.
+
+The IDs were renamed in `docs/ai-use-log.yaml` as follows:
+
+| Written in this session | Current ID |
+|---|---|
+| AI-wxxsfxyzm-0013 | AI-yuki11111111111-0003 |
+| AI-wxxsfxyzm-0014 | AI-yuki11111111111-0004 |
+| AI-wxxsfxyzm-0015 | AI-yuki11111111111-0005 |
+| AI-wxxsfxyzm-0016 | AI-yuki11111111111-0006 |
+
+The transcript above is left unmodified, so it still shows the original IDs
+and the original commit message. Where this transcript and the current
+`docs/ai-use-log.yaml` disagree on an ID, the log is authoritative. Entries
+`AI-wxxsfxyzm-0010` through `-0012` are unaffected: they belong to a different
+member and were not renamed.
