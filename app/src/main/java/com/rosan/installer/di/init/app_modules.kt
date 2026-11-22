@@ -2,7 +2,9 @@
 // Copyright (C) 2023-2026 iamr0s InstallerX Revived contributors
 package com.rosan.installer.di.init
 
+import com.rosan.installer.di.aiCredentialModule
 import com.rosan.installer.di.aiModule
+import com.rosan.installer.di.approvalModule
 import com.rosan.installer.di.coreModule
 import com.rosan.installer.di.deviceModule
 import com.rosan.installer.di.engineModule
@@ -29,5 +31,7 @@ val appModules = listOf(
     deviceModule,
     initModule,
     aiModule,
+    aiCredentialModule,
+    approvalModule,
     privilegedModule,
 )

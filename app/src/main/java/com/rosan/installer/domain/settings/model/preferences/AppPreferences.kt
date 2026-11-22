@@ -61,6 +61,9 @@ data class AppPreferences(
     val allowInternetAccess: Boolean,
     val githubUpdateChannel: GithubUpdateChannel,
     val customGithubProxyUrl: String,
+    // AI install-risk advisor switch states (non-secret; key is in AiCredentialStore)
+    val aiAdvisorEnabled: Boolean,
+    val aiAdvisorConsent: Boolean,
     // Lab Settings
     val labRootEnableModuleFlash: Boolean,
     val labRootShowModuleArt: Boolean,

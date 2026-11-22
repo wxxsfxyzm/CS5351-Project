@@ -88,6 +88,8 @@ enum class BooleanSetting {
     QuickOpenLSPosed,
     EnableFileLogging,
     UserSetLSPosedActive,
+    AiInstallRiskAdvisorEnabled,
+    AiInstallRiskAdvisorConsent,
 }
 
 enum class NamedPackageListSetting {

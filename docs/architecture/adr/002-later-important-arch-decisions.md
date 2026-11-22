@@ -188,6 +188,19 @@ policy specified in the D2 artifact named; an entry with status
   - Only `ApprovalCoordinator` may call `InstallationGateway`, and only
     after `ALLOW_AUTO` or a valid revalidated approval
     (REQ-IX-ARCH-001, REQ-IX-FR-007).
+  - **v1 scope of the choke point (decided 2026-11-22).** The choke
+    point applies to requests the AI component evaluates (AI switch on).
+    With the switch off, the system is baseline InstallerX
+    (REQ-IX-FR-012): the existing `session.install(true)` path is kept,
+    no `ApprovalCoordinator` is constructed, and no model call is made.
+    v1 evaluates AutoDialog only; AutoNotification keeps the baseline
+    and makes 0 AI calls. Reason: the merged `PolicyAdvice` contract
+    has no "AI disabled" arm, so routing AI-off submissions through the
+    coordinator would need a new decision rule, and the registry note
+    already states that AI-off flows use the baseline. Reopen if
+    AutoNotification is evaluated or an AI-off audit path is required
+    to pass through the coordinator. Decision record: Q9 in
+    `docs/plans/2026-11-22-ai-advisor-end-to-end-slice.md`.
 - **Enforcement:** static check that the advisory package references no
   gateway, repository, or privileged backend type
   (`planned: AdvisorIsolationTest`); decision-table negative test that a

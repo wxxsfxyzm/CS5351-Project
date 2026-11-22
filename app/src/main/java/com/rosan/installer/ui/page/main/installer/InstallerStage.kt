@@ -22,6 +22,18 @@ sealed interface InstallerStage {
 
     data object InstallChoice : InstallerStage
     data object InstallPrepare : InstallerStage
+
+    /**
+     * Implements: ADR-002.4; Enforces: REQ-IX-FR-006.
+     *
+     * The advisory review for the prepare dialog's Install button (Continue).
+     * It is an addition, not a replacement: while the advisor is on, the prepare
+     * dialog shows the advisory card and the Install button's enabled state
+     * comes from the pure [com.rosan.installer.domain.ai.model.AiUiState].
+     */
+    data class AiReview(
+        val uiState: com.rosan.installer.domain.ai.model.AiUiState,
+    ) : InstallerStage
     data object InstallExtendedMenu : InstallerStage
     data object InstallExtendedSubMenu : InstallerStage
     data class Installing(val progress: Float, val current: Int, val total: Int, val appLabel: String?, val phase: InstallPhase) : InstallerStage

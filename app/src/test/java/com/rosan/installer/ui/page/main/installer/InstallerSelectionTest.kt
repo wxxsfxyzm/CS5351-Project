@@ -535,6 +535,27 @@ class InstallerSelectionTest {
                 true
             },
             installedPackageSignatureProvider = stub(),
+            prepareApproval = com.rosan.installer.domain.engine.approval.PrepareApprovalUseCase(
+                assessment = com.rosan.installer.domain.ai.usecase.RequestInstallRiskAssessmentUseCase(
+                    builder = com.rosan.installer.domain.ai.usecase.AiRequestBuilder(),
+                    advisor = object : com.rosan.installer.domain.ai.repository.AIRiskAdvisor {
+                        override suspend fun assessRequest(
+                            request: com.rosan.installer.domain.ai.model.AiInstallRiskRequest,
+                            knownEvidencePaths: Set<String>,
+                        ): com.rosan.installer.domain.ai.model.AdvisorOutcome = com.rosan.installer.domain.ai.model.AdvisorOutcome.Failure(
+                            com.rosan.installer.domain.ai.model.AiAdvisorFailure.NetworkDisabled("test"),
+                        )
+                    },
+                ),
+            ),
+            aiEndpointConfig = com.rosan.installer.data.ai.provider.AiEndpointConfigSource {
+                com.rosan.installer.data.ai.provider.AiEndpointConfig(
+                    endpoint = null,
+                    apiKey = null,
+                    modelId = "CS5351/DeepSeek-V4-Flash",
+                    promptVersion = "ai-risk-prompt-v1.1",
+                )
+            },
         )
 
         fun load(results: List<PackageAnalysisResult>) {
@@ -615,6 +636,8 @@ class InstallerSelectionTest {
             allowInternetAccess = false,
             githubUpdateChannel = com.rosan.installer.domain.settings.model.preferences.GithubUpdateChannel.entries.first(),
             customGithubProxyUrl = "",
+            aiAdvisorEnabled = false,
+            aiAdvisorConsent = false,
             labRootEnableModuleFlash = false,
             labRootShowModuleArt = false,
             labRootMode = com.rosan.installer.domain.settings.model.preferences.RootMode.entries.first(),

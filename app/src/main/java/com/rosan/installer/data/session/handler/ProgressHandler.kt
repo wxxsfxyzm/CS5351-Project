@@ -10,7 +10,18 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
-class ProgressHandler(override val scope: CoroutineScope, override val session: InstallerSessionRepository) : Handler {
+class ProgressHandler(
+    override val scope: CoroutineScope,
+    override val session: InstallerSessionRepository,
+    /**
+     * Reads the current AI advisor switch. When the advisor is enabled, the
+     * AutoDialog flow drives the install through the advisory card, so this
+     * baseline auto-install must not fire (checkpoint C / review fix 4). The
+     * default keeps the baseline (advisor off) behaviour for callers that do not
+     * supply it. AutoNotification is never affected: it is not AutoDialog.
+     */
+    private val advisorEnabled: suspend () -> Boolean = { false },
+) : Handler {
 
     private var job: Job? = null
 
@@ -48,7 +59,7 @@ class ProgressHandler(override val scope: CoroutineScope, override val session: 
         }
     }
 
-    private fun onAnalysedSuccess() {
+    private suspend fun onAnalysedSuccess() {
         Timber.d("[id=${session.id}] onAnalysedSuccess called.")
         val installMode = session.config.installMode
         if (installMode != InstallMode.AutoDialog && installMode != InstallMode.AutoNotification) {
@@ -61,6 +72,14 @@ class ProgressHandler(override val scope: CoroutineScope, override val session: 
 
         if (!isSinglePackage) {
             Timber.d("[id=${session.id}] onAnalysedSuccess: Not a single package install. Doing nothing.")
+            return
+        }
+
+        // With the advisor on, the dialog flow owns AutoDialog installs (it runs
+        // the assessment and shows the card). Do not auto-install here. This only
+        // affects AutoDialog; AutoNotification keeps its baseline path.
+        if (installMode == InstallMode.AutoDialog && advisorEnabled()) {
+            Timber.d("[id=${session.id}] onAnalysedSuccess: Advisor enabled; dialog drives AutoDialog.")
             return
         }
 

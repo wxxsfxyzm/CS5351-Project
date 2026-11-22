@@ -579,7 +579,9 @@ fun MiuixInstallerPage(
                             )
                         }
 
-                        is InstallerStage.InstallPrepare -> {
+                        is InstallerStage.InstallPrepare,
+                        is InstallerStage.AiReview,
+                        -> {
                             val prepareSubState = when {
                                 showSettings -> "settings"
                                 showPermissions -> "permissions"

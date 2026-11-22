@@ -57,8 +57,18 @@ internal object OpenAiCompatiblePayload {
  * Transport for the model service. Implementations perform exactly one
  * HTTP exchange and translate every failure into
  * [com.rosan.installer.domain.ai.model.AiAdvisorFailure].
+ *
+ * The target is passed per call ([baseUrl] + [path]) rather than read from a
+ * fixed field, so a single stateless transport instance serves the current
+ * endpoint from configuration. The implementation still validates
+ * [baseUrl] before dispatch.
  */
 interface OpenAiCompatibleTransport {
-    /** @return the assistant message content, not the whole envelope. */
-    suspend fun post(path: String, body: String): String
+    /**
+     * @param baseUrl the validated endpoint host base (with no trailing slash).
+     * @param path the API path, e.g. `chat/completions`.
+     * @return the raw response envelope body; the client extracts the
+     *   assistant message content and checks the reply model.
+     */
+    suspend fun post(baseUrl: String, path: String, body: String): String
 }

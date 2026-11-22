@@ -747,6 +747,122 @@ entries:
     - docs/ai-use-log.yaml (AI-wxxsfxyzm-0011)
     notes: Documentation only. No file under app/ was modified. No commit or push performed. DEBT-002 was not previously used; DEBT-003 spans it as directed, leaving DEBT-002 unused.
 
+  - id: AI-wxxsfxyzm-0013
+    date: '2026-11-22'
+    tool: OpenCode 1.x (build agent)
+    model: CS5351/DeepSeek-V4-Flash
+    role: build
+    operator: wxxsfxyzm (project lead)
+    task: Implement the AI install-risk advisor end-to-end slice (checkpoints 0, A, B, C, D, E) per the approved plan.
+    requirements:
+    - REQ-IX-FR-001
+    - REQ-IX-FR-002
+    - REQ-IX-FR-003
+    - REQ-IX-FR-005
+    - REQ-IX-FR-006
+    - REQ-IX-FR-007
+    - REQ-IX-FR-008
+    - REQ-IX-FR-011
+    - REQ-IX-FR-012
+    - REQ-IX-ARCH-001
+    - REQ-IX-ARCH-002
+    - REQ-IX-INV-001
+    - REQ-IX-INV-002
+    - REQ-IX-INV-003
+    - REQ-IX-INV-004
+    - REQ-IX-INV-006
+    - REQ-IX-INV-007
+    - REQ-IX-SEC-004
+    - REQ-IX-SEC-005
+    - REQ-IX-MOD-001
+    - ADR-002.2
+    - ADR-002.4
+    - ADR-002.5
+    - ADR-002.6
+    - ADR-002.7
+    artifacts:
+    - app/src/main/java/com/rosan/installer/data/ai/provider/OpenAiCompatibleModelClient.kt
+    - app/src/main/java/com/rosan/installer/data/ai/provider/AiEndpointValidator.kt
+    - app/src/main/java/com/rosan/installer/data/ai/provider/AiEndpointConfigSource.kt
+    - app/src/main/java/com/rosan/installer/data/ai/provider/AiCredentialStore.kt
+    - app/src/main/java/com/rosan/installer/data/ai/provider/DataStoreAiCredentialStore.kt
+    - app/src/main/java/com/rosan/installer/data/ai/provider/OpenAiCompatibleTransport.kt
+    - app/src/main/java/com/rosan/installer/data/ai/provider/OkHttpAiTransport.kt
+    - app/src/main/java/com/rosan/installer/data/engine/approval/InMemoryApprovalStateStore.kt
+    - app/src/main/java/com/rosan/installer/data/engine/approval/SessionBindingFactsProvider.kt
+    - app/src/main/java/com/rosan/installer/data/engine/install/SessionInstallationGateway.kt
+    - app/src/main/java/com/rosan/installer/domain/engine/approval/PrepareApprovalUseCase.kt
+    - app/src/main/java/com/rosan/installer/domain/engine/approval/EvaluatedPolicyFactory.kt
+    - app/src/main/java/com/rosan/installer/domain/ai/model/AiUiState.kt
+    - app/src/main/java/com/rosan/installer/domain/ai/usecase/AiAdvisorSettings.kt
+    - app/src/main/java/com/rosan/installer/ui/page/main/installer/mapper/AiDecisionUiMapper.kt
+    - app/src/main/java/com/rosan/installer/ui/page/main/installer/AdvisorDecision.kt
+    - app/src/main/java/com/rosan/installer/data/session/handler/ProgressHandler.kt
+    - app/src/main/java/com/rosan/installer/framework/service/InstallerService.kt
+    - app/src/main/java/com/rosan/installer/ui/page/main/installer/dialog/inner/AiAdvisoryCard.kt
+    - app/src/main/java/com/rosan/installer/ui/page/miuix/installer/sheetcontent/AiAdvisoryCardContent.kt
+    - app/src/main/java/com/rosan/installer/ui/page/main/widget/dialog/AiAdvisorDialogs.kt
+    - app/src/main/java/com/rosan/installer/ui/page/miuix/widgets/MiuixAiAdvisorDialogs.kt
+    - app/src/main/java/com/rosan/installer/di/ApprovalModule.kt
+    - app/src/main/java/com/rosan/installer/di/AiCredentialModule.kt
+    - app/src/main/java/com/rosan/installer/di/AiModule.kt
+    - app/src/main/java/com/rosan/installer/ui/page/main/installer/InstallerViewModel.kt
+    - app/src/main/java/com/rosan/installer/ui/page/main/settings/preferred/network/NetworkSettingsViewModel.kt
+    - app/src/main/res/values/strings.xml
+    - prompts/prompt_v1.1.yaml
+    - prompts/prompt_v1.0.yaml
+    - app/src/main/java/com/rosan/installer/domain/ai/usecase/AiRequestBuilder.kt
+    - app/src/test/java/com/rosan/installer/live/CourseServiceLiveAdvisorTest.kt
+    - app/src/test/java/com/rosan/installer/domain/engine/approval/EvaluatedPolicyFactoryTest.kt
+    - app/src/test/java/com/rosan/installer/ui/page/main/installer/AdvisorDecisionTest.kt
+    - app/src/test/java/com/rosan/installer/data/session/handler/ProgressHandlerTest.kt
+    - docs/plans/2026-11-22-ai-advisor-end-to-end-slice.md
+    - docs/ai-use-log.yaml
+    human_decisions:
+    - Lead approved plan rev.3 and its tests on 2026-11-22 (Q1 keep 512, Q2 plaintext key no new dependency, Q4 enumerated consent dialog, Q9 Option (b) ARCH-001 v1 narrowing).
+    - Lead ran the checkpoint 0 live test with course credentials after the agent fixed a vacuous run (OkHttp cannot run in Android JVM unit tests; test now uses a java.net.http test-only transport). Result PASS; MIN_USABLE kept at 8.
+    - Lead directed that InstallerActivity re-issuing session.install(false) after the unknown-source prompt be recognised explicitly in the ChokePoint extension, not by allowing session.install in general.
+    - No key, credential, or env-file content was written to code, tests, fixtures, logs, or this log.
+    - 'Build review (lead) 2026-11-22: NOT ACCEPTED despite green tests. Directed: (1) fail closed so no InstallerViewModel path calls session.install except the PrepareApprovalUseCase Baseline branch; remove fallbacks for thrown/AlreadyStarted/missing coordinator/baseInput; a thrown prepare shows an error state with Install disabled and Cancel enabled; (2) gate-withheld cases must go through the coordinator.decide engine (consent off -> PolicyAdvice.Unusable(CONSENT_DECLINED), unconfigured/network off -> PolicyAdvice.Failed(code)) and return Decided so Continue goes through onContinue; PersistenceFailed disables Install (REL-002); (3) derive EvaluatedPolicy from deterministic facts via one pure function with tests (BLOCK on mismatch, DR-05 reachable, DR-06); (4) ProgressHandler must not auto-install AutoDialog when the advisor is enabled; AutoNotification keeps baseline; (5) the advisor runs only for InstallMode.AutoDialog; (6) ChokePointTest must not allowlist whole files; a pure ViewModel decision function test must prove only Baseline yields BaselineInstall; (7) add the required tests; update this entry (no new id); do not commit.'
+    verification:
+    - Checkpoint 0 (live, lead-run) - 10/10 single dispatch, 0 network errors, 8/10 usable (A-F, H, J); G and I returned INVALID_OUTPUT because the model cited untransmitted paths and the strict validator rejected them as designed (routes to REQUIRE_REVIEW). Key absent from the report.
+    - Checkpoint 0 offline - spotlessApply, spotlessCheck, :app:testUnstableDebugUnitTest, unit-test compile all pass; python .github/scripts/course_gates.py prompt-sync passes with prompt_v1.1.yaml.
+    - Checkpoints A-E - after each, ./gradlew spotlessApply, spotlessCheck, :app:testUnstableDebugUnitTest, and :app:compileUnstableDebugKotlin pass with zero regressions.
+    - 'New tests added: AiEndpointValidatorTest, ProviderRequestShapeTest, ProviderResponseHandlingTest, AiCredentialStoreTest, AiSettingsToGateTest, AiConsentDialogTest, SessionInstallationGatewayTest (incl waitingUnknownSourceIsNotTerminal), GatewaySessionIsolationTest, AiIsolationTest, extended ChokePointTest (production gateway is the only submit path; recognises the InstallWaitingUnknownSource continuation), PrepareApprovalUseCaseTest, AiDecisionUiMapperTest.'
+    - 'Review fixes 2026-11-22: (1) InstallerViewModel now has exactly one session.install, inside baselineInstall(), reached only from the advisor-off / non-AutoDialog / out-of-scope baseline paths; thrown prepare -> AiUiState.Error (Install disabled, Cancel enabled); AlreadyStarted keeps the stage; missing coordinator/ids/baseInput fail closed with no install. (2) PrepareApprovalUseCase gate-withheld cases build PolicyInput and call coordinator.decide (consent off -> Unusable(CONSENT_DECLINED) -> DR-02 AWAIT_HUMAN; unconfigured/network off -> Failed(code) -> AWAIT_HUMAN), returning Decided with the unavailable reason; PersistenceFailed -> AiUiState.Unavailable(PersistenceFailed) with continueEnabled=false. (3) EvaluatedPolicyFactory derives hardBlock/baselineAllowsAuto/autoRulesSatisfied purely; EvaluatedPolicyFactoryTest asserts BLOCK (mismatch and FAILED), DR-05 reachable (HIGH/LOW + all rules), DR-06 (shared UID). (4) ProgressHandler skips AutoDialog when the advisor is enabled (reads prefs via the injected provider) and keeps AutoNotification baseline; ProgressHandlerTest covers both. (5) runAdvisor runs only for InstallMode.AutoDialog. (6) ChokePointTest asserts the exact per-file session.install call sites/ counts (gateway, InstallerViewModel baseline funnel, ProgressHandler, BroadcastHandler) and the InstallerActivity currentSession?.install(false) continuation, with no whole-file allowlisting; AdvisorDecisionTest proves only Baseline yields BaselineInstall. (7) Added: AdvisorDecisionTest, EvaluatedPolicyFactoryTest, ProgressHandlerTest, consentOffGoesThroughEngineToAwaitHuman, persistenceFailedYieldsNoInstall, persistenceFailedDisablesContinue.'
+    - Final checks after the review - ./gradlew spotlessCheck compileUnstableDebugKotlin -> BUILD SUCCESSFUL; :app:testUnstableDebugUnitTest --rerun -> BUILD SUCCESSFUL; :app:assembleUnstableDebug -> BUILD SUCCESSFUL; python3 .github/scripts/course_gates.py prompt-sync -> passed. No commit, push, or PR performed.
+    - 'Re-review fixes 2026-11-22: the lead found the uninstall-then-reinstall retry (InstallerViewModel ~490, ProgressEntity.UninstallSuccess) still called baselineInstall(triggerAuth=false) with the advisor active, skipping the coordinator although the installed app and signature were gone. Fix: AdvisorDecision.forRetry(advisorActive) is the pure decision (RetryAssessment when active, BaselineInstall when off); the UninstallSuccess branch routes through it. When active, retryAdvisorAfterUninstall() resets the coordinator/baseInput/job/operation and starts a fresh assessment as attempt-2 on the same operation (FR-001: at most two attempts), so the user sees a fresh card; the advisor-off retry keeps baselineInstall(triggerAuth=false). The advisor-on retry can never yield BaselineInstall. AdvisorDecisionTest.advisorOnRetryNeverYieldsBaselineInstall covers it. Still exactly one session.install site (inside baselineInstall()).'
+    - 'Re-review round 2, 2026-11-22: the lead found (1) the advisor-on retry reused the same operationId, so PrepareApprovalUseCase started guard returned AlreadyStarted and the SubmissionLedger permit was already spent; (2) the UninstallSuccess else branch fell through to baselineInstall(triggerAuth=false). Fix: retryAdvisorAfterUninstall now runs runAdvisor(attemptId=attempt-1, operationSuffix=-retry-1), a NEW operation (fresh started guard and permit) started again at attempt-1 because the facts changed; the advisor-off retry keeps baselineInstall(triggerAuth=false). The UninstallSuccess when maps any other AdvisorDecision value to a no-op (fail closed). PrepareApprovalUseCaseTest.retryAfterUninstallUsesNewOperationIdAndCanSubmitOnce proves op-1 decides+submits once, the old op cannot submit again, and op-1-retry-1 decides afresh and submits once through the gateway (2 dispatches). AdvisorDecisionTest still proves forRetry(true) never yields BaselineInstall. Still exactly one session.install site.'
+    evidence:
+    - docs/plans/2026-11-22-ai-advisor-end-to-end-slice.md (approved rev.3)
+    - docs/ai-use-log.yaml (this entry, AI-wxxsfxyzm-0013)
+    notes: 'Review round 2026-11-22: the lead rejected the first build because the advisor-on path still bypassed the choke point; all seven review items were fixed (fail-closed single baseline install, gate-withheld cases through the engine, deterministic EvaluatedPolicyFactory, ProgressHandler AutoDialog skip, AutoDialog-only advisor, per-call-site ChokePoint with a pure AdvisorDecision test, and the new tests), then the final checks re-run green. AutoNotification and other out-of-scope flows remain 0-AI and unclaimed (Q8); persistence/audit (FR-009/REL-002..004) remains deferred (DEBT-003); plaintext key at rest recorded as guardrail debt for the verify role (Q2); the ARCH-001 v1 narrowing and CI secret change are human tasks in the plan (sections 9-10). Re-review 2026-11-22: the advisor-on uninstall-retry bypass was fixed (AdvisorDecision.forRetry + retryAdvisorAfterUninstall as a new operation); advisor-off retry stays baseline. Re-review round 2, 2026-11-22: the retry now uses a NEW operationId (-retry-1) because the first operation''s started guard and submission permit were spent; the UninstallSuccess fallthrough is a fail-closed no-op.'
+
+  - id: AI-wxxsfxyzm-0014
+    date: '2026-11-22'
+    tool: Claude Code
+    model: claude-opus-5-5
+    role: plan
+    operator: wxxsfxyzm (project lead)
+    task: Draft the v1 scope narrowing of REQ-IX-ARCH-001 and the matching ADR-002.6 note for human review.
+    requirements:
+    - REQ-IX-ARCH-001
+    - REQ-IX-FR-012
+    - ADR-002.6
+    artifacts:
+    - docs/req/requirements.yaml
+    - docs/architecture/adr/002-later-important-arch-decisions.md
+    - docs/ai-use-log.yaml
+    human_decisions:
+    - Lead chose option (b) for Q9 in docs/plans/2026-11-22-ai-advisor-end-to-end-slice.md. The choke point applies to AI-evaluated requests only; AI-off and not-yet-evaluated modes keep the baseline path with 0 AI calls.
+    - Lead reviewed the drafted statement, fit criterion, note, and ADR-002.6 bullet and approved them on 2026-11-22.
+    verification:
+    - Requirements schema gate passes on the edited docs/req/requirements.yaml.
+    - git diff --check clean.
+    evidence:
+    - docs/plans/2026-11-22-ai-advisor-end-to-end-slice.md (Q9 decision, section 13 approval)
+    notes: Documentation only; no source or test changes. The agent drafted; the lead approved. Must merge before the AI advisor end-to-end PR, which relies on the narrowed wording. ID 0013 is used by the AI advisor build branch, so this entry takes 0014.
+
   - id: AI-yuki11111111111-0003
     date: '2026-11-22'
     tool: OpenCode v1 (build agent)
@@ -874,7 +990,7 @@ entries:
     - Lead instructed that all changes be submitted as a pull request following .github/pull_request_template.md.
     - Lead instructed that the AI-use log carry the usage record and that the authoring transcript be appended to transcripts/transcriptE-Chengqian He-60267540.md.
     - Lead corrected the operator name and ID prefix for entries AI-yuki11111111111-0003 through -0006 (formerly AI-wxxsfxyzm-0013 through -0016) and asked for the bare account name without a member qualifier; the earlier wxxsfxyzm label was an agent error, not the operator's identity.
-    - Earlier instruction still applies: docs/plans/ is excluded from the commit.
+    - Earlier instruction still applies - docs/plans/ is excluded from the commit.
     verification:
     - python yaml.safe_load on docs/ai-use-log.yaml - entry count and unique id check.
     - Transcript regenerated from the local OpenCode session store (session ses_dfcb06c5bffeDYSnHAdV8gX8bl) and appended; file grew by 10515 lines.
