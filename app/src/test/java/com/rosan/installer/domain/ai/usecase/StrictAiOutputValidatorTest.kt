@@ -7,6 +7,7 @@ import com.rosan.installer.domain.ai.model.InstallSuccessLikelihood
 import com.rosan.installer.domain.ai.model.SecurityRisk
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -192,6 +193,84 @@ class StrictAiOutputValidatorTest {
     @Test
     fun fencedJson_isAccepted() {
         assertIs<AssessmentResult.Valid>(parse("```json\n$validJson\n```"))
+    }
+
+    // --- Fixed structure: exactly four keys (REQ-IX-FR-004) ---------------
+
+    /** Verifies: REQ-IX-FR-004 (positive: exactly the four fixed keys is valid). */
+    @Test
+    fun exactlyFourKeys_isValid() {
+        val assessment = assertIs<AssessmentResult.Valid>(parse(validJson)).assessment
+        assertEquals(1, assessment.reasons.size)
+        assertEquals(1, assessment.evidenceRefs.size)
+    }
+
+    /** Verifies: REQ-IX-FR-004 (negative: an extra key is a structural deviation). */
+    @Test
+    fun extraKey_isInvalidNamingThatKey() {
+        val json = validJson.replaceFirst("{", """{"notes":"extra commentary",""")
+        val invalid = invalidOf(json)
+        assertEquals("notes", invalid.field)
+        assertTrue(invalid.reason.contains("outside the fixed format"))
+    }
+
+    /** Verifies: REQ-IX-FR-004 (negative: an extra numeric score is not silently ignored). */
+    @Test
+    fun extraScoreKey_isInvalid() {
+        invalidOf(validJson.replaceFirst("{", """{"risk_score":1,"""))
+    }
+
+    /**
+     * Verifies: REQ-IX-INV-004, REQ-IX-FR-004 (legal JSON with an illegal
+     * inner type is a classified failure, never a thrown exception).
+     */
+    @Test
+    fun illTypedInnerValues_areInvalidAndNeverThrow() {
+        val cases = listOf(
+            // security_risk present as a number, not a string
+            validJson.replace("\"LOW\"", "1"),
+            // reasons holding an object instead of a string
+            validJson.replace("[\"target_sdk 35 is current\"]", "[{}]"),
+            // evidence_refs holding a number instead of a string
+            validJson.replace("[\"evidence.target_sdk\"]", "[42]"),
+            // reasons is an object, not an array
+            validJson.replace("[\"target_sdk 35 is current\"]", "{\"a\":1}"),
+        )
+        for (case in cases) {
+            val result = parse(case)
+            assertTrue(
+                result is AssessmentResult.Invalid || result is AssessmentResult.Missing,
+                "expected a classified failure for: $case",
+            )
+        }
+    }
+
+    /**
+     * Verifies: REQ-IX-INV-004 (no response text is copied into the audit
+     * reason when validation fails unexpectedly).
+     */
+    @Test
+    fun illTypedValue_doesNotEchoResponseText() {
+        val result = assertIs<AssessmentResult.Invalid>(parse(validJson.replace("\"LOW\"", "1")))
+        assertFalse(result.reason.contains("target_sdk 35 is current"))
+    }
+
+    /** Verifies: REQ-IX-INV-004 (an illegal enum value stays a field-scoped Invalid). */
+    @Test
+    fun illegalEnumValue_isInvalidOnThatField() {
+        val invalid = invalidOf(withLikelihood("ABSOLUTELY"))
+        assertEquals("install_success_likelihood", invalid.field)
+    }
+
+    /**
+     * Verifies: REQ-IX-INV-001 (an action key is reported as an action before
+     * the generic structure rule, so the audit reason stays specific).
+     */
+    @Test
+    fun actionAndExtraKeys_reportActionFirst() {
+        val json = validJson.replaceFirst("{", """{"action":"INSTALL_NOW","notes":"x",""")
+        val invalid = invalidOf(json)
+        assertTrue(invalid.reason.contains("forbidden action field"), invalid.reason)
     }
 
     /** Verifies: REQ-IX-INV-004: no output shape ever yields Valid without all four keys. */

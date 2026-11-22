@@ -269,8 +269,25 @@ class AiRequestBuilderTest {
         assertTrue(prompt.contains("reasons: non-empty array"))
         assertTrue(prompt.contains("evidence_refs: non-empty array"))
         assertTrue(prompt.contains("Never guess and never omit a key"))
+        assertTrue(prompt.contains("Add no other keys"))
         assertTrue(prompt.contains("evidence_json"))
         // The actual evidence is embedded, not described.
         assertTrue(prompt.contains("\"target_sdk\":35"))
+    }
+
+    /**
+     * Verifies: REQ-IX-FR-003 / `outbound_metadata_allowlist.local_only:
+     * installed_version`. The prompt never claims the installed version is
+     * known, so a passed-in `installedVersionCode` cannot create a
+     * contradiction with an `install_relation` of UNKNOWN.
+     */
+    @Test
+    fun prompt_neverClaimsTheInstalledVersionIsKnown() {
+        val withoutVersion = builder.build(sample()).request.userPrompt
+        val withVersion = builder.build(sample(), installedVersionCode = 41L).request.userPrompt
+
+        assertFalse(withoutVersion.contains("Installed version known"))
+        assertFalse(withVersion.contains("Installed version known"))
+        assertEquals(withoutVersion, withVersion, "the local installed version must not affect the prompt")
     }
 }
