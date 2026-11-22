@@ -9,6 +9,9 @@ import java.io.InterruptedIOException
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.job
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -19,6 +22,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
+import okio.BufferedSource
 
 /**
  * Implements: ADR-002.2; ADR-002.5
@@ -54,6 +58,7 @@ class OkHttpAiTransport(
     private val egressAllowed: suspend () -> Boolean = { true },
     baseClient: OkHttpClient? = null,
     readTimeoutSeconds: Long = READ_TIMEOUT_SECONDS,
+    callTimeoutSeconds: Long = CALL_TIMEOUT_SECONDS,
     private val maxResponseBytes: Int = MAX_RESPONSE_BYTES,
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) : OpenAiCompatibleTransport {
@@ -64,6 +69,10 @@ class OkHttpAiTransport(
                 .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         )
         .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
+        // REQ-IX-PER-001: one model call times out at 7 s in total. readTimeout
+        // alone only bounds the gap between reads; callTimeout bounds DNS,
+        // connect, TLS, write and read together.
+        .callTimeout(callTimeoutSeconds, TimeUnit.SECONDS)
         .build()
 
     override suspend fun post(baseUrl: String, path: String, body: String): String = withContext(Dispatchers.IO) {
@@ -88,8 +97,14 @@ class OkHttpAiTransport(
 
         if (!ModelRequestGate.hasCurrentConsent()) throw AiAdvisorFailure.ConsentUnavailable()
 
+        val call = client.newCall(request)
+        // Cancelling the coroutine (user Cancel, attempt budget) aborts the
+        // blocking exchange instead of waiting for it to finish.
+        val cancelHandle = currentCoroutineContext().job.invokeOnCompletion { cause ->
+            if (cause is CancellationException) call.cancel()
+        }
         try {
-            client.newCall(request).execute().use { response ->
+            call.execute().use { response ->
                 when {
                     response.code == 429 -> {
                         val retryAfter = response.header("Retry-After")?.toLongOrNull()
@@ -118,19 +133,20 @@ class OkHttpAiTransport(
                     }
 
                     else -> {
-                        val source = response.body.source()
-                        val read = source.readByteArray(maxResponseBytes.toLong() + 1)
-                        if (read.size > maxResponseBytes) {
-                            throw AiAdvisorFailure.OutputOversize(read.size, maxResponseBytes)
-                        }
-                        read.decodeToString()
+                        readCappedBody(response.body.source(), maxResponseBytes).decodeToString()
                     }
                 }
             }
         } catch (io: InterruptedIOException) {
+            currentCoroutineContext().ensureActive()
             throw AiAdvisorFailure.Timeout(io.message ?: "request timed out")
         } catch (io: IOException) {
-            throw AiAdvisorFailure.NetworkError(io.message ?: "network error")
+            // A cancelled call surfaces as IOException("Canceled"); report the cancellation.
+            currentCoroutineContext().ensureActive()
+            // Keep the exception class: "network error" alone hides TLS vs. DNS vs. reset.
+            throw AiAdvisorFailure.NetworkError("${io::class.simpleName}: ${io.message ?: "network error"}")
+        } finally {
+            cancelHandle.dispose()
         }
     }
 
@@ -184,6 +200,23 @@ class OkHttpAiTransport(
         /** Model-call budget from `runtime-policy-catalog.md` F-01. */
         const val READ_TIMEOUT_SECONDS = 7L
 
+        /** Whole-call cap for one model call (REQ-IX-PER-001). */
+        const val CALL_TIMEOUT_SECONDS = 7L
+
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
     }
+}
+
+/**
+ * Reads the whole body, but never more than [maxBytes]. `readByteArray(n)`
+ * demands exactly n bytes and threw EOFException for every normal (smaller)
+ * reply, so every real model call failed as NETWORK_ERROR. `request(n)` only
+ * buffers up to n bytes and reports whether that many exist.
+ */
+internal fun readCappedBody(source: BufferedSource, maxBytes: Int): ByteArray {
+    val limit = maxBytes.toLong() + 1
+    if (source.request(limit)) {
+        throw AiAdvisorFailure.OutputOversize(source.buffer.size.toInt().coerceAtLeast(maxBytes + 1), maxBytes)
+    }
+    return source.readByteArray()
 }

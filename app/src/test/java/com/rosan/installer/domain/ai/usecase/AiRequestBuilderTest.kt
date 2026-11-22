@@ -96,9 +96,33 @@ class AiRequestBuilderTest {
      * shrink). `apk_identity` is the one optional key: its `NOT_APPLICABLE`
      * encoding is "omit the key", so it is not transmitted for a new install.
      */
+
+    /** Verifies: REQ-IX-FR-003 (update-relative fields are sent only when known; v1.3 rules present). */
+    @Test
+    fun updateRelativeFields_areSentOnlyWhenKnown() {
+        val unknown = builder.build(sample())
+        assertFalse("evidence.permissions_added_since_installed" in unknown.transmittedPaths)
+        assertFalse("evidence.installed_is_system_app" in unknown.transmittedPaths)
+
+        val known = builder.build(
+            sample().copy(permissionsAddedSinceInstalled = emptyList(), installedIsSystemApp = true),
+        )
+        assertTrue("evidence.permissions_added_since_installed" in known.transmittedPaths)
+        assertTrue(known.request.evidencePayloadJson.contains("\"permissions_added_since_installed\":[]"))
+        assertTrue(known.request.evidencePayloadJson.contains("\"installed_is_system_app\":true"))
+        assertTrue(known.request.userPrompt.contains("permissions_added_since_installed is an empty array"))
+        assertTrue(known.request.userPrompt.contains("rate security_risk LOW"))
+    }
+
     @Test
     fun request_withFullEvidence_transmitsEveryAllowlistedField() {
-        val built = builder.build(sample().copy(apkIdentity = ApkIdentity.DIFFERENT))
+        val built = builder.build(
+            sample().copy(
+                apkIdentity = ApkIdentity.DIFFERENT,
+                permissionsAddedSinceInstalled = emptyList(),
+                installedIsSystemApp = false,
+            ),
+        )
         assertEquals(AiRequestBuilder.ALLOWLISTED_LEAF_PATHS, built.transmittedPaths)
     }
 

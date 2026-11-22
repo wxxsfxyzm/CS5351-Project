@@ -98,6 +98,41 @@ class CourseServiceLiveAdvisorTest {
         )
     }
 
+    /**
+     * Prompt v1.3 (lead decision 2026-11-23): an update that adds no
+     * permission, or a system-app update with a matching signature, must not
+     * be rated HIGH security risk only for permissions it already holds.
+     */
+    @Test
+    fun liveCourseCall_updateRelativeScenarios_areNotHighRisk() {
+        if (!configured) {
+            println("[live] AGENT_BASE_URL/AGENT_API_KEY/AGENT_DEPLOYMENT_MODEL not all set; skipping.")
+            return
+        }
+        val useCase = RequestInstallRiskAssessmentUseCase(
+            builder = AiRequestBuilder(),
+            advisor = DefaultAiRiskAdvisor(
+                modelClient = client(),
+                networkGate = gate(),
+                outputValidator = StrictAiOutputValidator(),
+            ),
+        )
+        for (scenario in EvidenceFixtures.updateRelative) {
+            val status = runBlocking(ModelRequestGate { true }) { useCase.invoke(scenario.evidence) }
+            val assessment = status.assessment?.assessment
+            println(
+                "[live] ${scenario.name}: usable=${status.isUsable} failure=${status.failure?.code} " +
+                    "likelihood=${assessment?.installSuccessLikelihood} risk=${assessment?.securityRisk} " +
+                    "reasons=${assessment?.reasons}",
+            )
+            assertTrue(status.isUsable, "${scenario.name}: expected a usable assessment, got ${status.failure}")
+            assertTrue(
+                assessment?.securityRisk != com.rosan.installer.domain.ai.model.SecurityRisk.HIGH,
+                "${scenario.name}: rated HIGH although the update adds no permission",
+            )
+        }
+    }
+
     @Test
     fun liveCourseCall_overEveryFixture_returnsFixedFormatOrExplicitFailure() {
         if (!configured) {

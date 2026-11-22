@@ -49,6 +49,8 @@ class AutoDialogInstallEvidenceMapper {
         val installerCapability: InstallerCapability = InstallerCapability.UNKNOWN,
         val verifiedApkSha256: String? = null,
         val confirmedNotInstalledForTargetUser: Boolean = false,
+        val permissionsAddedSinceInstalled: List<String>? = null,
+        val installedIsSystemApp: Boolean? = null,
     )
 
     /** Local mapping outcomes (ADR-001 Option B, REQ-IX-FR-002, REQ-IX-SEC-004). */
@@ -116,6 +118,8 @@ class AutoDialogInstallEvidenceMapper {
                 packageSource = facts.packageSource,
                 sourceConfidence = facts.sourceConfidence,
                 installerCapability = facts.installerCapability,
+                permissionsAddedSinceInstalled = facts.permissionsAddedSinceInstalled,
+                installedIsSystemApp = facts.installedIsSystemApp,
                 targetPackageName = selectedApk.packageName,
                 apkSha256 = apkSha256,
             ),

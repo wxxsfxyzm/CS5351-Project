@@ -19,5 +19,11 @@ sealed interface NetworkSettingsAction {
     data class SetAiConsent(val granted: Boolean) : NetworkSettingsAction
     data class SaveAiEndpoint(val endpoint: String) : NetworkSettingsAction
     data class SaveAiApiKey(val apiKey: String) : NetworkSettingsAction
+
+    /** Saves endpoint and (optionally) key in order, then continues a pending enable. */
+    data class SaveAiConfiguration(val endpoint: String, val apiKey: String?) : NetworkSettingsAction
+
+    /** The user dismissed the configuration or consent dialog; drop a pending enable. */
+    data object CancelAiSetup : NetworkSettingsAction
     data object ClearAiConfiguration : NetworkSettingsAction
 }

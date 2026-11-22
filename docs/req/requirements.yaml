@@ -8,7 +8,7 @@ notes: Revision 6 is an English D1 revision awaiting human approval. It preserve
   folded into FR-002 and FR-005, completeness-aware outbound evidence, separate attempt and provider-dispatch accounting, and corrected Continue/Retry semantics. FR-012 remains AI-toggle
   semantics. AI-use log updates are recorded separately; no verification result is claimed here. Match decision rules in listed order. VALID_ANY matches a validated two-axis assessment.
   VALID_HIGH_SUCCESS_LOW_RISK is its favorable subset. AUTO_RULES_MET includes a permissive base policy. An unreadable APK is UNREADABLE. An active prohibition dominates every outcome.
-  AI-off and out-of-scope flows use the baseline. On 2026-11-22, REQ-IX-ARCH-001 was narrowed for v1 to AI-evaluated requests (lead decision; see its note).
+  AI-off and out-of-scope flows use the baseline. On 2026-11-22, REQ-IX-ARCH-001 was narrowed for v1 to AI-evaluated requests (lead decision; see its note). On 2026-11-23, two optional allowlist fields were added, permissions_added_since_installed and installed_is_system_app (lead decision; see ADR-002.2).
 prioritization:
   method: MoSCoW
   tradeoff: "If time is short, reduce Should-level presentation items first and retain INV-001 through INV-007 and REL-002 through REL-004. Changing a Must requires re-review of scope and acceptance."
@@ -291,6 +291,23 @@ outbound_metadata_allowlist:
     - UNKNOWN
     purpose: Derived authorizer capability without exposing installer identifiers.
     unknown_encoding: UNKNOWN
+  - id: permissions_added_since_installed
+    path: evidence.permissions_added_since_installed
+    type: array<string>
+    required: false
+    max_items: 200
+    purpose: For an update, the declared permissions the installed version does not request, so risk is judged on what the update changes rather than on permissions the user already granted.
+    derivation: Added 2026-11-23 with prompt ai-risk-prompt-v1.3. Computed locally as declared_permissions minus the installed version's requested permissions; sent only for an installed package when both lists were read; a subset of declared_permissions, so it adds no identifier.
+    sanitization: Names only; each name passes REQ-IX-SEC-005; an empty list means the update adds no permission.
+    redaction: Same as declared_permissions.
+    unknown_encoding: 'null'
+  - id: installed_is_system_app
+    path: evidence.installed_is_system_app
+    type: boolean
+    required: false
+    purpose: Mark an update of a system or vendor component, where privileged permissions are expected.
+    derivation: Added 2026-11-23 with prompt ai-risk-prompt-v1.3. The installed package's FLAG_SYSTEM; omitted when the package is not installed; a device-derived boolean that adds no identifier.
+    unknown_encoding: 'null'
   local_only:
   - id: target_package_name
     egress: local

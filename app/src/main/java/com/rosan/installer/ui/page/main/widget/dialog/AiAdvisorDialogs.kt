@@ -79,7 +79,23 @@ fun AiAdvisorConfigDialog(
                     value = apiKey,
                     onValueChange = { apiKey = it },
                     label = { Text(stringResource(R.string.ai_advisor_api_key_label)) },
-                    supportingText = { Text(stringResource(R.string.ai_advisor_api_key_helper)) },
+                    // A stored key is never loaded into the field; dots only show that one exists.
+                    placeholder = if (hasStoredKey) {
+                        { Text(STORED_KEY_PLACEHOLDER) }
+                    } else {
+                        null
+                    },
+                    supportingText = {
+                        Text(
+                            stringResource(
+                                if (hasStoredKey) {
+                                    R.string.ai_advisor_api_key_stored_helper
+                                } else {
+                                    R.string.ai_advisor_api_key_helper
+                                },
+                            ),
+                        )
+                    },
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true,
                 )
@@ -152,3 +168,6 @@ fun AiAdvisorConsentDialog(
         },
     )
 }
+
+/** Shown in an empty key field when a key is already stored; not derived from the key. */
+internal const val STORED_KEY_PLACEHOLDER = "••••••••••••"

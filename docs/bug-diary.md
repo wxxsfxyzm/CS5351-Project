@@ -116,3 +116,110 @@ root cause, fix, and the invariant or guard gap it exposed.
   production transport.
 - **Gap exposed:** A live or integration test must assert a positive
   outcome threshold, not merely that the run did not crash.
+
+## BUG-005 — Installer crashed when the AI advisor was on
+
+- **Date / reporter:** 2026-11-23, found by the project lead on a device
+  after merging PR #30.
+- **Status:** Fixed (`fix/ai-advisor-on-device`).
+- **Symptom:** With the advisor on, opening any APK crashed the installer:
+  `NoDefinitionFoundException: AutoDialogInstallEvidenceMapper`.
+- **Classification:** Wiring defect (dependency injection).
+- **Root cause:** `singleOf(::PrepareApprovalUseCase)` and
+  `singleOf(::AiRequestBuilder)` make Koin resolve every constructor
+  parameter, including ones with default values
+  (`AutoDialogInstallEvidenceMapper`, `Json`), which have no definition.
+  Unit tests constructed these classes directly, so the Koin graph was
+  never resolved.
+- **Fix:** Explicit constructors in `AiModule`;
+  `AiModuleResolutionTest` resolves the real module and fails on the old
+  definitions.
+- **Gap exposed:** No test resolved the production DI graph.
+
+## BUG-006 — Evidence was always UNREADABLE on a device
+
+- **Date / reporter:** 2026-11-23, project lead, on-device demo run.
+- **Status:** Fixed (`fix/ai-advisor-on-device`).
+- **Symptom:** Every APK stopped at "Evidence incomplete; collect
+  again" (DR-03 RECOLLECT) with Continue disabled.
+- **Classification:** Data defect (missing evidence).
+- **Root cause:** The evidence and the approval binding read the APK
+  SHA-256 from `AppEntity.BaseEntity.fileHash`, which the parser never
+  sets (also upstream). A null hash makes `completeness()` UNREADABLE,
+  and the binding could not be built, so Continue could not submit
+  either. Test fixtures always set `fileHash`.
+- **Fix:** `ApkContentHasher` hashes the selected APK bytes on the AI
+  path only. `SessionBindingFactsProvider` re-hashes on every read, so a
+  file replaced after approval now fails revalidation (INV-003).
+  `ApkHashEvidenceTest` uses device-shaped entities (`fileHash = null`,
+  real file) with a negative control.
+- **Gap exposed:** Fixtures supplied a value the device never has.
+
+## BUG-007 — DR-05 (ALLOW_AUTO) was unreachable on a device
+
+- **Date / reporter:** 2026-11-23, project lead, on-device demo run.
+- **Status:** Fixed (`fix/ai-advisor-on-device`).
+- **Symptom:** Every install ended in REQUIRE_REVIEW, including clean
+  new installs and same-signature updates.
+- **Classification:** Data defect (facts not propagated).
+- **Root cause:** `PrepareApprovalUseCase` called the evidence mapper
+  with default `Facts`, so the version relation, platform and ABI
+  compatibility, and confirmed absence stayed UNKNOWN although the
+  analysis had them.
+- **Fix:** `AutoDialogFactsDeriver` derives them from the analysis and
+  device facts (SDK, ABIs, process user), failing toward UNKNOWN.
+  Covered by `AutoDialogFactsDeriverTest` and an end-to-end DR-05 test
+  with a negative control.
+- **Gap exposed:** No test drove a device-shaped install to DR-05.
+
+## BUG-008 — The model was never called on a device
+
+- **Date / reporter:** 2026-11-23, project lead, on-device demo run.
+- **Status:** Fixed (`fix/ai-advisor-on-device`).
+- **Symptom:** The card showed only "Needs your review" with no
+  advice; the decision was DR-08 ADVICE_UNUSABLE.
+- **Classification:** Wiring defect (consent gate).
+- **Root cause:** The request builder and transport refuse a call unless
+  a `ModelRequestGate` is in the coroutine context. Every test installed
+  `ModelRequestGate { true }`; no production code did (ADR-002.5 even
+  recorded this), so every request failed as `ConsentUnavailable`.
+- **Fix:** `InstallerViewModel` installs the gate around each
+  assessment, re-reading the persisted switch and consent on each check.
+- **Gap exposed:** Tests supplied the context that production must
+  provide, and the ADR note was not turned into a task.
+
+## BUG-009 — Every model reply failed with EOFException on a device
+
+- **Date / reporter:** 2026-11-23, project lead, on-device demo run.
+- **Status:** Fixed (`fix/ai-advisor-on-device`).
+- **Symptom:** `NETWORK_ERROR EOFException` for every call, although the
+  server returned HTTP 200 (confirmed by replaying the same body).
+- **Classification:** Transport defect.
+- **Root cause:** `OkHttpAiTransport` read the body with
+  `readByteArray(max + 1)`, which demands exactly that many bytes and
+  throws EOF for any smaller reply. It was never executed before: OkHttp
+  cannot run in JVM tests (BUG-004) and the live test used a
+  `java.net.http` transport. Diagnosis was first misattributed to the
+  phone's VPN and the course WAF; the stack trace settled it.
+- **Fix:** `readCappedBody` uses `request(max + 1)` to detect an
+  oversize reply and otherwise reads the whole body;
+  `ReadCappedBodyTest` covers small, empty, at-cap, and over-cap bodies.
+- **Gap exposed:** The production transport had no executed test, and a
+  network-looking symptom was chased before reading the stack trace.
+
+## BUG-010 — AI attempt had no total time limit and could not be cancelled
+
+- **Date / reporter:** 2026-11-23, project lead, code review against
+  REQ-IX-PER-001.
+- **Status:** Fixed (`fix/ai-advisor-on-device`).
+- **Symptom:** Only a 7 s read-idle timeout existed; connect (15 s),
+  write (15 s), and DNS were unbounded by it, there was no 15 s attempt
+  budget, and Cancel left the blocking HTTP call running.
+- **Classification:** Requirement gap (PER-001).
+- **Fix:** OkHttp `callTimeout(7 s)` for the whole call; the call is
+  cancelled when its coroutine is; `PrepareApprovalUseCase` bounds the
+  assessment at 12 s and routes a timeout through the engine to DR-08.
+  `AttemptBudgetTest` (virtual time) checks one call, cancellation, no
+  submission, and a decision within 15 s.
+- **Gap exposed:** `callTimeout` is verified on device only (OkHttp in
+  JVM tests, BUG-004).

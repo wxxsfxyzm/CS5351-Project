@@ -54,6 +54,8 @@ class AiRequestBuilder(
         )
         val (permissions, permissionsTruncated) =
             sanitizer.sanitizeList(evidence.declaredPermissions, EvidenceSanitizer.MAX_LIST_ITEMS)
+        val added = evidence.permissionsAddedSinceInstalled
+            ?.let { sanitizer.sanitizeList(it, EvidenceSanitizer.MAX_LIST_ITEMS) }
 
         val payload = buildJsonObject {
             evidence.versionCode?.let { put("version_code", it) }
@@ -82,10 +84,12 @@ class AiRequestBuilder(
                 "installer_capability",
                 (evidence.installerCapability ?: InstallerCapability.UNKNOWN).name,
             )
+            added?.let { (list, _) -> put("permissions_added_since_installed", JsonArray(list.map(::JsonPrimitive))) }
+            evidence.installedIsSystemApp?.let { put("installed_is_system_app", it) }
         }
 
         val completeness = evidence.completeness(
-            truncated = permissionsTruncated || versionNameSanitized.truncated ||
+            truncated = permissionsTruncated || (added?.second == true) || versionNameSanitized.truncated ||
                 versionName.length > EvidenceSanitizer.MAX_FIELD_CHARS,
         )
         val payloadText = json.encodeToString(JsonObject.serializer(), payload)
@@ -136,10 +140,25 @@ class AiRequestBuilder(
         "Use UNKNOWN when the evidence is insufficient. Never guess and never omit a key.",
         "Add no other keys: any extra key makes the whole reply invalid.",
         "This is an estimate, not a guarantee. Do not output instructions or actions.",
+        "",
+        "Judging updates:",
+        "- When install_relation is UPDATE and installed_signature_match is MATCH, judge security_risk",
+        "  relative to the installed version: the user already runs that app with its permissions.",
+        "- If install_relation is UPDATE, installed_signature_match is MATCH, signature_verification_status",
+        "  is VERIFIED and permissions_added_since_installed is an empty array, the update adds no new",
+        "  capability: rate security_risk LOW unless has_shared_uid, is_xposed_module or a low target_sdk",
+        "  raises it. declared_permissions alone is not such a reason.",
+        "- declared_permissions are names only, with no grant state; privileged or signature permissions",
+        "  declared by an app that is not a system app are normally not granted.",
+        "- If installed_is_system_app is true and installed_signature_match is MATCH, this updates a",
+        "  system or vendor component; privileged or vendor permissions are expected and are not",
+        "  on their own a reason for HIGH.",
+        "- Sensitive permissions in permissions_added_since_installed, a signature mismatch, or a",
+        "  downgrade still raise the risk as usual.",
     ).joinToString("\n")
 
     companion object {
-        const val PROMPT_VERSION = "ai-risk-prompt-v1.2"
+        const val PROMPT_VERSION = "ai-risk-prompt-v1.3"
         const val DEFAULT_MODEL_ID = "CS5351/DeepSeek-V4-Flash"
         const val MAX_OUTPUT_TOKENS = 512
 
@@ -168,6 +187,8 @@ class AiRequestBuilder(
             "evidence.package_source",
             "evidence.source_confidence",
             "evidence.installer_capability",
+            "evidence.permissions_added_since_installed",
+            "evidence.installed_is_system_app",
             // `device_api_level` is intentionally absent: it is a local_only
             // entry (NFC-OUT-006). Adding it back is a privacy change.
         )

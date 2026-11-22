@@ -26,11 +26,16 @@ class InstalledAppInfoProviderImpl(
             val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 packageManager.getPackageInfo(
                     packageName,
-                    PackageManager.PackageInfoFlags.of(PackageManager.MATCH_UNINSTALLED_PACKAGES.toLong()),
+                    PackageManager.PackageInfoFlags.of(
+                        (PackageManager.MATCH_UNINSTALLED_PACKAGES or PackageManager.GET_PERMISSIONS).toLong(),
+                    ),
                 )
             } else {
                 @Suppress("DEPRECATION")
-                packageManager.getPackageInfo(packageName, PackageManager.MATCH_UNINSTALLED_PACKAGES)
+                packageManager.getPackageInfo(
+                    packageName,
+                    PackageManager.MATCH_UNINSTALLED_PACKAGES or PackageManager.GET_PERMISSIONS,
+                )
             }
 
             val applicationInfo = packageInfo.applicationInfo
@@ -66,6 +71,8 @@ class InstalledAppInfoProviderImpl(
                 isArchived = packageManager.isPackageArchivedCompat(packageName),
                 packageSize = packageSize,
                 sourceDir = applicationInfo?.sourceDir,
+                // Used only to derive the permissions an update adds (REQ-IX-FR-002).
+                requestedPermissions = packageInfo.requestedPermissions?.toList() ?: emptyList(),
             )
         } catch (_: PackageManager.NameNotFoundException) {
             null

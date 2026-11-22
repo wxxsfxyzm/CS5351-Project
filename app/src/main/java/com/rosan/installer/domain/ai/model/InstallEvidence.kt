@@ -37,6 +37,10 @@ data class InstallEvidence(
     val packageSource: PackageSourceSignal? = null,
     val sourceConfidence: SourceConfidenceSignal? = null,
     val installerCapability: InstallerCapability? = null,
+    /** UPDATE only: declared permissions the installed version does not request; null if unknown. */
+    val permissionsAddedSinceInstalled: List<String>? = null,
+    /** Whether the installed package is a system app; null when not installed or unknown. */
+    val installedIsSystemApp: Boolean? = null,
 
     // --- local-only: never transmitted (PMA-OUT-001) -----------------------
     // The raw device API level is deliberately **not** a field here: it is a

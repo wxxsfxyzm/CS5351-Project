@@ -638,6 +638,8 @@ fun InstallPrepareContent(
         // Even if we can't install (e.g. because Base is deselected), we might want to expand the menu to fix the selection.
         // We show the button if rawBaseEntity exists (Bundle/APK) and settings allow it.
         val showExpandButton = rawBaseEntity != null && settings.showExtendedMenu
+        // While the advisor is assessing, every action except Cancel is disabled.
+        val advisorLoading = aiUiState is com.rosan.installer.domain.ai.model.AiUiState.Loading
 
         if (aiUiState != null) {
             item {
@@ -674,7 +676,8 @@ fun InstallPrepareContent(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (showExpandButton) {
+                // During the assessment the left slot is Cancel, never More.
+                if (showExpandButton && !advisorLoading) {
                     TextButton(
                         onClick = { isExpanded = !isExpanded },
                         text = if (isExpanded) stringResource(R.string.collapse) else stringResource(R.string.more),

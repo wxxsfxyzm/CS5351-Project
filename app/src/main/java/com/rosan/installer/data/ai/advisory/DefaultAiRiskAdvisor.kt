@@ -14,6 +14,7 @@ import com.rosan.installer.domain.ai.repository.AiNetworkGate
 import com.rosan.installer.domain.ai.repository.AiOutputValidator
 import com.rosan.installer.domain.ai.usecase.AiRequestBuilder
 import kotlinx.coroutines.CancellationException
+import timber.log.Timber
 
 /**
  * Implements: ADR-001; ADR-002.2; ADR-002.5
@@ -92,6 +93,8 @@ class DefaultAiRiskAdvisor(
         val raw = try {
             modelClient.complete(request)
         } catch (failure: AiAdvisorFailure) {
+            // Diagnostic only: the failure class and its short message (no body, no key).
+            Timber.w("AI advisor call failed: %s %s", failure::class.simpleName, failure.message)
             return Outcome(
                 AdvisorOutcome.Failure(failure),
                 providerDispatches = if (failure is AiAdvisorFailure.BeforeDispatch) 0 else 1,
@@ -99,6 +102,7 @@ class DefaultAiRiskAdvisor(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (t: Throwable) {
+            Timber.w("AI advisor call failed: %s", t::class.simpleName)
             return Outcome(
                 AdvisorOutcome.Failure(
                     AiAdvisorFailure.NetworkError(t.message ?: t::class.simpleName ?: "unknown"),
@@ -115,6 +119,9 @@ class DefaultAiRiskAdvisor(
             promptVersion = request.promptVersion,
             knownEvidencePaths = knownEvidencePaths,
         )
+        if (parsed !is com.rosan.installer.domain.ai.model.AssessmentResult.Valid) {
+            Timber.w("AI advisor reply rejected by the validator: %s", parsed)
+        }
         return Outcome(AdvisorOutcome.Ok(parsed), providerDispatches = 1)
     }
 

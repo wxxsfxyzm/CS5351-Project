@@ -5,6 +5,7 @@ package com.rosan.installer.ui.page.main.installer.mapper
 import com.rosan.installer.domain.ai.model.AiReviewModel
 import com.rosan.installer.domain.ai.model.AiUiState
 import com.rosan.installer.domain.ai.model.AiUnavailable
+import com.rosan.installer.domain.ai.model.HardBlockCause
 import com.rosan.installer.domain.engine.approval.ApprovalState
 import com.rosan.installer.domain.engine.policy.PolicyResult
 
@@ -32,8 +33,9 @@ object AiDecisionUiMapper {
         result: PolicyResult,
         model: AiReviewModel?,
         unavailable: AiUnavailable?,
+        blockCauses: List<HardBlockCause> = emptyList(),
     ): AiUiState = when (state) {
-        ApprovalState.BLOCKED -> AiUiState.Blocked(result.reasonCode)
+        ApprovalState.BLOCKED -> AiUiState.Blocked(result.reasonCode, blockCauses)
 
         ApprovalState.RECOLLECT -> AiUiState.Recollect(result.reasonCode)
 

@@ -99,19 +99,22 @@ fun MiuixNetworkPage(useBlur: Boolean, viewModel: NetworkSettingsViewModel = koi
         showState = showAiConfigDialog,
         initialEndpoint = uiState.aiEndpoint,
         hasStoredKey = uiState.aiKeyMasked.isNotEmpty(),
-        onDismiss = { showAiConfigDialog.value = false },
+        onDismiss = {
+            showAiConfigDialog.value = false
+            viewModel.dispatch(NetworkSettingsAction.CancelAiSetup)
+        },
         onSave = { endpoint, apiKey ->
-            viewModel.dispatch(NetworkSettingsAction.SaveAiEndpoint(endpoint))
-            if (apiKey != null) {
-                viewModel.dispatch(NetworkSettingsAction.SaveAiApiKey(apiKey))
-            }
+            viewModel.dispatch(NetworkSettingsAction.SaveAiConfiguration(endpoint, apiKey))
         },
     )
 
     MiuixAiAdvisorConsentDialog(
         showState = showAiConsentDialog,
         recipientHost = uiState.aiEndpointHostSummary,
-        onDismiss = { showAiConsentDialog.value = false },
+        onDismiss = {
+            showAiConsentDialog.value = false
+            viewModel.dispatch(NetworkSettingsAction.CancelAiSetup)
+        },
         onConfirm = { viewModel.confirmAiConsent() },
     )
 
@@ -319,15 +322,6 @@ fun MiuixNetworkPage(useBlur: Boolean, viewModel: NetworkSettingsViewModel = koi
                         },
                         title = stringResource(R.string.ai_advisor_enable_title),
                         summary = stringResource(R.string.ai_advisor_enable_desc),
-                        enabled = uiState.allowInternetAccess,
-                    )
-                    SwitchPreference(
-                        checked = uiState.aiConsentGranted,
-                        onCheckedChange = {
-                            viewModel.dispatch(NetworkSettingsAction.SetAiConsent(it))
-                        },
-                        title = stringResource(R.string.ai_advisor_consent_title),
-                        summary = stringResource(R.string.ai_advisor_consent_desc),
                         enabled = uiState.allowInternetAccess,
                     )
                     BasicComponent(

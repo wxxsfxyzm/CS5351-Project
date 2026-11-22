@@ -2,6 +2,9 @@
 // Copyright (C) 2025-2026 InstallerX Revived contributors
 package com.rosan.installer.di
 
+import android.os.Build
+import android.os.Process
+import com.rosan.installer.core.env.DeviceConfig
 import com.rosan.installer.data.ai.advisory.DefaultAiRiskAdvisor
 import com.rosan.installer.data.ai.gate.AppSettingsNetworkGate
 import com.rosan.installer.data.ai.provider.AiEndpointConfigSource
@@ -12,6 +15,7 @@ import com.rosan.installer.domain.ai.repository.AiModelClient
 import com.rosan.installer.domain.ai.repository.AiNetworkGate
 import com.rosan.installer.domain.ai.repository.AiOutputValidator
 import com.rosan.installer.domain.ai.usecase.AiRequestBuilder
+import com.rosan.installer.domain.ai.usecase.DeviceFacts
 import com.rosan.installer.domain.ai.usecase.EvidenceSanitizer
 import com.rosan.installer.domain.ai.usecase.RequestInstallRiskAssessmentUseCase
 import com.rosan.installer.domain.ai.usecase.StrictAiOutputValidator
@@ -45,7 +49,9 @@ import org.koin.dsl.module
  */
 val aiModule = module {
     single { EvidenceSanitizer() }
-    singleOf(::AiRequestBuilder)
+    // Explicit constructors: singleOf resolves defaulted parameters too, and
+    // Json / AutoDialogInstallEvidenceMapper have no Koin definition.
+    single { AiRequestBuilder(sanitizer = get()) }
     single<AiOutputValidator> { StrictAiOutputValidator() }
     single<AiNetworkGate> { AppSettingsNetworkGate(appSettingsRepository = get<AppSettingsRepository>()) }
 
@@ -63,5 +69,16 @@ val aiModule = module {
     singleOf(::DefaultAiRiskAdvisor)
     single<AIRiskAdvisor> { get<DefaultAiRiskAdvisor>() }
     singleOf(::RequestInstallRiskAssessmentUseCase)
-    singleOf(::PrepareApprovalUseCase)
+    single {
+        PrepareApprovalUseCase(
+            assessment = get(),
+            deviceFacts = {
+                DeviceFacts(
+                    sdkInt = Build.VERSION.SDK_INT,
+                    supportedArchitectures = DeviceConfig.supportedArchitectures,
+                    currentUserId = Process.myUserHandle().hashCode(),
+                )
+            },
+        )
+    }
 }

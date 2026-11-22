@@ -67,6 +67,7 @@ sealed interface AdvisorDecision {
                         result = outcome.decision,
                         model = outcome.model,
                         unavailable = outcome.unavailable,
+                        blockCauses = outcome.blockCauses,
                     ),
                 )
             }

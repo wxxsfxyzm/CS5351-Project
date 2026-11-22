@@ -30,7 +30,7 @@ sealed interface AiUiState {
     }
 
     /** BLOCK: hard prohibition. Continue is disabled; the model cannot override. */
-    data class Blocked(val reason: String) : AiUiState {
+    data class Blocked(val reason: String, val causes: List<HardBlockCause> = emptyList()) : AiUiState {
         override val continueEnabled: Boolean = false
     }
 
@@ -95,4 +95,16 @@ sealed interface AiUnavailable {
 
     /** Persistence of the approval state failed (REL-002): no auto submit. */
     data object PersistenceFailed : AiUnavailable
+}
+
+/**
+ * Which deterministic hard-block rule fired (DR-01), so the user sees why the
+ * install is blocked rather than the bare reason code.
+ */
+enum class HardBlockCause {
+    /** The APK is signed by a different key than the installed app. */
+    SIGNATURE_MISMATCH,
+
+    /** The APK signature failed verification. */
+    SIGNATURE_VERIFICATION_FAILED,
 }

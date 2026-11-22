@@ -20,6 +20,8 @@ import com.rosan.installer.R
 import com.rosan.installer.domain.ai.model.AiReviewModel
 import com.rosan.installer.domain.ai.model.AiUiState
 import com.rosan.installer.domain.ai.model.AiUnavailable
+import com.rosan.installer.domain.ai.model.FailureCode
+import com.rosan.installer.domain.ai.model.HardBlockCause
 
 /**
  * Implements: ADR-002.4
@@ -67,17 +69,22 @@ fun AiAdvisoryCard(uiState: AiUiState, modifier: Modifier = Modifier) {
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.titleSmall,
                     )
-                    Text(text = uiState.reason, style = MaterialTheme.typography.bodySmall)
+                    blockCauseTexts(uiState).forEach { Text(text = it, style = MaterialTheme.typography.bodyMedium) }
+                    Text(
+                        text = stringResource(R.string.ai_advisor_block_not_overridable),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
 
                 is AiUiState.Recollect -> {
                     Text(text = stringResource(R.string.ai_advisor_policy_recollect))
-                    Text(text = uiState.reason, style = MaterialTheme.typography.bodySmall)
+                    Text(text = stringResource(R.string.ai_advisor_recollect_detail), style = MaterialTheme.typography.bodySmall)
                 }
 
                 is AiUiState.Invalidated -> {
                     Text(text = stringResource(R.string.ai_advisor_policy_invalidated))
-                    Text(text = uiState.reason, style = MaterialTheme.typography.bodySmall)
+                    Text(text = stringResource(R.string.ai_advisor_invalidated_detail), style = MaterialTheme.typography.bodySmall)
                 }
 
                 is AiUiState.AutoExecute -> {
@@ -128,7 +135,7 @@ private fun UnavailableText(reason: AiUnavailable) {
         AiUnavailable.ConsentOff -> stringResource(R.string.ai_advisor_unavailable_consent_off)
         AiUnavailable.Unconfigured -> stringResource(R.string.ai_advisor_unavailable_unconfigured)
         AiUnavailable.NetworkOff -> stringResource(R.string.ai_advisor_unavailable_network_off)
-        is AiUnavailable.ModelFailure -> stringResource(R.string.ai_advisor_unavailable_model_failure) + " (" + reason.code.name + ")"
+        is AiUnavailable.ModelFailure -> modelFailureText(reason.code)
         AiUnavailable.InvalidOutput -> stringResource(R.string.ai_advisor_unavailable_invalid_output)
         AiUnavailable.PersistenceFailed -> stringResource(R.string.ai_advisor_unavailable_model_failure)
     }
@@ -153,4 +160,21 @@ private fun decisionRes(uiState: AiUiState): Int = when (uiState) {
     is AiUiState.Error -> R.string.ai_advisor_policy_review
     is AiUiState.Unavailable -> R.string.ai_advisor_policy_review
     is AiUiState.Loading -> R.string.ai_advisor_policy_review
+}
+
+/** Readable text for each hard-block rule that fired; a generic line if none is known. */
+@Composable
+internal fun blockCauseTexts(state: AiUiState.Blocked): List<String> = state.causes.map { cause ->
+    when (cause) {
+        HardBlockCause.SIGNATURE_MISMATCH -> stringResource(R.string.ai_advisor_block_signature_mismatch)
+        HardBlockCause.SIGNATURE_VERIFICATION_FAILED -> stringResource(R.string.ai_advisor_block_verification_failed)
+    }
+}.ifEmpty { listOf(stringResource(R.string.ai_advisor_block_generic)) }
+
+/** Readable text for a failed model call; the code is kept for the rarer cases. */
+@Composable
+internal fun modelFailureText(code: FailureCode): String = when (code) {
+    FailureCode.NETWORK_ERROR -> stringResource(R.string.ai_advisor_unavailable_network_error)
+    FailureCode.TIMEOUT -> stringResource(R.string.ai_advisor_unavailable_timeout)
+    else -> stringResource(R.string.ai_advisor_unavailable_model_failure) + " (" + code.name + ")"
 }

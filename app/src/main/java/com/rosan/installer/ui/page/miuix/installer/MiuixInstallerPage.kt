@@ -153,7 +153,9 @@ fun MiuixInstallerPage(
 
         is InstallerStage.InstallExtendedMenu -> stringResource(R.string.config_label_install_options)
 
-        is InstallerStage.InstallPrepare -> when {
+        is InstallerStage.InstallPrepare,
+        is InstallerStage.AiReview,
+        -> when {
             showSettings -> stringResource(R.string.installer_settings)
 
             showPermissions -> stringResource(R.string.permission_list)
