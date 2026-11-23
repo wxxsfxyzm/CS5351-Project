@@ -423,7 +423,7 @@ entries:
     tool: OpenCode v1
     model: cityu/CS5351/DeepSeek-V4-Flash
     role: other
-    operator: yuki11111111111 (Member A)
+    operator: yuki11111111111 (Member E)
     task: Explore the local project against the GitHub repository, explain the architecture and code seams, and answer design questions about model selection and the advisory integration.
     requirements:
       - REQ-IX-MOD-001
@@ -449,7 +449,7 @@ entries:
     tool: OpenCode v1
     model: cityu/CS5351/DeepSeek-V4-Flash
     role: build
-    operator: yuki11111111111 (Member A)
+    operator: yuki11111111111 (Member E)
     task: Implement the four blocking items and one note from the team lead's architecture review of PR #13 (E-1 device_api_level egress, E-2 data/ai isolation coverage, E-3 API key in BuildConfig, E-4 missing allowlisted context fields), then submit the changes to the existing PR.
     requirements:
       - REQ-IX-SEC-001
