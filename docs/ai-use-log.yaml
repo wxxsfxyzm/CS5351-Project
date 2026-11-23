@@ -1290,3 +1290,30 @@ entries:
     evidence:
     - Report.md section 7 (gap closed)
     notes: The AGENT_API_KEY repository secret must be added in GitHub settings by the lead; until then the live step is skipped and the offline replay remains the blocking check.
+
+  - id: AI-wxxsfxyzm-0022
+    date: '2026-11-23'
+    tool: Claude Code
+    model: claude-opus-5-5
+    role: verify
+    operator: wxxsfxyzm (project lead)
+    task: Record the D1 baseline approval and review each requirement's status against the code and tests.
+    requirements:
+    - REQ-IX-GOV-001
+    - REQ-IX-VER-001
+    artifacts:
+    - docs/req/requirements.yaml
+    - docs/req/req-schema.json
+    - Report.md
+    - docs/ai-use-log.yaml
+    human_decisions:
+    - Lead asked for the approval to be recorded rather than leaving the registry as a draft, since rev.6 had been approved in the PR 5 review on 2026-11-16.
+    - Lead approved PMA-OUT-002 to 006 retrospectively; each had shipped unchanged.
+    verification:
+    - Registry status set to approved_baseline, and the outbound allowlist to approved; the COST-001 token-threshold items stay pending because the preflight is not implemented.
+    - Each of the 41 requirements was classified against its fit criterion - 21 implemented, 19 conceptual, 1 future - with a dated note naming test classes or the gap; every cited test class exists in app/src/test.
+    - req-schema.json now allows an empty pending list (minItems 0), because the schema required at least one pending item even after all were decided.
+    - Schema gate passes; docs/plans/validate_pr5_rev6.py passes (14 first-match cases, 41 unique IDs, dependency graph).
+    evidence:
+    - PR 5 review (GitHub, 2026-11-16)
+    notes: The per-requirement verification blocks still list the originally planned test names; the dated notes give the actual evidence.

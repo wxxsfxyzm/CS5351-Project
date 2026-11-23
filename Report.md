@@ -231,8 +231,19 @@ All 41 requirement IDs were stable from rev.5 onward. Changes refined
 statements and fit criteria rather than adding or removing requirements. Each
 change carries a dated note in the registry and a matching ADR note.
 
-**Open:** the registry status is still `draft_for_group_review`.
-**[TO FILL: record the group's approval, or explain why it stays a draft.]**
+**Approval status.** The lead approved rev.6 as the D1 baseline in the PR #5
+review on 2026-11-16, but the registry kept its `draft_for_group_review`
+label. On 2026-11-23 the record was brought in line with what had happened:
+
+- the registry is marked `approved_baseline`, citing the PR #5 review;
+- the outbound allowlist is marked `approved`, and its five open proposals,
+  which had shipped unchanged, are recorded as approved;
+- each requirement's status was reviewed against code and tests:
+  21 `implemented`, 19 `conceptual` (partial or not started), 1 `future`.
+  Every one carries a dated note naming its evidence or its gap.
+
+The COST-001 token thresholds are still pending, because the token preflight
+is not implemented.
 
 ### 4.2 Defect trends
 
@@ -387,7 +398,8 @@ Other gaps to state honestly:
 - `docs/review-memo.md` was not kept per PR during the project. It was
   reconstructed on 2026-11-23 for every PR (#1–#39) from GitHub reviews,
   agent sessions, and the AI-use log, and it says so at the top.
-- The requirements registry is still a draft (Section 4.1).
+- 19 of 41 requirements are not fully met (Section 4.1). Most depend on the
+  deferred persistence and audit work (DEBT-003).
 - The trace matrix lags behind PRs #30 to #33 (Section 5).
 - PR #33 recorded that its tests were only partly approved before
   implementation, because the on-device fixes were made under time pressure.

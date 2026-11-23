@@ -2,9 +2,9 @@ document: InstallerX AI Component Requirements
 version: 0.2.1
 revision: 6
 date: '2026-11-16'
-status: draft_for_group_review
+status: approved_baseline
 schema: req-schema.json
-notes: Revision 6 is an English D1 revision awaiting human approval. It preserves all 41 rev.5 requirement IDs and adds two independent advisory axes, mode priorities, compatibility
+notes: Revision 6 was approved by Member A (project lead) on 2026-11-16 as the D1 baseline in the PR#5 review ("I consider this revision acceptable as our initial D1 baseline"); this status was recorded on 2026-11-23. Later changes are controlled changes with dated notes (PR#31, PR#33). Revision 6 is an English D1 revision. It preserves all 41 rev.5 requirement IDs and adds two independent advisory axes, mode priorities, compatibility
   folded into FR-002 and FR-005, completeness-aware outbound evidence, separate attempt and provider-dispatch accounting, and corrected Continue/Retry semantics. FR-012 remains AI-toggle
   semantics. AI-use log updates are recorded separately; no verification result is claimed here. Match decision rules in listed order. VALID_ANY matches a validated two-axis assessment.
   VALID_HIGH_SUCCESS_LOW_RISK is its favorable subset. AUTO_RULES_MET includes a permissive base policy. An unreadable APK is UNREADABLE. An active prohibition dominates every outcome.
@@ -106,7 +106,7 @@ decision_rules:
   reason_code: APPROVED_AFTER_REVIEW
   compatibility: ANY
 outbound_metadata_allowlist:
-  status: proposed_pending_member_a_review
+  status: approved
   applies_to: v1 scope defined by REQ-IX-SCOPE-001
   consent_requirement: REQ-IX-FR-011
   transmission_requirement: REQ-IX-FR-003
@@ -433,22 +433,56 @@ outbound_metadata_allowlist:
     approved_by: Member A
     confirmed_by: Member B
     rationale: The target package name remains available for local approval binding and audit and is not sent to the model in v1.
-  pending_member_a_review:
   - id: PMA-OUT-002
-    proposal: Keep the install-source package name and source UID local; send only package_source and source_confidence.
-    rationale: Raw source identity can fingerprint the installer or device; categories preserve decision value.
+    decision: Keep the install-source package name and source UID local; send only package_source and source_confidence.
+    scope: Applies to the install-source identity within the v1 scope.
+    does_not_cover:
+    - target_package_name
+    - apk_sha256
+    status: approved
+    approved_by: Member A (2026-11-23, recorded retrospectively; the proposal shipped unchanged in PRs #13, #30, #33)
+    confirmed_by: Merged implementation and tests
+    rationale: 'Raw source identity can fingerprint the installer or device; categories preserve decision value. Implemented - only package_source and source_confidence are sent (AiRequestBuilder; AiRequestBuilderTest).'
   - id: PMA-OUT-003
-    proposal: Keep raw APK and signer hashes, certificate details, and installed-app hashes local.
-    rationale: The model cannot validate them; deterministic code and audit use them for binding, identity, and tamper checks.
+    decision: Keep raw APK and signer hashes, certificate details, and installed-app hashes local.
+    scope: Applies to APK, signer, certificate, and installed-app hashes within the v1 scope.
+    does_not_cover:
+    - install_source_package_name
+    - source_uid
+    status: approved
+    approved_by: Member A (2026-11-23, recorded retrospectively; the proposal shipped unchanged in PRs #13, #30, #33)
+    confirmed_by: Merged implementation and tests
+    rationale: 'The model cannot validate them; deterministic code and audit use them for binding, identity, and tamper checks. Implemented - hashes stay local and are used only for binding and identity (AiRequestBuilderTest, AutoDialogInstallEvidenceMapperTest).'
   - id: PMA-OUT-004
-    proposal: Include has_shared_uid and is_xposed_module as booleans while omitting raw sharedUserId and module details.
-    rationale: Preserves structural risk signals without exposing identifiers.
+    decision: Include has_shared_uid and is_xposed_module as booleans while omitting raw sharedUserId and module details.
+    scope: Applies to shared-UID and Xposed signals within the v1 scope.
+    does_not_cover:
+    - shared_user_id
+    - xposed_module_details
+    status: approved
+    approved_by: Member A (2026-11-23, recorded retrospectively; the proposal shipped unchanged in PRs #13, #30, #33)
+    confirmed_by: Merged implementation and tests
+    rationale: 'Preserves structural risk signals without exposing identifiers. Implemented - only the two booleans are sent (AiRequestBuilder).'
   - id: PMA-OUT-005
-    proposal: Use this allowlist as the single source for FR-002 collection review, FR-003 egress, FR-011 consent display, and SEC-004 validation.
-    rationale: Prevents collection, consent UI, request builder, and tests from drifting apart.
+    decision: Use this allowlist as the single source for FR-002 collection review, FR-003 egress, FR-011 consent display, and SEC-004 validation.
+    scope: Applies to collection, egress, consent display, and outbound validation.
+    does_not_cover:
+    - local_only_fields
+    status: approved
+    approved_by: Member A (2026-11-23, recorded retrospectively; the proposal shipped unchanged in PRs #13, #30, #33)
+    confirmed_by: Merged implementation and tests
+    rationale: 'Prevents collection, consent UI, request builder, and tests from drifting apart. Implemented - ALLOWLISTED_LEAF_PATHS drives the request builder and the consent dialog (AiConsentDialogTest).'
   - id: PMA-OUT-006
-    proposal: Cap declared_permissions at 200 entries and version_name at 256 characters before transmission.
-    rationale: Bounds request size; the exact caps require Member A review.
+    decision: Cap declared_permissions at 200 entries and version_name at 256 characters before transmission.
+    scope: Applies to declared_permissions and version_name before transmission.
+    does_not_cover:
+    - other_outbound_allowlist_items
+    status: approved
+    approved_by: Member A (2026-11-23, recorded retrospectively; the proposal shipped unchanged in PRs #13, #30, #33)
+    confirmed_by: Merged implementation and tests
+    rationale: 'Bounds request size; the exact caps require Member A review.
+ Implemented - EvidenceSanitizer caps lists at 200 items and fields at 256 characters, marking truncation (EvidenceSanitizerTest).'
+  pending_member_a_review: []
   completeness:
     required_fields_always_present: true
     unknown_encoding: Required means the key is present. For unknown enum values use the documented unknown category; for other unknown values use JSON null. A missing binding field
@@ -480,6 +514,7 @@ requirements:
   source: V0.2 §5.1
   depends_on: []
   status: conceptual
+  note: '2026-11-23 status review (lead): conceptual; partly implemented. One operation ID per AutoDialog request and attempt IDs kept separate from provider dispatches (PrepareApprovalUseCase, InstallerViewModel); 0 backend calls before approval (ChokePointTest). Gap: the operation ID is not queryable outside the session, and a retry after uninstall starts a new operation by lead decision instead of a new attempt (DEBT-005).'
   asr: false
   enforcing_component: ApprovalCoordinator
   verification:
@@ -504,15 +539,14 @@ requirements:
   source: V0.2 §4.2
   depends_on:
   - REQ-IX-FR-001
-  status: conceptual
+  status: implemented
   asr: false
   enforcing_component: InstallEvidenceCollector
   verification:
     method: unit + fixture
     test: 'planned: EvidenceCollectorTest'
     evidence: planned
-  note: A missing source is recorded as UNKNOWN and is not by itself KEY_UNKNOWN; KEY_UNKNOWN applies only when a field bound by INV-003 is missing or unverifiable. Collection is local;
-    egress is governed separately by SEC-004 and outbound_metadata_allowlist.
+  note: 'A missing source is recorded as UNKNOWN and is not by itself KEY_UNKNOWN; KEY_UNKNOWN applies only when a field bound by INV-003 is missing or unverifiable. Collection is local; egress is governed separately by SEC-004 and outbound_metadata_allowlist. 2026-11-23 status review (lead): implemented; AutoDialogInstallEvidenceMapper and AutoDialogFactsDeriver build the evidence from the analysis; the APK SHA-256 is computed by ApkContentHasher. Evidence: AutoDialogInstallEvidenceMapperTest, AutoDialogFactsDeriverTest, ApkHashEvidenceTest; PRs #18, #33.'
   completeness:
     required_fields_always_present: true
     unknown_encoding: Required means the key is present. For unknown enum values use the documented unknown category; for other unknown values use JSON null. A missing binding field
@@ -545,14 +579,14 @@ requirements:
   - REQ-IX-FR-002
   - REQ-IX-FR-011
   - REQ-IX-SEC-004
-  status: conceptual
+  status: implemented
   asr: false
   enforcing_component: AIRiskAdvisor
   verification:
     method: integration (online) + offline fixed response
     test: 'planned: AdvisorIntegrationTest'
     evidence: planned
-  note: Target and source package names, raw hashes, and identifiers stay local under outbound_metadata_allowlist.
+  note: 'Target and source package names, raw hashes, and identifiers stay local under outbound_metadata_allowlist. 2026-11-23 status review (lead): implemented; Allowlisted evidence is sent to the course model CS5351/DeepSeek-V4-Flash through OpenAiCompatibleModelClient with prompt ai-risk-prompt-v1.3. Evidence: AiRequestBuilderTest, ProviderRequestShapeTest, CourseServiceLiveAdvisorTest (8/10 usable); PRs #30, #33.'
 - id: REQ-IX-FR-004
   type: functional
   priority: Must
@@ -566,7 +600,8 @@ requirements:
   source: V0.2 §4.2
   depends_on:
   - REQ-IX-FR-003
-  status: conceptual
+  status: implemented
+  note: '2026-11-23 status review (lead): implemented; StrictAiOutputValidator accepts only the fixed four-key format and returns Invalid or Missing otherwise, never an exception or a default. Evidence: StrictAiOutputValidatorTest, ReadCappedBodyTest; PRs #13/#16, #29, #33.'
   asr: false
   enforcing_component: AIOutputValidator
   verification:
@@ -593,7 +628,8 @@ requirements:
   depends_on:
   - REQ-IX-FR-004
   - REQ-IX-SEC-002
-  status: conceptual
+  status: implemented
+  note: '2026-11-23 status review (lead): implemented; DeterministicPolicyEngine evaluates DR-01..DR-10 from EvaluatedPolicyFactory facts. Evidence: PolicyDecisionTableTest (PR #16), EvaluatedPolicyFactoryTest, HardBlockCauseTest; DR-05 reached on a device (PR #33).'
   asr: false
   enforcing_component: DeterministicPolicyEngine
   verification:
@@ -618,7 +654,8 @@ requirements:
   source: V0.2 §5.1
   depends_on:
   - REQ-IX-FR-005
-  status: conceptual
+  status: implemented
+  note: '2026-11-23 status review (lead): implemented; Review UI in both themes; Continue revalidates the binding before one submission (DR-09/DR-10); Cancel submits nothing; BLOCK and RECOLLECT disable Continue. Evidence: ApprovalCoordinatorTest, PrepareApprovalUseCaseTest, AdvisorDecisionTest; PRs #27, #30. Notification replay is out of the v1 scope (REQ-IX-ARCH-001 note).'
   asr: false
   enforcing_component: HumanReviewHandler
   verification:
@@ -642,7 +679,8 @@ requirements:
   depends_on:
   - REQ-IX-FR-005
   - REQ-IX-SEC-003
-  status: conceptual
+  status: implemented
+  note: '2026-11-23 status review (lead): implemented; Only ApprovalCoordinator submits, through the per-session SessionInstallationGateway, once per operation. Evidence: ChokePointTest, GatewaySessionIsolationTest, ApprovalCoordinatorTest; PRs #27, #30.'
   asr: false
   enforcing_component: InstallationGateway
   verification:
@@ -662,6 +700,7 @@ requirements:
   depends_on:
   - REQ-IX-FR-001
   status: conceptual
+  note: '2026-11-23 status review (lead): conceptual; partly implemented. Cancel during the model wait and during review submits nothing and aborts the HTTP call (AttemptBudgetTest; PR #33). Gap: the notification path and labelling of an unknown result after submission are not implemented.'
   asr: false
   enforcing_component: InstallerSession UI
   verification:
@@ -682,6 +721,7 @@ requirements:
   - REQ-IX-FR-005
   - REQ-IX-REL-002
   status: conceptual
+  note: '2026-11-23 status review (lead): conceptual; not implemented. There is no DecisionAuditRecorder; approval state is in memory only (DEBT-003, ADR-002.3 deferred).'
   asr: false
   enforcing_component: DecisionAuditRecorder
   verification:
@@ -697,7 +737,8 @@ requirements:
   source: V0.2 §3.3
   depends_on:
   - REQ-IX-FR-009
-  status: conceptual
+  status: future
+  note: '2026-11-23 status review (lead): future; deferred. Depends on the FR-009 audit store, which is deferred (DEBT-003).'
   asr: false
   enforcing_component: AuditQuery UI
   verification:
@@ -713,6 +754,7 @@ requirements:
   source: V0.2 §9 + privacy risk
   depends_on: []
   status: conceptual
+  note: '2026-11-23 status review (lead): conceptual; partly implemented. The consent dialog lists every allowlisted field on each enable; after refusal or withdrawal the model is not called and the decision is REQUIRE_REVIEW (ModelRequestGate, AiConsentDialogTest, PrepareApprovalUseCaseTest; PRs #19, #30, #33). Gap: consent and withdrawal are not written to an audit (FR-009).'
   asr: false
   enforcing_component: ConsentGate
   verification:
@@ -729,6 +771,7 @@ requirements:
   depends_on:
   - REQ-IX-FR-011
   status: conceptual
+  note: '2026-11-23 status review (lead): conceptual; partly implemented. With the advisor off the baseline path runs with 0 model calls and no coordinator (PrepareApprovalUseCaseTest.advisorOffIsBaselineNoCoordinator, AiSettingsToGateTest). Gap: no AI_DISABLED audit record (FR-009).'
   asr: false
   enforcing_component: Settings + ConsentGate
   verification:
@@ -744,7 +787,8 @@ requirements:
     triggers 0 backend calls; both advisory dimensions remain advisory.'
   source: V0.2 INV-001
   depends_on: []
-  status: conceptual
+  status: implemented
+  note: '2026-11-23 status review (lead): implemented; The advisory packages reference no installer, session, or privileged type. Evidence: AdvisorIsolationTest, AiIsolationTest, ApprovalIsolationTest.'
   asr: false
   enforcing_component: ApprovalCoordinator
   verification:
@@ -760,7 +804,8 @@ requirements:
   fit_criterion: When AI returns HIGH success and LOW risk and the user confirms, a prohibited APK remains BLOCK; backend calls are 0; with AI disabled the same rule still yields BLOCK.
   source: V0.2 INV-002
   depends_on: []
-  status: conceptual
+  status: implemented
+  note: '2026-11-23 status review (lead): implemented; A hard prohibition yields BLOCK whatever the advice; Continue is disabled. Evidence: EvaluatedPolicyFactoryTest, HardBlockCauseTest, PolicyDecisionTableTest.'
   asr: false
   enforcing_component: DeterministicPolicyEngine
   verification:
@@ -779,7 +824,7 @@ requirements:
   source: V0.2 INV-003
   depends_on:
   - REQ-IX-FR-002
-  status: conceptual
+  status: implemented
   asr: true
   asr_rationale: Determines the approval state model, execution boundary, and pre-submission revalidation; it is a core structural constraint of the safety chain.
   enforcing_component: ApprovalStateStore
@@ -787,7 +832,7 @@ requirements:
     method: negative + TOCTOU
     test: 'planned: ApprovalBindingTest'
     evidence: planned
-  note: The target package name remains local and is retained in this binding; see outbound_metadata_allowlist.local_approval_binding.
+  note: 'The target package name remains local and is retained in this binding; see outbound_metadata_allowlist.local_approval_binding. 2026-11-23 status review (lead): implemented; The binding covers APK hash, package, user, backend, config, and policy version; facts are re-read and the APK re-hashed before submission. Evidence: ApprovalCoordinatorTest (TOCTOU), ApkHashEvidenceTest.bindingHashFollowsFileContent; PRs #27, #33.'
 - id: REQ-IX-INV-004
   type: invariant
   priority: Must
@@ -798,7 +843,8 @@ requirements:
     records 1 completed call; the UI shows the failure reason and a human entry point.
   source: V0.2 INV-004
   depends_on: []
-  status: conceptual
+  status: implemented
+  note: '2026-11-23 status review (lead): implemented; Every failure, timeout, and invalid reply routes to DR-08 REQUIRE_REVIEW and never auto-approves. Evidence: FailureEscalationTest, AttemptBudgetTest, StrictAiOutputValidatorTest; PRs #29, #33.'
   asr: true
   asr_rationale: Shapes the failure-handling structure and degradation path and affects the coordinator, UI, and audit.
   enforcing_component: ApprovalCoordinator
@@ -818,6 +864,7 @@ requirements:
   depends_on:
   - REQ-IX-REL-002
   status: conceptual
+  note: '2026-11-23 status review (lead): conceptual; partly implemented. SubmissionLedger allows one submission per operation within a process (ApprovalCoordinatorTest). Gap: the ledger is in memory, so replay after a restart is not covered (DEBT-003).'
   asr: false
   enforcing_component: ApprovalStateStore
   verification:
@@ -834,7 +881,8 @@ requirements:
     compatibility produces stable COMPATIBLE, INCOMPATIBLE, or UNKNOWN results without a model call.
   source: 'Course requirement: deterministic cage + FR-005'
   depends_on: []
-  status: conceptual
+  status: implemented
+  note: '2026-11-23 status review (lead): implemented; The policy engine has no model SDK or network dependency and decides from deterministic facts. Evidence: PolicyDependencyBoundaryTest, PolicyWithoutModelTest.'
   asr: true
   asr_rationale: Forces model and policy separation, determines module boundaries and testability, and is the structural basis of the AI cage.
   enforcing_component: DeterministicPolicyEngine
@@ -853,7 +901,7 @@ requirements:
   source: Legacy docs registry INV-005; V0.1 body INV-005; OI-04
   depends_on:
   - REQ-IX-FR-005
-  status: conceptual
+  status: implemented
   asr: true
   asr_rationale: Determines the precedence between AI and policy; auto-approval is valid only when the base policy permits it, making this a safety-chain structural constraint.
   enforcing_component: DeterministicPolicyEngine
@@ -861,7 +909,7 @@ requirements:
     method: decision-table negative
     test: 'planned: NoDowngradeTest'
     evidence: planned
-  note: The new INV-005 is idempotency; the old INV-005 'must not lower the review level' semantics moved to this requirement.
+  note: 'The new INV-005 is idempotency; the old INV-005 ''must not lower the review level'' semantics moved to this requirement. 2026-11-23 status review (lead): implemented; AI advice can keep or raise restrictions but never lower them; DR-05 needs base ALLOW_AUTO, rules met, and HIGH/LOW advice. Evidence: PolicyDecisionTableTest, AiPolicyIntegrationTest, ApkHashEvidenceTest DR-05 positive and negative cases.'
 - id: REQ-IX-SEC-001
   type: security
   priority: Must
@@ -873,6 +921,7 @@ requirements:
   source: V0.2 INV-001
   depends_on: []
   status: conceptual
+  note: '2026-11-23 status review (lead): conceptual; partly implemented. Permission and dependency static checks pass and the adapter cannot read APK bytes (AdvisorIsolationTest, CI permission check). Gap: no attack-instruction sample suite (shared with SEC-005).'
   asr: false
   enforcing_component: AIRiskAdvisor
   verification:
@@ -887,7 +936,8 @@ requirements:
   fit_criterion: With AI HIGH success and LOW risk and human confirmation, a prohibited APK remains BLOCK; rule results before and after AI are identical; backend calls are 0.
   source: V0.2 INV-002
   depends_on: []
-  status: conceptual
+  status: implemented
+  note: '2026-11-23 status review (lead): implemented; Signature mismatch or failed verification is BLOCK even with HIGH/LOW advice and human confirmation; no backend call. Evidence: HardBlockCauseTest, EvaluatedPolicyFactoryTest, PolicyDecisionTableTest; confirmed on a device (PR #33).'
   asr: false
   enforcing_component: DeterministicPolicyEngine
   verification:
@@ -904,6 +954,7 @@ requirements:
   depends_on:
   - REQ-IX-FR-002
   status: conceptual
+  note: '2026-11-23 status review (lead): conceptual; partly implemented. A changed binding field fails revalidation and an old approval cannot be reused (ApprovalCoordinatorTest). Gap: no tamper-evident audit (DATA-001).'
   asr: false
   enforcing_component: ApprovalStateStore
   verification:
@@ -924,15 +975,14 @@ requirements:
   depends_on:
   - REQ-IX-FR-002
   - REQ-IX-FR-011
-  status: conceptual
+  status: implemented
   asr: false
   enforcing_component: NetworkGate
   verification:
     method: capture + log scan + allowlist diff
     test: 'planned: OutboundWhitelistTest'
     evidence: planned
-  note: Outbound field definitions, local-only restrictions, consent behavior, and negative fit criteria are enumerated in outbound_metadata_allowlist. PMA-OUT-001 (target APK package
-    name local) is approved; the remaining allowlist items, including the source-package and raw-hash decisions, remain under review.
+  note: 'Outbound field definitions, local-only restrictions, consent behavior, and negative fit criteria are enumerated in outbound_metadata_allowlist. PMA-OUT-001 (target APK package name local) is approved; the remaining allowlist items, including the source-package and raw-hash decisions, remain under review. 2026-11-23 status review (lead): implemented; Only ALLOWLISTED_LEAF_PATHS leave the device; package name, hashes, and device level stay local; egress is gated by the network setting and consent. Evidence: AiRequestBuilderTest, AutoDialogInstallEvidenceMapperTest, AdvisorIsolationTest; PRs #13, #19, #33.'
   source_links:
   - https://github.com/wxxsfxyzm/InstallerX-Revived/blob/main/app/src/main/java/com/rosan/installer/data/session/resolver/OkHttpNetworkResolver.kt
 - id: REQ-IX-SEC-005
@@ -957,7 +1007,7 @@ requirements:
     method: adversarial corpus
     test: 'planned: SanitizerInjectionTest'
     evidence: planned
-  note: The 32 KB input byte cap does not guarantee the COST-001 token cap; the COST-001 pre-flight token budget decides whether a call is sent.
+  note: 'The 32 KB input byte cap does not guarantee the COST-001 token cap; the COST-001 pre-flight token budget decides whether a call is sent. 2026-11-23 status review (lead): conceptual; partly implemented. EvidenceSanitizer strips control characters and truncates oversized text, marking it incomplete (EvidenceSanitizerTest, AiRequestBuilderTest). Gap: the 20-sample injection suite has not been built.'
 - id: REQ-IX-REL-001
   type: robustness
   priority: Must
@@ -970,6 +1020,7 @@ requirements:
   depends_on:
   - REQ-IX-INV-004
   status: conceptual
+  note: '2026-11-23 status review (lead): conceptual; partly implemented. Injected failures cause 0 automatic executions and the card shows the failure (FailureEscalationTest, AttemptBudgetTest; PR #33). Gap: COST-001 preflight rejection and third-request blocking are not implemented.'
   asr: false
   enforcing_component: ApprovalCoordinator
   verification:
@@ -988,6 +1039,7 @@ requirements:
   depends_on:
   - REQ-IX-FR-001
   status: conceptual
+  note: '2026-11-23 status review (lead): conceptual; not implemented durably. Persist-before-submit is enforced against an in-memory store (ApprovalCoordinatorTest); durable storage is deferred (DEBT-003, BUG-003).'
   asr: true
   asr_rationale: Introduces persistent state storage and transaction boundaries, determining the recovery protocol and the Room data model.
   enforcing_component: ApprovalStateStore
@@ -1011,6 +1063,7 @@ requirements:
   - REQ-IX-REL-002
   - REQ-IX-SEC-003
   status: conceptual
+  note: '2026-11-23 status review (lead): conceptual; not implemented. Recovery mapping exists (ApprovalCoordinator.onRecovered) but state does not survive a restart (DEBT-003).'
   asr: true
   asr_rationale: Adds a crash-recovery protocol, idempotency keys, and state reconciliation, affecting storage, gateway, and UI.
   enforcing_component: ApprovalStateStore
@@ -1030,6 +1083,7 @@ requirements:
   depends_on:
   - REQ-IX-REL-002
   status: conceptual
+  note: '2026-11-23 status review (lead): conceptual; partly implemented. Concurrent submissions for one operation yield at most one within a process (SubmissionLedger). Gap: durable deduplication across restarts and the third-attempt rule (DEBT-003).'
   asr: false
   enforcing_component: ApprovalStateStore
   verification:
@@ -1045,14 +1099,14 @@ requirements:
   source: V0.2 §6 Cost/Performance
   depends_on:
   - REQ-IX-REL-001
-  status: conceptual
+  status: implemented
   asr: false
   enforcing_component: AIRiskAdvisor
   verification:
     method: timeout stub
     test: "planned: LatencyBudgetTest"
     evidence: planned
-  note: "The latency budget does not override the COST-001 hard token cap or the two-call limit."
+  note: 'The latency budget does not override the COST-001 hard token cap or the two-call limit. 2026-11-23 status review (lead): implemented; One model call capped at 7 s in total (OkHttp callTimeout), the assessment budget is 12 s, a timeout routes to REQUIRE_REVIEW, there is no automatic retry, and Cancel aborts the call. Evidence: AttemptBudgetTest (virtual time); PR #33. callTimeout itself is verified on a device only (DEBT-006); the decision is persisted to the in-memory store.'
 - id: REQ-IX-COST-001
   type: cost
   priority: Should
@@ -1078,9 +1132,7 @@ requirements:
     method: unit + boundary + evaluation distribution
     test: 'planned: CallBudgetTest; planned: TokenBudgetTest; planned: CostDistributionEvaluation'
     evidence: planned
-  note: Revision 5 defines the 95% value as an aggregate evaluation target and the 4,000-token value as an inclusive per-call hard cap enforced before spend. No request is sent when
-    the remaining budget cannot accommodate a valid structured response or the provider cannot enforce the output cap; exactly 4,000 total tokens for a completed valid call remains within
-    the cap. The measurement method and evaluation population remain pending Member A review.
+  note: 'Revision 5 defines the 95% value as an aggregate evaluation target and the 4,000-token value as an inclusive per-call hard cap enforced before spend. No request is sent when the remaining budget cannot accommodate a valid structured response or the provider cannot enforce the output cap; exactly 4,000 total tokens for a completed valid call remains within the cap. The measurement method and evaluation population remain pending Member A review. 2026-11-23 status review (lead): conceptual; partly implemented. One model call per operation and no automatic retry (PrepareApprovalUseCaseTest). Gap: the preflight token estimate and the 2,000/4,000-token thresholds are not implemented.'
   cost_policy:
     max_calls_per_operation: 2
     call_triggers:
@@ -1165,7 +1217,8 @@ requirements:
   depends_on:
   - REQ-IX-FR-003
   - REQ-IX-FR-004
-  status: conceptual
+  status: implemented
+  note: '2026-11-23 status review (lead): implemented; FixedResponseAdvisor replaces the online model and the policy and approval tests pass unchanged. Evidence: AdapterContractTest, FixedResponseAdvisorIntegrationTest; PR #29.'
   asr: true
   asr_rationale: "Defines the external dependency boundary and test doubles, affecting module interfaces and dependency injection."
   enforcing_component: AIRiskAdvisor
@@ -1185,6 +1238,7 @@ requirements:
   source: V0.2 §2.1; §3.4
   depends_on: []
   status: conceptual
+  note: '2026-11-23 status review (lead): conceptual; partly implemented. Baseline commit 816ea541 is recorded in AGENTS.md and the advisor-off path keeps baseline behaviour. Gap: the listed baseline regression scenarios (install, update, downgrade, signature mismatch, blacklist) have no dedicated suite.'
   asr: false
   enforcing_component: Baseline regression suite
   verification:
@@ -1207,6 +1261,7 @@ requirements:
   depends_on:
   - REQ-IX-FR-004
   status: conceptual
+  note: '2026-11-23 status review (lead): conceptual; not implemented. The 20-case, three-run human evaluation has not been carried out; only the 13-scenario live suite exists (CourseServiceLiveAdvisorTest).'
   asr: false
   enforcing_component: Evaluation harness
   verification:
@@ -1225,7 +1280,8 @@ requirements:
   source: V0.2 §9 AI output quality
   depends_on:
   - REQ-IX-FR-004
-  status: conceptual
+  status: implemented
+  note: '2026-11-23 status review (lead): implemented; Every accepted reason must cite evidence paths that were transmitted; replies citing anything else are rejected as INVALID_OUTPUT. Evidence: StrictAiOutputValidatorTest; live suite I and G cases.'
   asr: false
   enforcing_component: AIOutputValidator
   verification:
@@ -1245,6 +1301,7 @@ requirements:
   source: V0.2 §6 Phase 6
   depends_on: []
   status: conceptual
+  note: '2026-11-23 status review (lead): conceptual; partly implemented. Offline and live suites are separate and real-model records carry model and prompt version. Gap: docs/architecture/trace-matrix.md does not yet cover PRs #30 to #33.'
   asr: false
   enforcing_component: Test suite
   verification:
@@ -1260,7 +1317,8 @@ requirements:
   fit_criterion: "YAML parses, IDs are unique, there are no dangling dependencies and no cycles; review records can be linked to version and reason."
   source: V0.2 §6 Phase 2
   depends_on: []
-  status: conceptual
+  status: implemented
+  note: '2026-11-23 status review (lead): implemented; The registry validates against req-schema.json in the CI schema gate (IDs unique, no dangling dependencies); every PR has a review record in docs/review-memo.md.'
   asr: false
   enforcing_component: requirements registry
   verification:
@@ -1277,7 +1335,8 @@ requirements:
   source: V0.2 §6 Phase 4
   depends_on:
   - REQ-IX-GOV-001
-  status: conceptual
+  status: implemented
+  note: '2026-11-23 status review (lead): implemented; Sampled changes: the AI advisor slice (PR #30) and the approval coordinator (PR #27) each have plan approval (docs/plans), a generation record (AI-wxxsfxyzm-0013, 0008/0010), verification results, and a human review record (docs/review-memo.md).'
   asr: false
   enforcing_component: Process records
   verification:
@@ -1308,7 +1367,7 @@ requirements:
     method: scope inventory
     test: 'planned: entry-point audit'
     evidence: planned
-  note: The session bypass is a known bypass and is not fixed in v1; the team shall not claim that this path is protected by AI approval.
+  note: 'The session bypass is a known bypass and is not fixed in v1; the team shall not claim that this path is protected by AI approval. 2026-11-23 status review (lead): conceptual; partly implemented. AutoDialog single-APK submissions go through the assessment with one operation ID. Gap: AutoNotification does not use the assessment path in v1 (REQ-IX-ARCH-001 note) and the entry-point inventory is not kept as a separate artifact.'
   source_links:
   - https://github.com/wxxsfxyzm/InstallerX-Revived/blob/main/app/src/main/java/com/rosan/installer/data/session/handler/ActionHandler.kt
   - https://github.com/wxxsfxyzm/InstallerX-Revived/blob/main/app/src/main/java/com/rosan/installer/ui/page/main/installer/InstallerViewModel.kt
@@ -1325,13 +1384,11 @@ requirements:
   fit_criterion: Positive tests for every AI-evaluated in-scope mode pass through the Gateway; AI-off, not-yet-evaluated, and out-of-scope paths make 0 AI calls and construct no
     ApprovalCoordinator; static checks constrain backend injection only within scope; dynamic spying detects 0 calls that bypass the Coordinator on an AI-evaluated request; the
     architecture review records the choke-point diagram and which modes v1 evaluates with AI.
-  note: '2026-11-22 (v1 scope, lead decision Q9 in docs/plans/2026-11-22-ai-advisor-end-to-end-slice.md): narrowed from every in-scope submission to AI-evaluated requests, aligning
-    the statement with FR-012 and the registry note that AI-off and out-of-scope flows use the baseline. v1 evaluates AutoDialog only; AutoNotification keeps the baseline and makes 0
-    AI calls until it is evaluated.'
+  note: '2026-11-22 (v1 scope, lead decision Q9 in docs/plans/2026-11-22-ai-advisor-end-to-end-slice.md): narrowed from every in-scope submission to AI-evaluated requests, aligning the statement with FR-012 and the registry note that AI-off and out-of-scope flows use the baseline. v1 evaluates AutoDialog only; AutoNotification keeps the baseline and makes 0 AI calls until it is evaluated. 2026-11-23 status review (lead): implemented; As narrowed for v1: every AI-evaluated submission passes ApprovalCoordinator -> InstallationGateway. Evidence: ChokePointTest (exact call sites), AdvisorDecisionTest; PRs #30, #31.'
   source: V0.2 §4.2 + baseline architecture
   depends_on:
   - REQ-IX-FR-007
-  status: conceptual
+  status: implemented
   asr: true
   asr_rationale: Defines component boundaries and call contracts, affecting all installation entry points and the dependency-injection structure.
   enforcing_component: InstallationGateway
@@ -1353,7 +1410,8 @@ requirements:
   source: AGENTS.md + baseline dual UI
   depends_on:
   - REQ-IX-FR-006
-  status: conceptual
+  status: implemented
+  note: '2026-11-23 status review (lead): implemented; The review card, consent, and configuration dialogs exist in both Material 3 and Miuix and both compile; Continue/Cancel behave the same in both (PRs #30, #33). Notification review is out of the v1 scope.'
   asr: false
   enforcing_component: UI layer
   verification:
@@ -1377,6 +1435,7 @@ requirements:
   depends_on:
   - REQ-IX-FR-009
   status: conceptual
+  note: '2026-11-23 status review (lead): conceptual; not implemented. There is no audit store (DEBT-003).'
   asr: false
   enforcing_component: DecisionAuditRecorder
   verification:
