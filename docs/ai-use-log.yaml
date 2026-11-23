@@ -495,6 +495,7 @@ entries:
       - No on-device test, no live Groq call, and no external CI result was observed by the agent.
     evidence:
       - transcripts/transcriptE-Chengqian He-60267540 fix.md
+        (removed from the repository on 2026-11-23)
       - https://github.com/wxxsfxyzm/CS5351-Project/pull/13
       - docs/plans/2026-11-19-pr13-architecture-review-fixes.md
     notes: >-
@@ -989,6 +990,7 @@ entries:
     human_decisions:
     - Lead instructed that all changes be submitted as a pull request following .github/pull_request_template.md.
     - Lead instructed that the AI-use log carry the usage record and that the authoring transcript be appended to transcripts/transcriptE-Chengqian He-60267540.md.
+    - Lead replaced the repository transcript (the appended export plus the short transcripts/transcriptE-Chengqian He-60267540 fix.md) with one consolidated export of the same session at transcripts/transcriptE-Chengqian He-60267540.md and deleted fix.md; AI-yuki11111111111-0002's evidence now names the deleted file as removed.
     - Lead corrected the operator name and ID prefix for entries AI-yuki11111111111-0003 through -0006 (formerly AI-wxxsfxyzm-0013 through -0016) and asked for the bare account name without a member qualifier; the earlier wxxsfxyzm label was an agent error, not the operator's identity.
     - Earlier instruction still applies - docs/plans/ is excluded from the commit.
     verification:
