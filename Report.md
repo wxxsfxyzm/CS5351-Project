@@ -39,7 +39,7 @@ to measure effort in productive hours per sprint.
 | B | **[TO FILL]** | | | | | |
 | C | **[TO FILL]** | | | | | |
 | D | **[TO FILL]** | | | | | |
-| E | **[TO FILL]** | | | | | |
+| E | 7.5 | 7.5 | 7.5 | 7.5 | 30 | Pending team totals |
 
 Weight = member total / mean total.
 
@@ -207,12 +207,44 @@ on a device found five defects in one evening, BUG-005 to BUG-009. Since then,
 every fix carries a test that fails on the old code. The missing automated
 on-device test is recorded as DEBT-006.
 
-### 3.7 Team-level process **[TO FILL: B, C, D, E]**
+### 3.7 Team-level process **[TO FILL: B, C, D]**
 How each member's part of the process worked or was improved, for example:
 
 - the review cycle on PR #5;
 - the architecture review fixes for PR #13;
 - the verification test plan.
+
+#### Member E — reviewing and hardening the advisory path
+
+E organised the advisor work into separate instructions for a single model
+adapter, two independent assessment dimensions, fixed-format parsing, failure
+reporting, and fixed test scenarios. The explicit boundary was that the advisor
+reports evidence-based advice; the deterministic policy decides whether an
+installation may proceed. This made the acceptance criteria more specific than
+simply asking the agent to implement an AI feature.
+
+The review cycle then tightened both implementation and verification. E relayed
+the lead's four PR #13 findings and directed their correction: remove a local-only
+device field from outbound JSON, scan the data-layer implementation for forbidden
+dependencies, stop compiling the key into BuildConfig, and cover missing
+allowlisted context fields. The changes landed through PR #16; PR #13 itself was
+closed rather than merged independently. For PR #29, E asked the agent to inspect
+existing behavior before adding code, relayed the lead's approval of the plans
+and tests, and requested an offline FixedResponseAdvisor plus adapter-contract
+and failure-escalation tests. This allowed A/D to exercise unfavorable and failed
+assessments without depending on a live provider.
+
+E also controlled delivery: changes were held before committing, the commit scope
+excluded docs/plans, and submission required the PR template, AI-use log, and
+transcript. The initial instruction permitting new files was less explicit than
+the later plan-and-test approval records. A further review caught a prompt edit
+without a version bump; the lead added v1.2 before PR #29 merged. These are process
+improvements and remaining lessons, not evidence that every initial step fully
+satisfied the governance workflow.
+
+Evidence: [Member E transcript](transcripts/memberE-yuki11111111111.md), stages
+1–3; [AI-use log](docs/ai-use-log.yaml), AI-yuki11111111111-0002 to 0006;
+[review memo](docs/review-memo.md), PRs #13, #16 and #29.
 
 ---
 
@@ -270,8 +302,31 @@ the device lacks:
 - a mis-specified SEC-003 test;
 - six verification suites that tested copies of production code (PR #25).
 
-**[TO FILL: B, C, D, E: defects found and fixed in your PRs, for example the
-PR #13 review fixes.]**
+**Member E — advisory defects and corrections.** The following are review and
+session findings, not new BUG identifiers in the team bug diary.
+
+| Finding | Correction and verification evidence | Attribution |
+|---|---|---|
+| `device_api_level` was sent even though it was local-only | Removed its outbound field and changed tests to require absence, including `request_neverContainsDeviceApiLevel` | Lead's PR #13 review; E directed the fixes |
+| Static isolation checked only `domain/ai` | Extended `AdvisorIsolationTest` to `data/ai`, restricting provider libraries and excluding backend/privileged references | Lead's PR #13 review; E's correction session |
+| The key could be compiled into `BuildConfig` | Removed the compile-time key field and added a regression guard; later runtime credential storage belongs to the lead's integration slice | Lead's PR #13 review; E's correction session |
+| Five allowlisted context fields were missing | Added installation mode, target-user scope, package source, source confidence, and installer capability to evidence/request support | Lead's PR #13 review; E's correction session |
+| Extra response keys and contradictory prompt context weakened the contract | Enforced the four-key response shape, removed the contradictory prompt line, and added `AdapterContractTest` | E-requested audit; implementation findings reported by the agent |
+| Structurally valid JSON with wrong inner types could escape as an exception | Converted malformed responses into explicit invalid results and added `FailureEscalationTest` through the real use case and policy engine | E-requested failure audit and approval of the proposed fixes |
+| The prompt changed without a new version | Added prompt v1.2 before merge | Subsequent reviewer finding; lead's correction on the PR #29 branch |
+
+The E session log records 370 tests across 55 suites passing after the final
+failure-path changes, including 11 failure-escalation tests and 30 validator
+tests. The PR #29 integration review records 423 passing tests and 8/10 usable
+live scenarios. These are different repository states; they must not be added
+together or described as tests written solely by E. The initial E runs were
+offline, and the later live result is integration evidence rather than proof of
+on-device correctness. Sources: [AI-use log](docs/ai-use-log.yaml), entries
+0002–0005 under AI-yuki11111111111; [review memo](docs/review-memo.md), PRs #13
+and #29; `StrictAiOutputValidator`, `AdvisorIsolationTest`, and
+`FailureEscalationTest` in the source and test trees.
+
+**[TO FILL: B, C, D: defects found and fixed in your PRs.]**
 
 ### 4.3 Test growth
 
@@ -367,7 +422,29 @@ From the lead's supervision record (`transcripts/wxxsfxyzm-supervision.md`):
    - that routine updates should not be rated high risk;
    - when to defer a slice rather than force it.
 
-**[TO FILL: B, C, D, E: what you caught in your own sessions.]**
+**Member E's supervision.** E explicitly required malformed or missing model
+output to fail rather than default to safe, and instructed the advisor to report
+status without making installation decisions. E then relayed the lead's privacy,
+isolation, and key-handling findings instead of accepting the initial generated
+implementation as complete. Asking the agent to check existing behavior against
+specific failure scenarios led to further parsing and contract fixes; those
+technical diagnoses were made by the agent under E's direction, rather than
+independently discovered by E.
+
+E directly caught errors in the development record: the operator account and
+AI-use log ID prefix were wrong, and the tool-version field did not match the
+transcript. E requested successive corrections to the account, IDs, member label,
+and tool description. This demonstrates that traceability records themselves
+need human review. The consolidated transcript still notes a disagreement between
+the session database's reported version and the recorded OpenCode v1 label; it
+should not be presented as independently resolved. E also withheld permission to
+commit until the intended scope and delivery records had been checked.
+
+Source: [Member E transcript](transcripts/memberE-yuki11111111111.md), sections
+1.3–1.4, 2.1–2.2 and 3.2–3.6. Its editorial annotations remain marked as pending
+Member E's review.
+
+**[TO FILL: B, C, D: what you caught in your own sessions.]**
 
 ---
 
@@ -519,7 +596,11 @@ architect's duty to verify every claim against ground truth.
 
 ### 8.4 Member D (`Eugene12321`) **[TO FILL]**
 
-### 8.5 Member E (`yuki11111111111`) **[TO FILL]**
+### 8.5 Member E (`yuki11111111111`) — AI Component
+
+> Draft prepared with AI assistance from the recorded E sessions at Member E's request. Member E should review and revise it into their own words before submission.
+
+My responsibility was the AI advisory path, where the main challenge was to keep a model's recommendation separate from permission to install an APK. I began by asking the agent to understand the project, then divided implementation into a single-provider adapter, a prompt covering installation success likelihood and security risk, fixed-format JSON parsing, and failure reporting. I explicitly required malformed or missing output to produce a failure rather than a safe default. This made my instructions concrete enough to check against tests instead of relying on the agent's description of completed code. The review of PR #13 exposed the limits of the first implementation. The team leader found that device_api_level was being transmitted despite being local-only, that isolation tests did not cover data/ai, that a key could be compiled into BuildConfig, and that several allowlisted fields were missing. I forwarded those findings and directed the corrections. I should distinguish that supervision from discovering the defects myself: the review came from the lead, while the agent implemented the changes. In the later session, I asked the agent to inspect what already existed before modifying it. That work produced an offline FixedResponseAdvisor and stronger contract and failure-escalation tests, so integration could cover unfavorable and invalid assessments without a network dependency. The parsing audit showed why checking only the JSON shape was insufficient: incorrect inner types could prevent the policy layer from receiving any status. Another lesson concerned the records around the code. I had to correct the operator account, log ID prefixes, member label, and tool description, showing that an automatically generated audit trail also needs scrutiny. I also held commits until the intended files and submission records were clear. The process was imperfect: my initial permission to add files was less precise than a separate approval of a plan and its tests, and a prompt change later needed a version correction during review. For future work, I would make approval scope explicit, require prompt and implementation versions to change together, and check the usage log against the transcript before submission. I would also keep offline contract checks separate from live-model and device evidence. Passing my component tests supported its behavior under those inputs; it did not establish that the complete Android installation flow worked. The lead's later integration and device fixes reinforced that distinction.
 
 ---
 
