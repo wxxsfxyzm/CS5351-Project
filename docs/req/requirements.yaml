@@ -519,8 +519,8 @@ requirements:
   enforcing_component: ApprovalCoordinator
   verification:
     method: integration + negative
-    test: 'planned: ApprovalRequestTest'
-    evidence: planned
+    test: 'PrepareApprovalUseCaseTest; ChokePointTest; planned: operation-ID query (ApprovalRequestTest)'
+    evidence: partial; tests on main cover part, planned items remain
   source_links:
   - https://github.com/wxxsfxyzm/InstallerX-Revived/blob/main/app/src/main/java/com/rosan/installer/ui/page/main/installer/InstallerViewModel.kt
 - id: REQ-IX-FR-002
@@ -544,8 +544,8 @@ requirements:
   enforcing_component: InstallEvidenceCollector
   verification:
     method: unit + fixture
-    test: 'planned: EvidenceCollectorTest'
-    evidence: planned
+    test: 'AutoDialogInstallEvidenceMapperTest; AutoDialogFactsDeriverTest; ApkHashEvidenceTest'
+    evidence: tests on main (trace matrix, 2026-11-24)
   note: 'A missing source is recorded as UNKNOWN and is not by itself KEY_UNKNOWN; KEY_UNKNOWN applies only when a field bound by INV-003 is missing or unverifiable. Collection is local; egress is governed separately by SEC-004 and outbound_metadata_allowlist. 2026-11-23 status review (lead): implemented; AutoDialogInstallEvidenceMapper and AutoDialogFactsDeriver build the evidence from the analysis; the APK SHA-256 is computed by ApkContentHasher. Evidence: AutoDialogInstallEvidenceMapperTest, AutoDialogFactsDeriverTest, ApkHashEvidenceTest; PRs #18, #33.'
   completeness:
     required_fields_always_present: true
@@ -584,8 +584,8 @@ requirements:
   enforcing_component: AIRiskAdvisor
   verification:
     method: integration (online) + offline fixed response
-    test: 'planned: AdvisorIntegrationTest'
-    evidence: planned
+    test: 'AiRequestBuilderTest; ProviderRequestShapeTest; DefaultAiRiskAdvisorTest; CourseServiceLiveAdvisorTest (live)'
+    evidence: tests on main (trace matrix, 2026-11-24)
   note: 'Target and source package names, raw hashes, and identifiers stay local under outbound_metadata_allowlist. 2026-11-23 status review (lead): implemented; Allowlisted evidence is sent to the course model CS5351/DeepSeek-V4-Flash through OpenAiCompatibleModelClient with prompt ai-risk-prompt-v1.3. Evidence: AiRequestBuilderTest, ProviderRequestShapeTest, CourseServiceLiveAdvisorTest (8/10 usable); PRs #30, #33.'
 - id: REQ-IX-FR-004
   type: functional
@@ -606,8 +606,8 @@ requirements:
   enforcing_component: AIOutputValidator
   verification:
     method: unit negative
-    test: 'planned: OutputValidationTest'
-    evidence: planned
+    test: 'StrictAiOutputValidatorTest; ProviderResponseHandlingTest; ReadCappedBodyTest'
+    evidence: tests on main (trace matrix, 2026-11-24)
 - id: REQ-IX-FR-005
   type: functional
   priority: Must
@@ -634,8 +634,8 @@ requirements:
   enforcing_component: DeterministicPolicyEngine
   verification:
     method: decision-table + property
-    test: 'planned: PolicyDecisionTableTest'
-    evidence: planned
+    test: 'PolicyDecisionTableTest; EvaluatedPolicyFactoryTest; HardBlockCauseTest'
+    evidence: tests on main (trace matrix, 2026-11-24)
 - id: REQ-IX-FR-006
   type: functional
   priority: Must
@@ -660,8 +660,8 @@ requirements:
   enforcing_component: HumanReviewHandler
   verification:
     method: UI + negative
-    test: 'planned: ReviewUiTest'
-    evidence: planned
+    test: 'ApprovalCoordinatorTest; PrepareApprovalUseCaseTest; AdvisorDecisionTest; AiDecisionUiMapperTest'
+    evidence: tests on main (trace matrix, 2026-11-24)
 - id: REQ-IX-FR-007
   type: functional
   priority: Must
@@ -685,8 +685,8 @@ requirements:
   enforcing_component: InstallationGateway
   verification:
     method: integration + negative
-    test: 'planned: ControlledInstallTest'
-    evidence: planned
+    test: 'ChokePointTest; GatewaySessionIsolationTest; SessionInstallationGatewayTest'
+    evidence: tests on main (trace matrix, 2026-11-24)
 - id: REQ-IX-FR-008
   type: functional
   priority: Must
@@ -705,8 +705,8 @@ requirements:
   enforcing_component: InstallerSession UI
   verification:
     method: UI + negative
-    test: 'planned: ProgressCancelTest'
-    evidence: planned
+    test: 'AttemptBudgetTest; planned: notification path and RESULT_UNKNOWN (ProgressCancelTest)'
+    evidence: partial; tests on main cover part, planned items remain
 - id: REQ-IX-FR-009
   type: functional
   priority: Must
@@ -743,7 +743,7 @@ requirements:
   enforcing_component: AuditQuery UI
   verification:
     method: UI + export
-    test: "planned: AuditQueryTest"
+    test: 'planned: AuditQueryTest'
     evidence: planned
 - id: REQ-IX-FR-011
   type: functional
@@ -759,8 +759,8 @@ requirements:
   enforcing_component: ConsentGate
   verification:
     method: UI + counter
-    test: "planned: ConsentGateTest"
-    evidence: planned
+    test: 'ModelRequestGateTest; AiConsentDialogTest; PrepareApprovalUseCaseTest; planned: consent audit record (FR-009)'
+    evidence: partial; tests on main cover part, planned items remain
 - id: REQ-IX-FR-012
   type: functional
   priority: Must
@@ -776,8 +776,8 @@ requirements:
   enforcing_component: Settings + ConsentGate
   verification:
     method: config matrix + negative
-    test: "planned: ToggleSemanticsTest"
-    evidence: planned
+    test: 'AiSettingsToGateTest; PrepareApprovalUseCaseTest; planned: AI_DISABLED audit record (FR-009)'
+    evidence: partial; tests on main cover part, planned items remain
 - id: REQ-IX-INV-001
   type: invariant
   priority: Must
@@ -793,8 +793,8 @@ requirements:
   enforcing_component: ApprovalCoordinator
   verification:
     method: static + dynamic negative
-    test: 'planned: AdvisorIsolationTest'
-    evidence: planned
+    test: 'AdvisorIsolationTest; AiIsolationTest; ApprovalIsolationTest'
+    evidence: tests on main (trace matrix, 2026-11-24)
 - id: REQ-IX-INV-002
   type: invariant
   priority: Must
@@ -810,8 +810,8 @@ requirements:
   enforcing_component: DeterministicPolicyEngine
   verification:
     method: negative
-    test: 'planned: HardBlockPrecedenceTest'
-    evidence: planned
+    test: 'HardBlockCauseTest; EvaluatedPolicyFactoryTest; PolicyDecisionTableTest'
+    evidence: tests on main (trace matrix, 2026-11-24)
 - id: REQ-IX-INV-003
   type: invariant
   priority: Must
@@ -830,8 +830,8 @@ requirements:
   enforcing_component: ApprovalStateStore
   verification:
     method: negative + TOCTOU
-    test: 'planned: ApprovalBindingTest'
-    evidence: planned
+    test: 'ApprovalBindingTest; ApprovalCoordinatorTest; ApkHashEvidenceTest'
+    evidence: tests on main (trace matrix, 2026-11-24)
   note: 'The target package name remains local and is retained in this binding; see outbound_metadata_allowlist.local_approval_binding. 2026-11-23 status review (lead): implemented; The binding covers APK hash, package, user, backend, config, and policy version; facts are re-read and the APK re-hashed before submission. Evidence: ApprovalCoordinatorTest (TOCTOU), ApkHashEvidenceTest.bindingHashFollowsFileContent; PRs #27, #33.'
 - id: REQ-IX-INV-004
   type: invariant
@@ -850,8 +850,8 @@ requirements:
   enforcing_component: ApprovalCoordinator
   verification:
     method: fault injection
-    test: 'planned: FailureFallbackTest'
-    evidence: planned
+    test: 'FailureEscalationTest; AttemptBudgetTest; AdvisorFailureReportingTest'
+    evidence: tests on main (trace matrix, 2026-11-24)
 - id: REQ-IX-INV-005
   type: invariant
   priority: Must
@@ -869,8 +869,8 @@ requirements:
   enforcing_component: ApprovalStateStore
   verification:
     method: concurrency + recovery
-    test: 'planned: IdempotencyTest'
-    evidence: planned
+    test: 'IdempotencyTest; ApprovalCoordinatorTest; planned: deduplication across restarts (DEBT-003)'
+    evidence: partial; tests on main cover part, planned items remain
 - id: REQ-IX-INV-006
   type: invariant
   priority: Must
@@ -888,8 +888,8 @@ requirements:
   enforcing_component: DeterministicPolicyEngine
   verification:
     method: static + unit
-    test: 'planned: PolicyWithoutModelTest'
-    evidence: planned
+    test: 'PolicyWithoutModelTest; PolicyDependencyBoundaryTest'
+    evidence: tests on main (trace matrix, 2026-11-24)
 - id: REQ-IX-INV-007
   type: invariant
   priority: Must
@@ -907,8 +907,8 @@ requirements:
   enforcing_component: DeterministicPolicyEngine
   verification:
     method: decision-table negative
-    test: 'planned: NoDowngradeTest'
-    evidence: planned
+    test: 'PolicyDecisionTableTest; AiPolicyIntegrationTest; ApkHashEvidenceTest'
+    evidence: tests on main (trace matrix, 2026-11-24)
   note: 'The new INV-005 is idempotency; the old INV-005 ''must not lower the review level'' semantics moved to this requirement. 2026-11-23 status review (lead): implemented; AI advice can keep or raise restrictions but never lower them; DR-05 needs base ALLOW_AUTO, rules met, and HIGH/LOW advice. Evidence: PolicyDecisionTableTest, AiPolicyIntegrationTest, ApkHashEvidenceTest DR-05 positive and negative cases.'
 - id: REQ-IX-SEC-001
   type: security
@@ -926,8 +926,8 @@ requirements:
   enforcing_component: AIRiskAdvisor
   verification:
     method: static + negative
-    test: 'planned: AdapterPermissionTest'
-    evidence: planned
+    test: 'AdvisorIsolationTest; CI permission gate; planned: attack-instruction samples (AdapterPermissionTest)'
+    evidence: partial; tests on main cover part, planned items remain
 - id: REQ-IX-SEC-002
   type: security
   priority: Must
@@ -942,8 +942,8 @@ requirements:
   enforcing_component: DeterministicPolicyEngine
   verification:
     method: negative
-    test: 'planned: HardRuleRegressionTest'
-    evidence: planned
+    test: 'HardBlockCauseTest; EvaluatedPolicyFactoryTest; PolicyDecisionTableTest'
+    evidence: tests on main (trace matrix, 2026-11-24)
 - id: REQ-IX-SEC-003
   type: security
   priority: Must
@@ -959,8 +959,8 @@ requirements:
   enforcing_component: ApprovalStateStore
   verification:
     method: tamper + negative
-    test: "planned: ApprovalTamperTest"
-    evidence: planned
+    test: 'ApprovalBindingTest; ApprovalCoordinatorTest; planned: tamper-evident audit (ApprovalTamperTest)'
+    evidence: partial; tests on main cover part, planned items remain
 - id: REQ-IX-SEC-004
   type: security
   priority: Must
@@ -980,8 +980,8 @@ requirements:
   enforcing_component: NetworkGate
   verification:
     method: capture + log scan + allowlist diff
-    test: 'planned: OutboundWhitelistTest'
-    evidence: planned
+    test: 'AiRequestBuilderTest; AutoDialogInstallEvidenceMapperTest; AdvisorIsolationTest'
+    evidence: tests on main (trace matrix, 2026-11-24)
   note: 'Outbound field definitions, local-only restrictions, consent behavior, and negative fit criteria are enumerated in outbound_metadata_allowlist. PMA-OUT-001 (target APK package name local) is approved; the remaining allowlist items, including the source-package and raw-hash decisions, remain under review. 2026-11-23 status review (lead): implemented; Only ALLOWLISTED_LEAF_PATHS leave the device; package name, hashes, and device level stay local; egress is gated by the network setting and consent. Evidence: AiRequestBuilderTest, AutoDialogInstallEvidenceMapperTest, AdvisorIsolationTest; PRs #13, #19, #33.'
   source_links:
   - https://github.com/wxxsfxyzm/InstallerX-Revived/blob/main/app/src/main/java/com/rosan/installer/data/session/resolver/OkHttpNetworkResolver.kt
@@ -1005,8 +1005,8 @@ requirements:
   enforcing_component: EvidenceSanitizer
   verification:
     method: adversarial corpus
-    test: 'planned: SanitizerInjectionTest'
-    evidence: planned
+    test: 'EvidenceSanitizerTest; AiRequestBuilderTest; planned: 20-sample injection suite (SanitizerInjectionTest)'
+    evidence: partial; tests on main cover part, planned items remain
   note: 'The 32 KB input byte cap does not guarantee the COST-001 token cap; the COST-001 pre-flight token budget decides whether a call is sent. 2026-11-23 status review (lead): conceptual; partly implemented. EvidenceSanitizer strips control characters and truncates oversized text, marking it incomplete (EvidenceSanitizerTest, AiRequestBuilderTest). Gap: the 20-sample injection suite has not been built.'
 - id: REQ-IX-REL-001
   type: robustness
@@ -1025,8 +1025,8 @@ requirements:
   enforcing_component: ApprovalCoordinator
   verification:
     method: fault injection
-    test: 'planned: FailureModeTest'
-    evidence: planned
+    test: 'FailureEscalationTest; AttemptBudgetTest; planned: preflight rejection and third request (FailureModeTest)'
+    evidence: partial; tests on main cover part, planned items remain
 - id: REQ-IX-REL-002
   type: robustness
   priority: Must
@@ -1045,8 +1045,8 @@ requirements:
   enforcing_component: ApprovalStateStore
   verification:
     method: restart + write-fault
-    test: 'planned: StatePersistenceTest'
-    evidence: planned
+    test: 'StatePersistenceTest (in memory); planned: durable store (DEBT-003)'
+    evidence: partial; tests on main cover part, planned items remain
   source_links:
   - https://github.com/wxxsfxyzm/InstallerX-Revived/blob/main/app/src/main/java/com/rosan/installer/data/session/repository/InstallerSessionRepositoryImpl.kt
 - id: REQ-IX-REL-003
@@ -1069,8 +1069,8 @@ requirements:
   enforcing_component: ApprovalStateStore
   verification:
     method: crash recovery
-    test: 'planned: RecoveryTest'
-    evidence: planned
+    test: 'RecoveryTest (in memory); planned: recovery after process restart (DEBT-003)'
+    evidence: partial; tests on main cover part, planned items remain
 - id: REQ-IX-REL-004
   type: robustness
   priority: Must
@@ -1088,8 +1088,8 @@ requirements:
   enforcing_component: ApprovalStateStore
   verification:
     method: concurrency
-    test: 'planned: DedupTest'
-    evidence: planned
+    test: 'IdempotencyTest; planned: durable deduplication (DedupTest)'
+    evidence: partial; tests on main cover part, planned items remain
 - id: REQ-IX-PER-001
   type: performance
   priority: Should
@@ -1104,8 +1104,8 @@ requirements:
   enforcing_component: AIRiskAdvisor
   verification:
     method: timeout stub
-    test: "planned: LatencyBudgetTest"
-    evidence: planned
+    test: 'AttemptBudgetTest'
+    evidence: tests on main (trace matrix, 2026-11-24)
   note: 'The latency budget does not override the COST-001 hard token cap or the two-call limit. 2026-11-23 status review (lead): implemented; One model call capped at 7 s in total (OkHttp callTimeout), the assessment budget is 12 s, a timeout routes to REQUIRE_REVIEW, there is no automatic retry, and Cancel aborts the call. Evidence: AttemptBudgetTest (virtual time); PR #33. callTimeout itself is verified on a device only (DEBT-006); the decision is persisted to the in-memory store.'
 - id: REQ-IX-COST-001
   type: cost
@@ -1130,8 +1130,8 @@ requirements:
   enforcing_component: AIRiskAdvisor
   verification:
     method: unit + boundary + evaluation distribution
-    test: 'planned: CallBudgetTest; planned: TokenBudgetTest; planned: CostDistributionEvaluation'
-    evidence: planned
+    test: 'PrepareApprovalUseCaseTest; planned: TokenBudgetTest; planned: CostDistributionEvaluation'
+    evidence: partial; tests on main cover part, planned items remain
   note: 'Revision 5 defines the 95% value as an aggregate evaluation target and the 4,000-token value as an inclusive per-call hard cap enforced before spend. No request is sent when the remaining budget cannot accommodate a valid structured response or the provider cannot enforce the output cap; exactly 4,000 total tokens for a completed valid call remains within the cap. The measurement method and evaluation population remain pending Member A review. 2026-11-23 status review (lead): conceptual; partly implemented. One model call per operation and no automatic retry (PrepareApprovalUseCaseTest). Gap: the preflight token estimate and the 2,000/4,000-token thresholds are not implemented.'
   cost_policy:
     max_calls_per_operation: 2
@@ -1224,8 +1224,8 @@ requirements:
   enforcing_component: AIRiskAdvisor
   verification:
     method: adapter swap
-    test: "planned: AdapterContractTest"
-    evidence: planned
+    test: 'AdapterContractTest; FixedResponseAdvisorIntegrationTest'
+    evidence: tests on main (trace matrix, 2026-11-24)
 - id: REQ-IX-COMP-001
   type: quality
   subtype: compatibility
@@ -1243,8 +1243,8 @@ requirements:
   enforcing_component: Baseline regression suite
   verification:
     method: baseline regression
-    test: 'planned: BaselineRegressionTest'
-    evidence: planned
+    test: 'PrepareApprovalUseCaseTest (advisor off); planned: BaselineRegressionTest'
+    evidence: partial; tests on main cover part, planned items remain
 - id: REQ-IX-AIQ-001
   type: quality
   subtype: ai_quality
@@ -1266,8 +1266,8 @@ requirements:
   enforcing_component: Evaluation harness
   verification:
     method: labeled evaluation
-    test: 'planned: AIQualityEvaluation'
-    evidence: planned
+    test: 'CourseServiceLiveAdvisorTest (13 scenarios); planned: 20-case human evaluation (AIQualityEvaluation)'
+    evidence: partial; tests on main cover part, planned items remain
 - id: REQ-IX-QUAL-001
   type: quality
   subtype: explainability
@@ -1286,8 +1286,8 @@ requirements:
   enforcing_component: AIOutputValidator
   verification:
     method: fixture + negative
-    test: 'planned: ExplanationGroundingTest'
-    evidence: planned
+    test: 'StrictAiOutputValidatorTest; CourseServiceLiveAdvisorTest (live)'
+    evidence: tests on main (trace matrix, 2026-11-24)
 - id: REQ-IX-VER-001
   type: governance
   subtype: verification_process
@@ -1301,13 +1301,13 @@ requirements:
   source: V0.2 §6 Phase 6
   depends_on: []
   status: conceptual
-  note: '2026-11-23 status review (lead): conceptual; partly implemented. Offline and live suites are separate and real-model records carry model and prompt version. Gap: docs/architecture/trace-matrix.md does not yet cover PRs #30 to #33.'
+  note: '2026-11-23 status review (lead): conceptual; partly implemented. Offline and live suites are separate and real-model records carry model and prompt version. Gap: docs/architecture/trace-matrix.md does not yet cover PRs #30 to #33. 2026-11-24 (lead): the trace matrix was regenerated against main and every named test exists; status stays conceptual because 20 requirements still carry planned tests.'
   asr: false
   enforcing_component: Test suite
   verification:
     method: trace audit
-    test: 'planned: requirements trace check'
-    evidence: planned
+    test: 'CI regression gate; this matrix (§5)'
+    evidence: partial; tests on main cover part, planned items remain
 - id: REQ-IX-GOV-001
   type: governance
   subtype: traceability
@@ -1323,8 +1323,8 @@ requirements:
   enforcing_component: requirements registry
   verification:
     method: static check
-    test: validate_requirements.py
-    evidence: planned
+    test: 'course_gates.py schema'
+    evidence: tests on main (trace matrix, 2026-11-24)
 - id: REQ-IX-GOV-002
   type: governance
   subtype: agent_governance
@@ -1341,8 +1341,8 @@ requirements:
   enforcing_component: Process records
   verification:
     method: process audit
-    test: "planned: review log"
-    evidence: planned
+    test: 'course_gates.py ai-use-log; docs/review-memo.md'
+    evidence: tests on main (trace matrix, 2026-11-24)
 - id: REQ-IX-SCOPE-001
   type: governance
   subtype: scope
@@ -1365,8 +1365,8 @@ requirements:
   enforcing_component: Scope inventory
   verification:
     method: scope inventory
-    test: 'planned: entry-point audit'
-    evidence: planned
+    test: 'PrepareApprovalUseCaseTest; planned: entry-point inventory'
+    evidence: partial; tests on main cover part, planned items remain
   note: 'The session bypass is a known bypass and is not fixed in v1; the team shall not claim that this path is protected by AI approval. 2026-11-23 status review (lead): conceptual; partly implemented. AutoDialog single-APK submissions go through the assessment with one operation ID. Gap: AutoNotification does not use the assessment path in v1 (REQ-IX-ARCH-001 note) and the entry-point inventory is not kept as a separate artifact.'
   source_links:
   - https://github.com/wxxsfxyzm/InstallerX-Revived/blob/main/app/src/main/java/com/rosan/installer/data/session/handler/ActionHandler.kt
@@ -1394,8 +1394,8 @@ requirements:
   enforcing_component: InstallationGateway
   verification:
     method: static + dynamic spy
-    test: 'planned: ChokePointTest'
-    evidence: planned
+    test: 'ChokePointTest; AdvisorDecisionTest'
+    evidence: tests on main (trace matrix, 2026-11-24)
   source_links:
   - https://github.com/wxxsfxyzm/InstallerX-Revived/blob/main/app/src/main/java/com/rosan/installer/data/engine/repository/AppInstallerRepositoryImpl.kt
 - id: REQ-IX-ARCH-002
@@ -1416,8 +1416,8 @@ requirements:
   enforcing_component: UI layer
   verification:
     method: build + UI smoke
-    test: 'planned: DualUiSmokeTest'
-    evidence: planned
+    test: 'both UI families compile; planned: DualUiSmokeTest'
+    evidence: tests on main (trace matrix, 2026-11-24)
   source_links:
   - https://github.com/wxxsfxyzm/InstallerX-Revived/blob/main/AGENTS.md
   - https://github.com/wxxsfxyzm/InstallerX-Revived/tree/main/app/src/main/java/com/rosan/installer/ui/page/main

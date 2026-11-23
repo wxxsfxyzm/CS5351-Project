@@ -1317,3 +1317,28 @@ entries:
     evidence:
     - PR 5 review (GitHub, 2026-11-16)
     notes: The per-requirement verification blocks still list the originally planned test names; the dated notes give the actual evidence.
+  - id: AI-wxxsfxyzm-0023
+    date: '2026-11-24'
+    tool: Claude Code
+    model: claude-opus-5-5
+    role: verify
+    operator: wxxsfxyzm (project lead)
+    task: Regenerate the requirement trace matrix against main and replace the planned test names in the registry with the real test classes.
+    requirements:
+    - REQ-IX-VER-001
+    - REQ-IX-GOV-001
+    artifacts:
+    - docs/architecture/trace-matrix.md
+    - docs/req/requirements.yaml
+    - Report.md
+    - docs/ai-use-log.yaml
+    human_decisions:
+    - Lead asked for the matrix to be updated directly instead of waiting for its owner, Member C; it is marked pending Member C review.
+    verification:
+    - Matrix rows take priority, enforcing element and status from the registry; a new Implemented by column names the classes on main, and the Tests column lists real test classes plus planned gaps.
+    - 28 of the 41 D2 planned test names did not exist on main; they were replaced by the test classes that cover the fit criteria, or kept as planned where nothing covers them (20 rows still carry a planned item).
+    - A read-only check confirmed 41/41 rows, no dangling IDs, matching priority, element, status and verification.test, and that every named test class exists in app/src/test.
+    - Schema gate passes; docs/plans/validate_pr5_rev6.py passes.
+    evidence:
+    - docs/architecture/trace-matrix.md section 5
+    notes: The Runtime monitor column was kept as it was; several monitors remain planned because they depend on the deferred audit store (DEBT-003).

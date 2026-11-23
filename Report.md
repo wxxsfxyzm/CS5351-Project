@@ -470,8 +470,17 @@ When code changed, the documents changed in the same PR. Four examples:
 significant defect has a bug diary entry. Each known shortfall has a debt
 entry. The CI AI-use log gate enforces the log.
 
-**Gap.** `docs/architecture/trace-matrix.md` has not been updated for PRs #30
-to #33. **[TO FILL: update it, or record it as debt.]**
+**Trace matrix.** `docs/architecture/trace-matrix.md` lagged behind PRs #27
+to #33 until the end: it still listed every requirement as `conceptual` and
+named the tests planned in D2, 28 of which never existed under that name. On
+11-24 it was regenerated from the registry. Each row now gives the
+architecture element, the classes on `main` that implement it, the real test
+classes, and any `planned:` gap; the registry's `verification` fields were
+changed to match. A read-only check confirmed 41/41 rows, matching statuses,
+and that every named test class exists. Twenty rows still carry a planned
+test, mostly for the deferred audit store and durable state (DEBT-003). The
+lesson is that a matrix kept by hand drifts as soon as code moves faster
+than documents; it should have been regenerated in each feature PR.
 
 ---
 
@@ -576,7 +585,6 @@ Other gaps to state honestly:
   agent sessions, and the AI-use log, and it says so at the top.
 - 19 of 41 requirements are not fully met (Section 4.1). Most depend on the
   deferred persistence and audit work (DEBT-003).
-- The trace matrix lags behind PRs #30 to #33 (Section 5).
 - PR #33 recorded that its tests were only partly approved before
   implementation, because the on-device fixes were made under time pressure.
 - The CI semantic-evaluation gate's live step was switched from the retired
