@@ -1,6 +1,6 @@
 # Requirement Traceability Matrix
 
-**Status:** regenerated 2026-11-24 after PRs #27–#33 by the lead; pending Member C review.
+**Status:** regenerated 2026-11-24 after PRs #27–#33 by the lead; reviewed and approved by Member C (owner) on 2026-11-24.
 **Owner:** Member C (Software Architect).
 **Baseline:** InstallerX Revived `816ea541`; repository state `main`, 2026-11-24.
 **Requirements:** `docs/req/requirements.yaml` rev.6
