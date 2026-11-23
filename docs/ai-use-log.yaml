@@ -440,7 +440,7 @@ entries:
       - Read-only review only; no Gradle command, test, or build was run.
       - Findings were checked against the repository state at HEAD eaf9fe78 on main, which was documentation and architecture only at the time.
     evidence:
-      - transcripts/transcriptE-Chengqian He-60267540.md
+      - transcripts/memberE-yuki11111111111.md
       - https://github.com/wxxsfxyzm/CS5351-Project/pull/14
     notes: Exploration and discussion session; the agent made no edits, commits, or pushes. Model identifier is taken from the OpenCode session configuration because the transcript does not record it.
 
@@ -494,7 +494,7 @@ entries:
       - E-2 and E-3 guards were verified as load-bearing by temporarily injecting a forbidden okhttp3 import and a GROQ_API_KEY buildConfigField, observing the failures, and reverting.
       - No on-device test, no live Groq call, and no external CI result was observed by the agent.
     evidence:
-      - transcripts/transcriptE-Chengqian He-60267540 fix.md
+      - transcripts/memberE-yuki11111111111.md
       - https://github.com/wxxsfxyzm/CS5351-Project/pull/13
       - docs/plans/2026-11-19-pr13-architecture-review-fixes.md
     notes: >-
@@ -984,11 +984,11 @@ entries:
     - REQ-IX-INV-004
     artifacts:
     - .github/pull_request_template.md (template used, not modified)
-    - transcripts/transcriptE-Chengqian He-60267540.md
+    - transcripts/memberE-yuki11111111111.md
     - docs/ai-use-log.yaml
     human_decisions:
     - Lead instructed that all changes be submitted as a pull request following .github/pull_request_template.md.
-    - Lead instructed that the AI-use log carry the usage record and that the authoring transcript be appended to transcripts/transcriptE-Chengqian He-60267540.md.
+    - Lead instructed that the AI-use log carry the usage record and that the authoring transcript be appended to transcripts/memberE-yuki11111111111.md.
     - Lead corrected the operator name and ID prefix for entries AI-yuki11111111111-0003 through -0006 (formerly AI-wxxsfxyzm-0013 through -0016) and asked for the bare account name without a member qualifier; the earlier wxxsfxyzm label was an agent error, not the operator's identity.
     - Earlier instruction still applies - docs/plans/ is excluded from the commit.
     verification:
@@ -996,7 +996,7 @@ entries:
     - Transcript regenerated from the local OpenCode session store (session ses_dfcb06c5bffeDYSnHAdV8gX8bl) and appended; file grew by 10515 lines.
     - ./gradlew --offline spotlessCheck and :app:testUnstableDebugUnitTest re-run after the log edit - BUILD SUCCESSFUL, 370 tests, 0 failures.
     evidence:
-    - transcripts/transcriptE-Chengqian He-60267540.md
+    - transcripts/memberE-yuki11111111111.md
     notes: "PR prepared on branch feat/fixed-response-advisor from main e8420f8c. Pull request body written following the eight template sections. Aborted console output rendered as '?' inside the transcript; the console encoding on this machine is GBK and mangled non-ASCII shell output. docs/plans/ left untracked on purpose. PR body text is stored locally at the temp path and is pasted by the operator because the GitHub CLI is not installed here."
 
   - id: AI-wxxsfxyzm-0015
@@ -1241,3 +1241,29 @@ entries:
     - docs/debt-register.md (DEBT-006)
     - prompts/prompt_v1.3.yaml
     notes: The agent misdiagnosed BUG-009 as a VPN or WAF problem before reading the stack trace; the lead changed phone network settings in the meantime. Diagnostic logs added to the advisor path record rule, reason, failure class, and validator rejections only, never the key or evidence. The API key was sourced from agent.env for live tests and never printed or written.
+
+  - id: AI-wxxsfxyzm-0020
+    date: '2026-11-23'
+    tool: Claude Code
+    model: claude-opus-5-5
+    role: verify
+    operator: wxxsfxyzm (project lead)
+    task: Consolidate the Member C and Member E transcripts from PR #38 and PR #35 into curated D5 files without real names or student IDs.
+    requirements:
+    - REQ-IX-GOV-002
+    artifacts:
+    - transcripts/memberC-yipu02.md
+    - transcripts/memberE-yuki11111111111.md
+    - docs/ai-use-log.yaml
+    human_decisions:
+    - Lead decided not to merge PR #35 and PR #38 and asked the agent to take the transcripts out, fix them, and commit them directly.
+    - Lead decided to keep real names and student IDs out of the public repository.
+    verification:
+    - Member C - the annotated file from PR #38 was taken as is, except for three changes - the name and student ID were removed from the header and from file references; turn 9 and its summary and timeline rows now say that Member C relayed the lead's Option B decision, matching AI-memberC-0002.
+    - PR #38 was based on a commit later removed from main for carrying personal data, so only its transcript file was taken, not the branch.
+    - Member E - a curated transcript built from three sessions (S1 ses_e0fe83fe, S2 ses_e0d60141, S3 ses_dfcb06c5) - 24 operator turns kept, agent output excerpted, code removed; annotations are drafts pending Member E's review. The two earlier E files were removed, as PR #35 intended, and the log's references to them now point to the new file.
+    - The E annotation records that the session database reported OpenCode 2.3.2 while the log records v1, without a finding.
+    evidence:
+    - PR 35
+    - PR 38
+    notes: Documentation only. The raw Member C export is left in place.
