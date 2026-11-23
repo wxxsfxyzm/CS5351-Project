@@ -170,7 +170,7 @@ entries:
     - OpenCode session ses_e1b8c6b9cffewP3MlltTCEZB1F
     - docs/plans/2026-11-16-pr5-rev6-revision.md
     - https://github.com/wxxsfxyzm/CS5351-Project/pull/5
-    - transcripts/60687558-chaojiao2-pr5.md
+    - transcripts/transcriptB-chaojiao2-60687558.md
     notes: OpenCode generated the proposal in chat without editing docs/req. Codex corrected
       the schema and rule predicates, validated in a temporary copy, and applied the
       patch locally. PR review of rev.6 is outstanding.
