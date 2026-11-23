@@ -13,7 +13,7 @@
 | Member | GitHub | Main responsibility |
 |---|---|---|
 | A | `wxxsfxyzm` | Project lead: governance (D3), CI blocking gates (D7), approval coordinator and gateway, AI advisor end-to-end integration, on-device validation |
-| B | `GArbage823` | Requirements registry D1 (rev.6), deterministic policy engine, evidence mapper, consent-scoped model gate |
+| B | `GArbage823` | Requirements registry D1 (rev.6), deterministic policy engine, evidence mapper, consent-scoped model request gate |
 | C | `yipu02` | Architecture artifacts D2: ADR-001/002, invariants, permission model, runtime policy catalog, blueprint sync |
 | D | `Eugene12321` | Verification: D1 rev.6 test plan, offline verification suites |
 | E | `yuki11111111111` | AI advisory path: strict output parsing, fixed-response advisor, failure-escalation tests |
@@ -49,7 +49,7 @@ counts, not weights:
 | GitHub | PRs merged | AI-use log entries | Transcript |
 |---|---|---|---|
 | `wxxsfxyzm` | 13 (#2–#4, #17, #24, #26–#28, #30–#33, #37) | 19 | `wxxsfxyzm-supervision.md`, `transcriptA-wxxsfxyzm.md` |
-| `GArbage823` | 5 (#5, #16, #18, #19, #34) | 4 | Member B transcript |
+| `GArbage823` | 6 (#5, #16, #18, #19, #34, #39) | 4 | Member B transcript |
 | `yipu02` | 2 (#6, #20) | 3 (`AI-memberC-*`) | Member C transcript |
 | `Eugene12321` | 1 (#25) | 2 | Member D transcript |
 | `yuki11111111111` | 4 (#14, #15, #22, #29) | 6 | Member E transcripts |
@@ -207,12 +207,19 @@ on a device found five defects in one evening, BUG-005 to BUG-009. Since then,
 every fix carries a test that fails on the old code. The missing automated
 on-device test is recorded as DEBT-006.
 
-### 3.7 Team-level process **[TO FILL: B, C, D, E]**
-How each member's part of the process worked or was improved, for example:
+### 3.7 Team-level process
 
-- the review cycle on PR #5;
-- the architecture review fixes for PR #13;
-- the verification test plan.
+**Requirements review (PR #5).** The lead raised seven points. Member B had
+OpenCode map each one to a requirement and an acceptance case, then authorised
+saving the plan. Edits to the registry followed once Member B approved the
+plan and its tests. We updated the registry and schema together and kept all
+41 IDs. All 14 decision cases passed, and the schema rejected all three invalid
+fixtures ([review memo](docs/review-memo.md)). The policy engine, evidence
+mapper and model request gate each had a separate plan and test scope for
+Member B to approve (PRs #16, #18 and #19).
+
+**[TO FILL: C, D, E: how your part of the process worked or was improved,
+including architecture review fixes and the verification test plan.]**
 
 ---
 
@@ -222,7 +229,7 @@ How each member's part of the process worked or was improved, for example:
 
 | Date | Change | Trigger | PR |
 |---|---|---|---|
-| ≤ 11-16 | Registry rev.3 to rev.5 | Initial drafting and group review | **[TO FILL: B]** |
+| 11-14 to 11-16 | rev.3 registry, consolidated YAML and schema in rev.4, English requirements with a proposed outbound allowlist and token budget in rev.5 | Group review of which APK fields could leave the device and how to count tokens | [rev.3](https://github.com/wxxsfxyzm/CS5351-Project/commit/6bd3dbf8), [rev.4](https://github.com/wxxsfxyzm/CS5351-Project/commit/54072d0e), [rev.5](https://github.com/wxxsfxyzm/CS5351-Project/commit/a9e237f6) (PR #5) |
 | 11-16 | rev.6: two independent advisory axes, mode priorities, compatibility folded into FR-002/FR-005, completeness-aware evidence, separate attempt and dispatch accounting, corrected Continue/Retry | Seven review items on PR #5 | #5 |
 | 11-22 | REQ-IX-ARCH-001 narrowed for v1 to AI-evaluated requests; AI-off keeps the baseline path | Plan review found that the advisor-off path cannot go through the coordinator without a new decision rule (Q9) | #31 |
 | 11-23 | Two optional outbound fields: `permissions_added_since_installed`, `installed_is_system_app` | On-device runs rated routine updates of permission-heavy apps MEDIUM/HIGH, so DR-05 was never reached | #33 |
@@ -270,7 +277,22 @@ the device lacks:
 - a mis-specified SEC-003 test;
 - six verification suites that tested copies of production code (PR #25).
 
-**[TO FILL: B, C, D, E: defects found and fixed in your PRs, for example the
+**Evidence mapper (PR #18).** Member B confirmed two issues and
+approved the following changes during review:
+
+- The parser left `fileHash` empty. We let the caller supply a verified
+  SHA-256 for the selected APK. If the two hashes disagree, the mapper
+  rejects the evidence.
+- An empty package lookup could leave the target user's install status
+  unknown. The mapper now requires confirmation that the app is absent for
+  that user before it returns `NEW_INSTALL`.
+
+The PR passed all 276 local JVM tests, including 17 mapper tests, and built
+both debug APKs ([AI-use log](docs/ai-use-log.yaml), AI-GArbage823-0003). At
+merge, only the tests supplied a caller hash; PR #33 added the call-site
+hashing.
+
+**[TO FILL: C, D, E: defects found and fixed in your PRs, for example the
 PR #13 review fixes.]**
 
 ### 4.3 Test growth
@@ -303,9 +325,14 @@ plan's approval section. Examples:
 | Where the API key lives | Asked on first enable, stored in an app-private DataStore, never in the APK | AI plan |
 | Consent UX | One switch; consent shown on every enable; disabling withdraws consent | PR #33 |
 | MEDIUM-risk updates and DR-05 | Keep DR-05 strict; give the model update-relative evidence instead | PR #33 |
+| Meaning of FR-012 | Keep FR-012 for the AI switch. Fold compatibility into FR-002 and FR-005 | Transcript B, messages 38 and 51 |
+| Continue, Retry or Cancel | Continue rechecks approval locally. Retry starts a fresh assessment if consent, network and budget allow. Cancel submits nothing | Transcript B, messages 43–44 |
+| Retry rejected before dispatch | Count the attempt. Add one provider call only when the request is sent | Transcript B, messages 45–46 |
+| First Continue and repeated clicks | Bind approval to the current installation object on the first Continue. Revalidate before submission and submit at most once per operation | Transcript B, messages 47–48 |
+| Empty installed-app lookup | Require confirmed absence for the target user before returning `NEW_INSTALL` | PR #18 |
+| Consent withdrawn during assessment | Check consent again before sending the request. Missing or withdrawn consent blocks dispatch | PR #19 |
 
-**[TO FILL: B, C: ambiguities resolved in the requirements and architecture
-reviews.]**
+**[TO FILL: C: ambiguities resolved in the architecture reviews.]**
 
 ---
 
@@ -367,7 +394,23 @@ From the lead's supervision record (`transcripts/wxxsfxyzm-supervision.md`):
    - that routine updates should not be rated high risk;
    - when to defer a slice rather than force it.
 
-**[TO FILL: B, C, D, E: what you caught in your own sessions.]**
+From Member B's [requirements review](transcripts/transcriptB-chaojiao2-60687558.md)
+for PR #5:
+
+1. **No approval on the first click.** OpenCode's S16 replay case assumed an
+   approval already existed. Member B pointed out that the first Continue had
+   no approval to reuse. The revised plan binds approval on that click and
+   checks it again before submission. A repeated click cannot submit twice, and a
+   restart while waiting for the user leaves the operation pending
+   (messages 47–48).
+2. **Counting a call that never left the device.** OpenCode counted one
+   model call for a permitted Retry. Member B pointed out that a retry could
+   still fail the budget check before dispatch. The revised plan counts the
+   attempt, records zero provider calls in that case, and allows at most one
+   retry per operation (messages 43–46,
+   [rev.6 plan](docs/plans/2026-11-16-pr5-rev6-revision.md)).
+
+**[TO FILL: C, D, E: what you caught in your own sessions.]**
 
 ---
 
@@ -445,37 +488,37 @@ device is caught on the first day rather than at the end.
 
 ### 8.2 Member B (`GArbage823`) — Requirements Engineer
 
-I started on requirements, then helped build the install-risk policy engine,
-the AutoDialog evidence mapper, and the default-deny model egress gate. I set
-the scope, approved the plans and tests, and reviewed the changes before they
-were committed. For the later batches, I authorised OpenCode to move into
-Build mode once the plan and tests were ready. D1 went from rev.3 to rev.6 in
-under a week. PR #5 came back with seven required changes, including
-separating install success likelihood from security risk and distinguishing a
+I started on requirements, then built the install-risk policy engine, the
+AutoDialog evidence mapper, and the default-deny model request gate. I set
+the scope, approved the plans and tests, and checked the verification output
+before merge. For the later batches, I authorised OpenCode to move into Build
+mode once the plan and tests were ready. D1 went from rev.3 to rev.6 between
+11-14 and 11-16. PR #5 came back with seven required changes. One separated
+install success likelihood from security risk; another distinguished a
 preflight rejection with zero model calls from a response that exceeded the
-budget. I kept all 41 requirement IDs and folded the compatibility criteria
-into FR-002 and FR-005. For rev.6 we updated the YAML registry and JSON Schema
-together, checked 14 first-match decision cases, and recorded the results in
-the review memo. That gave me a way to see whether the revised wording still
-led to the expected decisions. The first-use case was where the plan and I
-diverged. OpenCode described notification replay as reusing an existing
-approval. A user who has never approved anything has nothing to reuse. I had
-left that state out of the prompt. I asked for the first Continue to create an
-approval bound to the installation object, revalidate the binding before
-submission, and make zero additional model calls. Repeated clicks must yield
-at most one submission. In the mapper review, I also required affirmative
-confirmation before an empty installed-app lookup could be classified as
-`NEW_INSTALL` for the target user. The three branches passed their local JVM
-suites, including six policy tests, 17 mapper tests, and seven egress tests.
-Those tests showed that the slices handled the inputs we gave them. In the
-project lead's later device run, missing APK hashes made real evidence
-unreadable, even though the fixtures supplied a hash. The run also exposed two
-separate failures in the request path. A missing consent gate blocked
-dispatch, and once a request could reach the server, the response reader threw
-an `EOFException` on short bodies. Next time I would pair the offline cases
-with a smoke test through the actual Android install flow as soon as the first
-slice is wired in. The agent is good at extending a path that already works.
-My job was to name the states that were not on it.
+budget. We retained all 41 IDs by folding the proposed COMP-002 criteria into
+FR-002 and FR-005. For rev.6 we updated the YAML registry and JSON Schema
+together. All 14 cases matched the expected rule, decision and disposition.
+We recorded the results in the review memo. OpenCode described notification
+replay as reusing an existing approval. A user who has never approved
+anything has nothing to reuse. That first-use state was not in the prompt I
+wrote. The plan filled the gap with an assumption that does not hold for a
+first-time user. I asked for the first Continue to create an approval bound
+to the installation object, revalidate the binding before submission, and
+make zero additional model calls. Repeated clicks must yield at most one
+submission. In the mapper review, I also required affirmative confirmation
+before an empty installed-app lookup could be classified as `NEW_INSTALL` for
+the target user. On their own branches the three slices passed: six policy
+tests inside 259, 17 mapper tests inside 276, and seven egress tests inside
+266. The branch tests covered the inputs supplied by our fixtures. The lead’s
+device run exposed an assumption those fixtures had hidden. Every APK came
+back unreadable. The production parser never populated `fileHash`, and our
+fixtures had always supplied one. The model request gate was never installed
+on the production path, so no model call went out. After that fix, every
+reply failed with an `EOFException` on short bodies. None of the three
+batches ran on a device or against the live model. Next time I would pair the
+offline cases with a smoke test through the actual Android install flow as
+soon as the first slice is wired in.
 
 ### 8.3 Member C (`yipu02`) — Software Architect
 
