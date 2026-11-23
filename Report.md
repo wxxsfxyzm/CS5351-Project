@@ -391,8 +391,9 @@ Other gaps to state honestly:
 - The trace matrix lags behind PRs #30 to #33 (Section 5).
 - PR #33 recorded that its tests were only partly approved before
   implementation, because the on-device fixes were made under time pressure.
-- The CI semantic-evaluation gate's live step still checks `GROQ_API_KEY`; it
-  should use the `AGENT_*` variables of the course service. **[TO FILL]**
+- The CI semantic-evaluation gate's live step was switched from the retired
+  `GROQ_API_KEY` to the course service's `AGENT_*` variables on 2026-11-23. It
+  runs only once the `AGENT_API_KEY` secret is configured.
 
 ---
 

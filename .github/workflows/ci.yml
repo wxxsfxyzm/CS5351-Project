@@ -163,8 +163,9 @@ jobs:
           cache-read-only: true
 
       - name: Run all unit test suites
-        # Live tests skip themselves without GROQ_API_KEY, so this is the
-        # deterministic offline suite.
+        # Live tests skip themselves unless AGENT_BASE_URL, AGENT_API_KEY and
+        # AGENT_DEPLOYMENT_MODEL are all set, so this is the deterministic
+        # offline suite.
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -177,7 +178,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      # Course LLM service (OpenAI-compatible). Only the key is secret; the
+      # endpoint and model fall back to the course defaults when no repository
+      # variable is set. The live test reads exactly these three variables.
+      AGENT_API_KEY: ${{ secrets.AGENT_API_KEY }}
+      AGENT_BASE_URL: ${{ vars.AGENT_BASE_URL || 'https://llm.cs.cityu.edu.hk/v1' }}
+      AGENT_DEPLOYMENT_MODEL: ${{ vars.AGENT_DEPLOYMENT_MODEL || 'CS5351/DeepSeek-V4-Flash' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -207,8 +213,8 @@ jobs:
           --tests 'com.rosan.installer.domain.ai.*'
           --tests 'com.rosan.installer.data.ai.*'
 
-      - name: Live model evaluation (only when GROQ_API_KEY is configured)
-        if: env.GROQ_API_KEY != ''
+      - name: Live model evaluation (only when AGENT_API_KEY is configured)
+        if: env.AGENT_API_KEY != ''
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

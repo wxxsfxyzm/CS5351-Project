@@ -75,14 +75,17 @@ Requires JDK 25 and GitHub Packages credentials (see [Building](#building)).
 
 ```bash
 # Offline suite: deterministic, no network. Live tests skip themselves
-# when GROQ_API_KEY is unset.
+# unless all three AGENT_* variables below are set.
 ./gradlew testUnstableDebugUnitTest
 
-# Live tests only: call the real model API.
-GROQ_API_KEY=<key> ./gradlew testUnstableDebugUnitTest --tests "com.rosan.installer.live.*"
+# Live tests only: call the course LLM service (OpenAI-compatible).
+export AGENT_BASE_URL=https://llm.cs.cityu.edu.hk/v1
+export AGENT_DEPLOYMENT_MODEL=CS5351/DeepSeek-V4-Flash
+export AGENT_API_KEY=<key>        # never commit or log the key
+./gradlew testUnstableDebugUnitTest --tests "com.rosan.installer.live.*"
 
-# Full suite: offline and live together.
-GROQ_API_KEY=<key> ./gradlew testUnstableDebugUnitTest
+# Full suite: offline and live together (same three variables set).
+./gradlew testUnstableDebugUnitTest
 ```
 
 ### CS5351 blocking gates
@@ -97,7 +100,7 @@ script `.github/scripts/course_gates.py` holds the non-Gradle checks.
 | Safety-path checks | PRs that touch AI, policy, approval, gateway, or agent-permission paths | Architecture boundary tests (`*IsolationTest`, `*DependencyBoundaryTest`) or the policy decision-table contract test fails |
 | Permission check | Every push and PR | `.opencode/permissions.jsonc` loses a guard rule: default deny, protected paths, secret reads, push/merge denial, or `project-plan` editing outside `docs/plans/` |
 | Schema | Every push and PR | `docs/req/requirements.yaml` does not validate against `docs/req/req-schema.json`, or IDs repeat |
-| Semantic evaluation | PRs that change prompts or AI request code | The fixed offline evaluation set (recorded model replies in the `domain.ai` and `data.ai` suites) fails, or `prompts/*.yaml` is out of sync with the code; the live suite also runs when a `GROQ_API_KEY` secret is set |
+| Semantic evaluation | PRs that change prompts or AI request code | The fixed offline evaluation set (recorded model replies in the `domain.ai` and `data.ai` suites) fails, or `prompts/*.yaml` is out of sync with the code; the live suite also runs when an `AGENT_API_KEY` secret is set (endpoint and model from the `AGENT_BASE_URL` / `AGENT_DEPLOYMENT_MODEL` repository variables, defaulting to the course service) |
 | Regression | Every push and PR | Any test in the full prior suite fails |
 | AI-use log | PRs that change source, tests, or prompts | `docs/ai-use-log.yaml` is not updated, or an entry has a malformed ID or missing fields |
 

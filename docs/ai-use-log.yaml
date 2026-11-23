@@ -1267,3 +1267,26 @@ entries:
     - PR 35
     - PR 38
     notes: Documentation only. The raw Member C export is left in place.
+
+  - id: AI-wxxsfxyzm-0021
+    date: '2026-11-23'
+    tool: Claude Code
+    model: claude-opus-5-5
+    role: build
+    operator: wxxsfxyzm (project lead)
+    task: Point the CI semantic-evaluation gate and the README test instructions at the course LLM service variables instead of the retired GROQ_API_KEY.
+    requirements:
+    - REQ-IX-VER-001
+    - REQ-IX-FR-003
+    artifacts:
+    - .github/workflows/ci.yml
+    - README.md
+    - docs/ai-use-log.yaml
+    human_decisions:
+    - Lead asked for the stale GROQ_API_KEY reference in the semantic gate to be fixed.
+    verification:
+    - ci.yml parses; the live step now runs only when the AGENT_API_KEY secret is set, with AGENT_BASE_URL and AGENT_DEPLOYMENT_MODEL from repository variables or the course defaults - the same three variables CourseServiceLiveAdvisorTest reads.
+    - Permission gate passes. No secret value is written anywhere.
+    evidence:
+    - Report.md section 7 (gap closed)
+    notes: The AGENT_API_KEY repository secret must be added in GitHub settings by the lead; until then the live step is skipped and the offline replay remains the blocking check.
