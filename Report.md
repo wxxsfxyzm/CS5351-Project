@@ -441,7 +441,39 @@ instead. Next time, I would add an automated on-device smoke test from the
 first integrated slice, so that the gap between unit tests and the real
 device is caught on the first day rather than at the end.
 
-### 8.2 Member B (`GArbage823`) **[TO FILL]**
+### 8.2 Member B (`GArbage823`) — Requirements Engineer
+
+I started on requirements, then helped build the install-risk policy engine,
+the AutoDialog evidence mapper, and the default-deny model egress gate. I set
+the scope, approved the plans and tests, and reviewed the changes before they
+were committed. For the later batches, I authorised OpenCode to move into
+Build mode once the plan and tests were ready. D1 went from rev.3 to rev.6 in
+under a week. PR #5 came back with seven required changes, including
+separating install success likelihood from security risk and distinguishing a
+preflight rejection with zero model calls from a response that exceeded the
+budget. I kept all 41 requirement IDs and folded the compatibility criteria
+into FR-002 and FR-005. For rev.6 we updated the YAML registry and JSON Schema
+together, checked 14 first-match decision cases, and recorded the results in
+the review memo. That gave me a way to see whether the revised wording still
+led to the expected decisions. The first-use case was where the plan and I
+diverged. OpenCode described notification replay as reusing an existing
+approval. A user who has never approved anything has nothing to reuse. I had
+left that state out of the prompt. I asked for the first Continue to create an
+approval bound to the installation object, revalidate the binding before
+submission, and make zero additional model calls. Repeated clicks must yield
+at most one submission. In the mapper review, I also required affirmative
+confirmation before an empty installed-app lookup could be classified as
+`NEW_INSTALL` for the target user. The three branches passed their local JVM
+suites, including six policy tests, 17 mapper tests, and seven egress tests.
+Those tests showed that the slices handled the inputs we gave them. In the
+project lead's later device run, missing APK hashes made real evidence
+unreadable, even though the fixtures supplied a hash. The run also exposed two
+separate failures in the request path. A missing consent gate blocked
+dispatch, and once a request could reach the server, the response reader threw
+an `EOFException` on short bodies. Next time I would pair the offline cases
+with a smoke test through the actual Android install flow as soon as the first
+slice is wired in. The agent is good at extending a path that already works.
+My job was to name the states that were not on it.
 
 ### 8.3 Member C (`yipu02`) — Software Architect
 
