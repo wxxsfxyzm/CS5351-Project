@@ -282,6 +282,9 @@ in `transcripts/wxxsfxyzm-supervision.md`.
   - AI-use log conflicts with main were resolved.
 
   Both were fixed on the author's branch by the lead.
+- **Approval:** the plans and their tests were approved by the lead in a
+  private conversation and relayed to the agent by Member E
+  (AI-yuki11111111111-0003 to 0005).
 - **Code & tests:** 423 tests, 0 failures. Live course suite 8/10 usable at
   the threshold.
 - **Metadata:** `yuki11111111111`; approved and merged by `wxxsfxyzm` on
