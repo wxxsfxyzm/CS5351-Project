@@ -384,8 +384,9 @@ From the lead's supervision record (`transcripts/wxxsfxyzm-supervision.md`):
 
 Other gaps to state honestly:
 
-- `docs/review-memo.md` has an entry only for PR #5; the course asks for one
-  per PR. **[TO FILL]**
+- `docs/review-memo.md` was not kept per PR during the project. It was
+  reconstructed on 2026-11-23 for every PR (#1–#39) from GitHub reviews,
+  agent sessions, and the AI-use log, and it says so at the top.
 - The requirements registry is still a draft (Section 4.1).
 - The trace matrix lags behind PRs #30 to #33 (Section 5).
 - PR #33 recorded that its tests were only partly approved before
