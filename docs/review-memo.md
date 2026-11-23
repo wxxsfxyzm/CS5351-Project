@@ -13,4 +13,4 @@ git diff --check
 
 Observed: Draft 2020-12 schema and registry validation passed, 14 first-match cases passed, 41 unique IDs and their dependency graph passed, and all three invalid fixtures were rejected. Whitespace checks passed. No Android runtime, live-model or Gradle tests were run for this requirements-only submission. Cost-cohort size and AI agreement thresholds remain proposals. The implementation tests in the registry remain planned.
 
-Session evidence: transcripts/60687558-chaojiao2-pr5.md. The transcript includes all session turns with privacy omissions identified. Operator decisions and delegated application are recorded in docs/ai-use-log.yaml.
+Session evidence: transcripts/transcriptB-chaojiao2-60687558.md. The transcript includes all session turns with privacy omissions identified. Operator decisions and delegated application are recorded in docs/ai-use-log.yaml.
