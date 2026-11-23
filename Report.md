@@ -39,7 +39,7 @@ to measure effort in productive hours per sprint.
 | B | **[TO FILL]** | | | | | |
 | C | **[TO FILL]** | | | | | |
 | D | **[TO FILL]** | | | | | |
-| E | **[TO FILL]** | | | | | |
+| E | 7.5 | 7.5 | 7.5 | 7.5 | 30 | Pending team totals |
 
 Weight = member total / mean total.
 
@@ -209,7 +209,9 @@ on-device test is recorded as DEBT-006.
 
 ### 3.7 Team-level process
 
-**Requirements review (PR #5).** The lead raised seven points. Member B had
+#### Member B — requirements review (PR #5)
+
+The lead raised seven points. Member B had
 OpenCode map each one to a requirement and an acceptance case, then authorised
 saving the plan. Edits to the registry followed once Member B approved the
 plan and its tests. We updated the registry and schema together and kept all
@@ -218,8 +220,64 @@ fixtures ([review memo](docs/review-memo.md)). The policy engine, evidence
 mapper and model request gate each had a separate plan and test scope for
 Member B to approve (PRs #16, #18 and #19).
 
-**[TO FILL: C, D, E: how your part of the process worked or was improved,
-including architecture review fixes and the verification test plan.]**
+#### Member D — verification test plan
+
+Member D wrote the test plan before any test code. The first request was
+limited to `docs/verification/test-plan.md` and one interface-independent
+static check (`PolicyWithoutModelTest`), because the policy, advisor and
+coordinator classes were not yet on `main`. The plan was then filled section
+by section, each reviewed before the next: decision cases P-01 to P-22 for
+DR-01 to DR-10, coordinator and binding cases C-01 to C-16, AI integration
+cases A-01 to A-10, and a list of open questions for Members A and C (DR-09
+decision versus disposition, DR-03 versus DR-10 order, who supplies the fake
+gateway). Main-source scans that had nothing to scan were reported as skipped
+through `assumeTrue`, not as passing.
+
+The process changed once the production classes merged. The offline suites
+had been written against test-scoped copies of the contracts. Member D
+redirected the agent to wire `AiPolicyIntegrationTest` to the real use case,
+advisor, validator, request gate and policy engine, and pointed
+`PolicyWithoutModelTest` at `domain/engine/policy` (63 tests, 0 skipped).
+At review the lead kept those two suites and the plan, and removed the six
+copy-based suites (DEBT-002).
+
+Evidence: [Member D transcript](transcripts/memberD-Eugene12321.md), stages
+1–5; [review memo](docs/review-memo.md), PR #25.
+
+#### Member E — reviewing and hardening the advisory path
+
+E organised the advisor work into separate instructions for a single model
+adapter, two independent assessment dimensions, fixed-format parsing, failure
+reporting, and fixed test scenarios. The explicit boundary was that the advisor
+reports evidence-based advice; the deterministic policy decides whether an
+installation may proceed. This made the acceptance criteria more specific than
+simply asking the agent to implement an AI feature.
+
+The review cycle then tightened both implementation and verification. E relayed
+the lead's four PR #13 findings and directed their correction: remove a local-only
+device field from outbound JSON, scan the data-layer implementation for forbidden
+dependencies, stop compiling the key into BuildConfig, and cover missing
+allowlisted context fields. The changes landed through PR #16; PR #13 itself was
+closed rather than merged independently. For PR #29, E asked the agent to inspect
+existing behavior before adding code, relayed the lead's approval of the plans
+and tests, and requested an offline FixedResponseAdvisor plus adapter-contract
+and failure-escalation tests. This allowed A/D to exercise unfavorable and failed
+assessments without depending on a live provider.
+
+E also controlled delivery: changes were held before committing, the commit scope
+excluded docs/plans, and submission required the PR template, AI-use log, and
+transcript. The initial instruction permitting new files was less explicit than
+the later plan-and-test approval records. A further review caught a prompt edit
+without a version bump; the lead added v1.2 before PR #29 merged. These are process
+improvements and remaining lessons, not evidence that every initial step fully
+satisfied the governance workflow.
+
+Evidence: [Member E transcript](transcripts/memberE-yuki11111111111.md), stages
+1–3; [AI-use log](docs/ai-use-log.yaml), AI-yuki11111111111-0002 to 0006;
+[review memo](docs/review-memo.md), PRs #13, #16 and #29.
+
+**[TO FILL: C: how your part of the process worked or was improved, including
+the architecture review fixes.]**
 
 ---
 
@@ -303,8 +361,44 @@ both debug APKs ([AI-use log](docs/ai-use-log.yaml), AI-GArbage823-0003). At
 merge, only the tests supplied a caller hash; PR #33 added the call-site
 hashing.
 
-**[TO FILL: C, D, E: defects found and fixed in your PRs, for example the
-PR #13 review fixes.]**
+**Member E — advisory defects and corrections.** The following are review and
+session findings, not new BUG identifiers in the team bug diary.
+
+| Finding | Correction and verification evidence | Attribution |
+|---|---|---|
+| `device_api_level` was sent even though it was local-only | Removed its outbound field and changed tests to require absence, including `request_neverContainsDeviceApiLevel` | Lead's PR #13 review; E directed the fixes |
+| Static isolation checked only `domain/ai` | Extended `AdvisorIsolationTest` to `data/ai`, restricting provider libraries and excluding backend/privileged references | Lead's PR #13 review; E's correction session |
+| The key could be compiled into `BuildConfig` | Removed the compile-time key field and added a regression guard; later runtime credential storage belongs to the lead's integration slice | Lead's PR #13 review; E's correction session |
+| Five allowlisted context fields were missing | Added installation mode, target-user scope, package source, source confidence, and installer capability to evidence/request support | Lead's PR #13 review; E's correction session |
+| Extra response keys and contradictory prompt context weakened the contract | Enforced the four-key response shape, removed the contradictory prompt line, and added `AdapterContractTest` | E-requested audit; implementation findings reported by the agent |
+| Structurally valid JSON with wrong inner types could escape as an exception | Converted malformed responses into explicit invalid results and added `FailureEscalationTest` through the real use case and policy engine | E-requested failure audit and approval of the proposed fixes |
+| The prompt changed without a new version | Added prompt v1.2 before merge | Subsequent reviewer finding; lead's correction on the PR #29 branch |
+
+The E session log records 370 tests across 55 suites passing after the final
+failure-path changes, including 11 failure-escalation tests and 30 validator
+tests. The PR #29 integration review records 423 passing tests and 8/10 usable
+live scenarios. These are different repository states; they must not be added
+together or described as tests written solely by E. The initial E runs were
+offline, and the later live result is integration evidence rather than proof of
+on-device correctness. Sources: [AI-use log](docs/ai-use-log.yaml), entries
+0002–0005 under AI-yuki11111111111; [review memo](docs/review-memo.md), PRs #13
+and #29; `StrictAiOutputValidator`, `AdvisorIsolationTest`, and
+`FailureEscalationTest` in the source and test trees.
+
+**Member D — verification defects.**
+
+- The six offline suites tested copies of the contracts and reference
+  implementations, which had already drifted from the PR #27 coordinator.
+  The lead removed them at review and recorded DEBT-002; only the two suites
+  against production classes were kept.
+- A non-ASCII Windows workspace path broke `aidl.exe`. The agent proposed
+  custom SDK wrappers and experimental Gradle overrides. Member D rejected
+  the patch, restored the clean SDK and renamed the workspace directory.
+- `AiPolicyIntegrationTest` first failed to compile on a named-parameter
+  mismatch with `DefaultAiRiskAdvisor`, and a parallel `spotlessKotlin` run
+  raced with the build directory. Both were fixed before PR #25.
+
+**[TO FILL: C: defects found and fixed in your PRs.]**
 
 ### 4.3 Test growth
 
@@ -405,8 +499,7 @@ From the lead's supervision record (`transcripts/wxxsfxyzm-supervision.md`):
    - that routine updates should not be rated high risk;
    - when to defer a slice rather than force it.
 
-From Member B's [requirements review](transcripts/transcriptB-chaojiao2-60687558.md)
-for PR #5:
+From Member B's requirements review transcript for PR #5:
 
 1. **No approval on the first click.** OpenCode's S16 replay case assumed an
    approval already existed. Member B pointed out that the first Continue had
@@ -421,7 +514,47 @@ for PR #5:
    retry per operation (messages 43–46,
    [rev.6 plan](docs/plans/2026-11-16-pr5-rev6-revision.md)).
 
-**[TO FILL: C, D, E: what you caught in your own sessions.]**
+**Member E's supervision.** E explicitly required malformed or missing model
+output to fail rather than default to safe, and instructed the advisor to report
+status without making installation decisions. E then relayed the lead's privacy,
+isolation, and key-handling findings instead of accepting the initial generated
+implementation as complete. Asking the agent to check existing behavior against
+specific failure scenarios led to further parsing and contract fixes; those
+technical diagnoses were made by the agent under E's direction, rather than
+independently discovered by E.
+
+E directly caught errors in the development record: the operator account and
+AI-use log ID prefix were wrong, and the tool-version field did not match the
+transcript. E requested successive corrections to the account, IDs, member label,
+and tool description. This demonstrates that traceability records themselves
+need human review. The consolidated transcript still notes a disagreement between
+the session database's reported version and the recorded OpenCode v1 label; it
+should not be presented as independently resolved. E also withheld permission to
+commit until the intended scope and delivery records had been checked.
+
+Source: [Member E transcript](transcripts/memberE-yuki11111111111.md), sections
+1.3–1.4, 2.1–2.2 and 3.2–3.6. Its editorial annotations remain marked as pending
+Member E's review.
+
+**Member D's supervision.** From the [Member D transcript](transcripts/memberD-Eugene12321.md):
+
+1. **AI risk standing in for a hard block.** Member D required the plan to
+   contrast an AI `HIGH` security risk (DR-07, `REQUIRE_REVIEW`) with a
+   deterministic hard block (DR-01, `BLOCK`), so a model rating can never
+   produce `BLOCK` on its own (1.3).
+2. **Invariants hidden in happy-path tables.** Member D asked for separate
+   negative suites for INV-002 and INV-007, following
+   `verification-constraints.md` §1 (2.4).
+3. **Binding coverage.** Member D listed all nine INV-003 binding fields, the
+   NFC-OUT-004 target-versus-source package case, TOCTOU hash replacement and
+   20 concurrent Continue events for one operation (1.4, 3.1).
+4. **An over-engineered build workaround.** Member D rejected the SDK wrapper
+   patch described in §4.2.
+5. **Tests against copies.** Once the real classes merged, Member D moved the
+   integration suite onto them (5.1). The lead's review then removed the
+   remaining copy-based suites.
+
+**[TO FILL: C: what you caught in your own sessions.]**
 
 ---
 
@@ -572,9 +705,55 @@ The critical catches came from human oversight rather than from the agent:
 an AI agent accelerates architectural work, but it cannot replace the
 architect's duty to verify every claim against ground truth.
 
-### 8.4 Member D (`Eugene12321`) **[TO FILL]**
+### 8.4 Member D (`Eugene12321`) — Verification Engineer
 
-### 8.5 Member E (`yuki11111111111`) **[TO FILL]**
+As Verification Engineer, my goal was to turn the D1 rev.6 fit criteria and
+the D2 invariants (INV-001 to INV-007) into executable offline checks rather
+than leave safety claims on paper. The local snapshot I started from had no
+AI, policy, or coordinator classes under `app/src/main/`. I therefore scoped
+Stage 1 to two things. The first was `docs/verification/test-plan.md`, which
+maps the DR-01 to DR-10 decision cases (P-01 to P-22), the approval-binding
+and idempotency cases (C-01 to C-16), and the AI integration cases (A-01 to
+A-10). The second was `PolicyWithoutModelTest`, a static import check that
+needed no unfrozen interfaces.
+
+Supervising the coding agent taught me that clear constraints matter far
+more than fast code generation. While reviewing the test plan and the early
+suites, I made sure that an AI `HIGH` security risk was explicitly contrasted
+with a deterministic hard block (DR-07 `REQUIRE_REVIEW` against DR-01
+`BLOCK`). I required `REQ-IX-*` traceability tags in every test and
+standalone negative invariant tests, as `verification-constraints.md`
+requires. Main-source scans with nothing to scan yet stayed honestly skipped
+through `assumeTrue` instead of passing vacuously. I also learned to push
+back when an agent over-engineers a workaround. When a non-ASCII Windows path
+broke `aidl.exe`, the agent tried adding custom SDK wrappers and experimental
+Gradle overrides. I rejected that patch, restored the clean SDK, and renamed
+the workspace directory instead.
+
+My biggest lesson came from PR #25. While waiting for upstream merges, I
+directed the agent to build six suites against test-scoped contract mirrors
+and reference implementations. Once I synced with `main` after PRs #16, #18
+and #19, I added `AiPolicyIntegrationTest` directly against the real
+`RequestInstallRiskAssessmentUseCase`, `DefaultAiRiskAdvisor`,
+`StrictAiOutputValidator`, `ModelRequestGate`, and
+`DeterministicPolicyEngine`, and pointed `PolicyWithoutModelTest` at
+`domain/engine/policy`. All 63 local tests passed. During the PR #25 review,
+however, the lead rightly removed the six mirror-based suites and logged
+DEBT-002. Testing self-authored copies cannot prove that production classes
+obey the invariants, and those copies had already drifted from the PR #27
+coordinator design. Only `PolicyWithoutModelTest` and
+`AiPolicyIntegrationTest` delivered real production evidence.
+
+Next time, I would wait for or pull the production interfaces first, limit
+test doubles strictly to external boundaries such as gateways and scripted
+model clients, and run the repository's governance gates (`course_gates.py`)
+and the PR template checks before opening a pull request.
+
+### 8.5 Member E (`yuki11111111111`) — AI Component
+
+> Draft prepared with AI assistance from the recorded E sessions at Member E's request. Member E should review and revise it into their own words before submission.
+
+My responsibility was the AI advisory path, where the main challenge was to keep a model's recommendation separate from permission to install an APK. I began by asking the agent to understand the project, then divided implementation into a single-provider adapter, a prompt covering installation success likelihood and security risk, fixed-format JSON parsing, and failure reporting. I explicitly required malformed or missing output to produce a failure rather than a safe default. This made my instructions concrete enough to check against tests instead of relying on the agent's description of completed code. The review of PR #13 exposed the limits of the first implementation. The team leader found that device_api_level was being transmitted despite being local-only, that isolation tests did not cover data/ai, that a key could be compiled into BuildConfig, and that several allowlisted fields were missing. I forwarded those findings and directed the corrections. I should distinguish that supervision from discovering the defects myself: the review came from the lead, while the agent implemented the changes. In the later session, I asked the agent to inspect what already existed before modifying it. That work produced an offline FixedResponseAdvisor and stronger contract and failure-escalation tests, so integration could cover unfavorable and invalid assessments without a network dependency. The parsing audit showed why checking only the JSON shape was insufficient: incorrect inner types could prevent the policy layer from receiving any status. Another lesson concerned the records around the code. I had to correct the operator account, log ID prefixes, member label, and tool description, showing that an automatically generated audit trail also needs scrutiny. I also held commits until the intended files and submission records were clear. The process was imperfect: my initial permission to add files was less precise than a separate approval of a plan and its tests, and a prompt change later needed a version correction during review. For future work, I would make approval scope explicit, require prompt and implementation versions to change together, and check the usage log against the transcript before submission. I would also keep offline contract checks separate from live-model and device evidence. Passing my component tests supported its behavior under those inputs; it did not establish that the complete Android installation flow worked. The lead's later integration and device fixes reinforced that distinction.
 
 ---
 
