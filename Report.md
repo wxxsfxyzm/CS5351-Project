@@ -39,7 +39,7 @@ to measure effort in productive hours per sprint.
 | B | **[TO FILL]** | | | | | |
 | C | **[TO FILL]** | | | | | |
 | D | **[TO FILL]** | | | | | |
-| E | 7.5 | 7.5 | 7.5 | 7.5 | 30 | Pending team totals |
+| E | 5 | 7 | 8 | 10 | 30 | Pending team totals |
 
 Weight = member total / mean total.
 
