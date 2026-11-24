@@ -3,7 +3,7 @@
 > **Status: framework draft.** Sections marked **[TO FILL]** need input from
 > the named member. Facts in the other sections come from the repository
 > (PRs, `docs/ai-use-log.yaml`, `docs/bug-diary.md`, `docs/debt-register.md`,
-> `docs/plans/`, transcripts) as of `main` on 2026-11-23. Check them before
+> `docs/plans/`, transcripts) as of `main` on 2026-11-24. Check them before
 > submission. Delete this box when done.
 
 ## 0. Team and relative contribution
@@ -48,11 +48,11 @@ counts, not weights:
 
 | GitHub | PRs merged | AI-use log entries | Transcript |
 |---|---|---|---|
-| `wxxsfxyzm` | 13 (#2–#4, #17, #24, #26–#28, #30–#33, #37) | 19 | `wxxsfxyzm-supervision.md`, `transcriptA-wxxsfxyzm.md` |
-| `GArbage823` | 6 (#5, #16, #18, #19, #34, #39) | 4 | Member B transcript |
+| `wxxsfxyzm` | 13 (#2–#4, #17, #24, #26–#28, #30–#33, #37) | 23 | `wxxsfxyzm-supervision.md`, `transcriptA-wxxsfxyzm.md` |
+| `GArbage823` | 7 (#5, #16, #18, #19, #34, #39, #40) | 4 | Member B transcript |
 | `yipu02` | 2 (#6, #20) | 3 (`AI-memberC-*`) | Member C transcript |
-| `Eugene12321` | 1 (#25) | 2 | Member D transcript |
-| `yuki11111111111` | 4 (#14, #15, #22, #29) | 6 | Member E transcripts |
+| `Eugene12321` | 2 (#25, #42) | 2 | Member D transcript |
+| `yuki11111111111` | 5 (#14, #15, #22, #29, #41) | 6 | Member E transcript |
 
 ---
 
@@ -140,7 +140,11 @@ REQ-IX-ARCH-001 and INV-001 to INV-007.
 
 ### 2.3 Pull requests and CI blocking gates
 
-Every change went through a task branch and a PR. Agents never pushed to main.
+During development, every change went through a task branch and a PR, and
+agents never pushed to main. After development ended on 2026-11-23, the lead
+turned branch protection off while preparing the submission materials, and
+documentation-only commits (report, transcripts, review memo, registry
+status, trace matrix) were pushed to main directly.
 `.github/workflows/ci.yml` implements the six gates required by the course:
 
 | Course gate | Implementation |
@@ -466,7 +470,7 @@ When code changed, the documents changed in the same PR. Four examples:
    gate. That turned out to be the cause of BUG-008, and the ADR was updated in
    the fix PR.
 
-**Records.** Every agent session has an AI-use log entry (34 entries). Each
+**Records.** Every agent session has an AI-use log entry (38 entries). Each
 significant defect has a bug diary entry. Each known shortfall has a debt
 entry. The CI AI-use log gate enforces the log.
 
@@ -581,9 +585,10 @@ Member E's review.
 Other gaps to state honestly:
 
 - `docs/review-memo.md` was not kept per PR during the project. It was
-  reconstructed on 2026-11-23 for every PR (#1–#39) from GitHub reviews,
+  reconstructed on 2026-11-23 (#40–#42 added on 11-24) for every PR from GitHub reviews,
   agent sessions, and the AI-use log, and it says so at the top.
-- 19 of 41 requirements are not fully met (Section 4.1). Most depend on the
+- 20 of 41 requirements are not fully met (19 `conceptual`, 1 `future`;
+  Section 4.1). Most depend on the
   deferred persistence and audit work (DEBT-003).
 - PR #33 recorded that its tests were only partly approved before
   implementation, because the on-device fixes were made under time pressure.
@@ -723,25 +728,22 @@ Stage 1 to two things. The first was `docs/verification/test-plan.md`, which
 maps the DR-01 to DR-10 decision cases (P-01 to P-22), the approval-binding
 and idempotency cases (C-01 to C-16), and the AI integration cases (A-01 to
 A-10). The second was `PolicyWithoutModelTest`, a static import check that
-needed no unfrozen interfaces.
-
-Supervising the coding agent taught me that clear constraints matter far
-more than fast code generation. While reviewing the test plan and the early
-suites, I made sure that an AI `HIGH` security risk was explicitly contrasted
-with a deterministic hard block (DR-07 `REQUIRE_REVIEW` against DR-01
-`BLOCK`). I required `REQ-IX-*` traceability tags in every test and
-standalone negative invariant tests, as `verification-constraints.md`
-requires. Main-source scans with nothing to scan yet stayed honestly skipped
-through `assumeTrue` instead of passing vacuously. I also learned to push
-back when an agent over-engineers a workaround. When a non-ASCII Windows path
-broke `aidl.exe`, the agent tried adding custom SDK wrappers and experimental
-Gradle overrides. I rejected that patch, restored the clean SDK, and renamed
-the workspace directory instead.
-
-My biggest lesson came from PR #25. While waiting for upstream merges, I
-directed the agent to build six suites against test-scoped contract mirrors
-and reference implementations. Once I synced with `main` after PRs #16, #18
-and #19, I added `AiPolicyIntegrationTest` directly against the real
+needed no unfrozen interfaces. Supervising the coding agent taught me that
+clear constraints matter far more than fast code generation. While reviewing
+the test plan and the early suites, I made sure that an AI `HIGH` security
+risk was explicitly contrasted with a deterministic hard block (DR-07
+`REQUIRE_REVIEW` against DR-01 `BLOCK`). I required `REQ-IX-*` traceability
+tags in every test and standalone negative invariant tests, as `verification-
+constraints.md` requires. Main-source scans with nothing to scan yet stayed
+honestly skipped through `assumeTrue` instead of passing vacuously. I also
+learned to push back when an agent over-engineers a workaround. When a non-
+ASCII Windows path broke `aidl.exe`, the agent tried adding custom SDK
+wrappers and experimental Gradle overrides. I rejected that patch, restored
+the clean SDK, and renamed the workspace directory instead. My biggest lesson
+came from PR #25. While waiting for upstream merges, I directed the agent to
+build six suites against test-scoped contract mirrors and reference
+implementations. Once I synced with `main` after PRs #16, #18 and #19, I added
+`AiPolicyIntegrationTest` directly against the real
 `RequestInstallRiskAssessmentUseCase`, `DefaultAiRiskAdvisor`,
 `StrictAiOutputValidator`, `ModelRequestGate`, and
 `DeterministicPolicyEngine`, and pointed `PolicyWithoutModelTest` at
@@ -750,12 +752,12 @@ however, the lead rightly removed the six mirror-based suites and logged
 DEBT-002. Testing self-authored copies cannot prove that production classes
 obey the invariants, and those copies had already drifted from the PR #27
 coordinator design. Only `PolicyWithoutModelTest` and
-`AiPolicyIntegrationTest` delivered real production evidence.
+`AiPolicyIntegrationTest` delivered real production evidence. Next time, I
+would wait for or pull the production interfaces first, limit test doubles
+strictly to external boundaries such as gateways and scripted model clients,
+and run the repository's governance gates (`course_gates.py`) and the PR
+template checks before opening a pull request.
 
-Next time, I would wait for or pull the production interfaces first, limit
-test doubles strictly to external boundaries such as gateways and scripted
-model clients, and run the repository's governance gates (`course_gates.py`)
-and the PR template checks before opening a pull request.
 
 ### 8.5 Member E (`yuki11111111111`) — AI Component
 

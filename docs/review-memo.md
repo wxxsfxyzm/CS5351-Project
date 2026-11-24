@@ -1,6 +1,6 @@
 # Review Memo — one entry per pull request
 
-This memo was **recorded retrospectively on 2026-11-23**. During the project,
+This memo was **recorded retrospectively on 2026-11-23** (PRs #40–#42 added on 2026-11-24). During the project,
 reviews happened on GitHub (approvals and review comments), inside agent
 sessions (the lead's review of OpenCode plans and builds), and in the review
 assistant session. They were not collected here at the time. Each entry below
@@ -383,6 +383,18 @@ in `transcripts/wxxsfxyzm-supervision.md`.
   14 first-match cases, 6/17/7 tests, BUG-006/008/009. 388 words; no personal
   data in the text.
 - **Metadata:** `GArbage823`; approved and merged by `wxxsfxyzm` on 2026-11-23.
+- **Verdict:** APPROVE.
+
+### PR #40, #41, #42 — Member B, E and D report sections and Member D transcript
+- **Review:** merged together by the lead on 2026-11-24. #40 and #41 both
+  edited Report §3.7, §4.2 and §6; the conflicts were resolved by keeping both
+  members' text. Facts were checked against the repository. A link in #40
+  whose filename contains a student ID was replaced by plain text. #42 adds an
+  edited transcript with no generated code; the raw transcript it cites was
+  already on `main`.
+- **Metadata:** `GArbage823` (#40), `yuki11111111111` (#41), `Eugene12321`
+  (#42); merged by `wxxsfxyzm` on 2026-11-24. Report and transcript only; no
+  AI-use log entry needed.
 - **Verdict:** APPROVE.
 
 ---
