@@ -770,7 +770,7 @@ with every decision logged in `docs/ai-use-log.yaml` and cross-checked against
 `trace-matrix.md`. This discipline was essential: the agent was fast and
 fluent, but it lacked self-governance and would readily have promoted
 unverified proposals into baseline architecture. We refined this workflow to
-enforce clear ownership boundaries. Every Build-mode prompt carried an
+enforce clear ownership boundaries. Every D2 Build-mode prompt carried an
 explicit constraint, "do not touch `app/`", which confined architectural edits
 to `docs/` and `architecture-blueprint.md` while implementation owners
 controlled production code. I also consolidated redundant prompts and, once
