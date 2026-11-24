@@ -21,6 +21,15 @@ Every entry follows the D4 headings:
 - **Verdict**: APPROVE, CHANGES REQUIRED, or REJECT. Earlier rounds are listed
   before the final verdict.
 
+**How reviews and approvals worked.** Most review discussion happened in the
+team's private chat, not in PR comments. Members reviewed the work they owned
+there (for example, Member C reviewed PR #13's architecture), and the lead
+relayed findings between members. Most members were not used to GitHub, so
+the lead carried out the GitHub actions: approving, merging, and closing. An
+approval or merge by `wxxsfxyzm` therefore records a decision shared by the
+lead and the reviewing member, not the lead's review alone. Where a member's
+review is in their own session record, the entry names it.
+
 The lead's own PRs were merged by the lead. For those PRs the review was done
 in the agent sessions and by the review assistant (Claude Code), as recorded
 in `transcripts/wxxsfxyzm-supervision.md`.
@@ -187,9 +196,10 @@ in `transcripts/wxxsfxyzm-supervision.md`.
 ### PR #13 — AI advisory interfaces (closed; content landed through #16)
 - **Spec:** an AI advisor over allowlisted evidence, strict fixed-format
   parsing, and classified failures (REQ-IX-FR-003, FR-004, INV-004).
-- **Review (Member C's architecture review, relayed in Member E's session S2):**
-  drafted in Member C's session (turns 11–12) and re-verified per commit there
-  (turn 13); four blocking items:
+- **Review (Member C's architecture review):** drafted in Member C's session
+  (turns 11–12) and re-verified per commit there (turn 13). The lead relayed it
+  to Member E in private chat, which is why E's records call it the lead's
+  review; E pasted it into session S2. Four blocking items:
   - **E-1 (High, privacy):** `device_api_level` was transmitted, although it
     is a `local_only` allowlist entry (REQ-IX-SEC-004, NFC-OUT-006).
   - **E-2:** isolation test did not cover `data/ai`.

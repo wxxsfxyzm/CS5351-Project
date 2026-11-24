@@ -141,7 +141,11 @@ REQ-IX-ARCH-001 and INV-001 to INV-007.
 ### 2.3 Pull requests and CI blocking gates
 
 During development, every change went through a task branch and a PR, and
-agents never pushed to main. After development ended on 2026-11-23, the lead
+agents never pushed to main. Review discussion mostly took place in the
+team's private chat; members reviewed the parts they owned, and the lead,
+as the most experienced GitHub user, performed the approve and merge actions,
+so those GitHub actions record joint decisions (see the note at the top of
+`docs/review-memo.md`). After development ended on 2026-11-23, the lead
 turned branch protection off while preparing the submission materials, and
 documentation-only commits (report, transcripts, review memo, registry
 status, trace matrix) were pushed to main directly.
