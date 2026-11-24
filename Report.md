@@ -24,7 +24,7 @@ only]**
 
 Member E's work overlapped with the lead's AI-advisor scope. E implemented
 the fixes from Member C's architecture review of PR #13, and E's fixed-response advisor (PR #29)
-was integrated into the lead's end-to-end slice (PR #30). E's first two AI-use
+was merged on top of the lead's end-to-end slice (PR #30). E's first two AI-use
 log entries (AI-yuki11111111111-0001 and 0002) were labelled "Member A"; the
 label was corrected to Member E on 2026-11-23, confirmed by the lead.
 
@@ -108,7 +108,7 @@ REQ-IX-ARCH-001 and INV-001 to INV-007.
 | Requirements | A machine-readable registry with fit criteria, MoSCoW priorities, and a JSON schema validated in CI; revised to rev.6 after review | `docs/req/`, PR #5 |
 | Architecture | Candidate options evaluated (`evaluation-table.md`); ADR-001 chose Option B; ADR-002 recorded later decisions; invariants, permission model, runtime policy catalog | `docs/architecture/`, PRs #6, #20 |
 | Coding governance | `AGENTS.md` as the single agent entry point; `Prompt.md` as the launch prompt; OpenCode roles `plan`/`build`/`verify` with per-path permissions | PRs #4, #24 |
-| Planned slices | Each feature started as a plan in `docs/plans/` with traceability, interface contract, scope, and test strategy; the lead approved the plan and its tests before any code | 10 plans |
+| Planned slices | Each feature started as a plan in `docs/plans/` with traceability, interface contract, scope, and test strategy; the lead approved the plan and its tests before any code | 9 plans (plus one PR description) in `docs/plans/` |
 | Build | OpenCode `build` agent, checkpoint by checkpoint, each ending with format, compile, and unit tests green | PRs #16, #18, #19, #27, #29, #30 |
 | Verification | `verify` agent and human review; QA records in the bug diary and debt register | PRs #25, #28, #32 |
 | On-device validation | The lead ran the real app and fixed what unit tests could not see | PR #33 |
@@ -245,7 +245,8 @@ The process changed once the production classes merged. The offline suites
 had been written against test-scoped copies of the contracts. Member D
 redirected the agent to wire `AiPolicyIntegrationTest` to the real use case,
 advisor, validator, request gate and policy engine, and pointed
-`PolicyWithoutModelTest` at `domain/engine/policy` (63 tests, 0 skipped).
+`PolicyWithoutModelTest` at `domain/engine/policy`; the full verification set,
+63 tests across 11 classes, passed with 0 skipped.
 At review the lead kept those two suites and the plan, and removed the six
 copy-based suites (DEBT-002).
 
@@ -290,8 +291,9 @@ Member C ran the D2 work as plan first, then batches. The agent first did a
 gap analysis of the twelve D2 skeletons against D1 rev.6 and stopped with six
 open questions. Member C answered each one (§4.4) and had the answers written
 into `docs/plans/2026-11-17-d2-architecture-population.md`, then gave an
-explicit Gate A approval before any D2 file changed. The artifacts were filled
-in four batches, with a review stop after each. Every Build-mode prompt
+explicit Gate A approval before any D2 file changed. The one code task in the
+session, the advisor interfaces in turn 10, was approved separately. The artifacts were filled
+in four batches, with a review stop after each. Every D2 batch prompt
 carried the constraint "do not touch `app/`", so architecture edits stayed in
 `docs/` and `architecture-blueprint.md` while the implementation owners kept
 the production code.
@@ -305,7 +307,7 @@ the plans. That showed ADR-002 still saying "not started" for code already on
 `main`, and Member C limited the fix to an incremental sync of what was
 verifiably merged (PR #20) rather than a rewrite to a predicted end state.
 
-Evidence: [Member C transcript](transcripts/memberC-yipu02.md), turns 1–8 and
+Evidence: [Member C transcript](transcripts/memberC-yipu02.md), turns 1–10 and
 14–17; [review memo](docs/review-memo.md), PRs #6 and #20.
 
 
@@ -411,7 +413,7 @@ live scenarios. These are different repository states; they must not be added
 together or described as tests written solely by E. The initial E runs were
 offline, and the later live result is integration evidence rather than proof of
 on-device correctness. Sources: [AI-use log](docs/ai-use-log.yaml), entries
-0002–0005 under AI-yuki11111111111; [review memo](docs/review-memo.md), PRs #13
+0002–0006 under AI-yuki11111111111; [review memo](docs/review-memo.md), PRs #13
 and #29; `StrictAiOutputValidator`, `AdvisorIsolationTest`, and
 `FailureEscalationTest` in the source and test trees.
 
@@ -455,7 +457,7 @@ and #29; `StrictAiOutputValidator`, `AdvisorIsolationTest`, and
 
 | Point | Unit tests |
 |---|---|
-| After PR #25 was rebased onto #27 (11-21) | 336 |
+| PR #25 branch merged with `main` for review (11-21) | 336 |
 | PR #30 (AI advisor end to end) | 376 |
 | PR #29 merged | 423 |
 | PR #25 merged | 436 |
@@ -695,7 +697,7 @@ themselves. Working through the approval gates felt slow at first. Every slice
 began with a plan, and the agent had to stop until I approved it and its
 tests. Once implementation started, the work went smoothly, because the hard
 questions had already been answered on paper. The most important lesson was
-that green tests do not mean a working product. All 463 unit tests passed on
+that green tests do not mean a working product. All 436 unit tests passed on
 my machine, yet when I installed the app on a phone, the AI advisor had never
 once made a successful model call, and five defects appeared in a single
 evening (BUG-005 to BUG-009). They shared one cause: the tests supplied what
@@ -846,7 +848,7 @@ My responsibility was the AI advisory path, where the main challenge was to keep
 
 - Course specification: CS5351 Agentic Software Engineering Project, Project
   Requirement Sheet.
-- Plans: `docs/plans/` (10 files).
+- Plans: `docs/plans/` (9 plans and one PR description).
 - Records: `docs/ai-use-log.yaml`, `docs/bug-diary.md`,
   `docs/debt-register.md`, `docs/review-memo.md`.
 - Transcripts: `transcripts/` (one per member, combined per the team

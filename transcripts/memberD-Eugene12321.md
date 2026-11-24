@@ -8,7 +8,7 @@
 | Date | 2026-11-21 |
 | Source raw transcript | `transcripts/60747744-YangXinyu.md` (retained unchanged) |
 | Result | PR #25 (merged): `docs/verification/test-plan.md`, `PolicyWithoutModelTest.kt`, `AiPolicyIntegrationTest.kt`; `DEBT-002` recorded for rebuilding shadow suites against production classes |
-| AI-use log | `AI-60747744-0001`, `AI-60747744-0002` (and lead review `AI-wxxsfxyzm-0013`) |
+| AI-use log | `AI-60747744-0001`, `AI-60747744-0002` (and lead review `AI-wxxsfxyzm-0016`) |
 
 ## What this document is
 
@@ -162,7 +162,7 @@ and records:
 - **Outcome:** Branch `feat/d-verification-suite` verified green locally.
 
 ### 5.3 PR #25 review and adoption outcome (post-submission)
-- **Context:** During PR #25 review (`AI-wxxsfxyzm-0013`), the project lead verified that `docs/verification/test-plan.md`, `transcripts/60747744-YangXinyu.md`, `PolicyWithoutModelTest.kt`, and `AiPolicyIntegrationTest.kt` directly verify production code and merged PR #25 into `main`. The 6 shadow-implementation suites (`VerificationContracts.kt`, `VerificationFakesAndEngines.kt`, and the 4 test files wired to them before PR #16/#27 merged) were removed at review and recorded in `docs/debt-register.md` as **`DEBT-002`** for rebuilding against the merged `domain.engine.policy` and `domain.engine.approval` production packages.
+- **Context:** During PR #25 review (`AI-wxxsfxyzm-0016`), the project lead verified that `docs/verification/test-plan.md`, `transcripts/60747744-YangXinyu.md`, `PolicyWithoutModelTest.kt`, and `AiPolicyIntegrationTest.kt` directly verify production code and merged PR #25 into `main`. The 6 shadow-implementation suites (`VerificationContracts.kt`, `VerificationFakesAndEngines.kt`, and the 4 test files wired to them before PR #16/#27 merged) were removed at review and recorded in `docs/debt-register.md` as **`DEBT-002`** for rebuilding against the merged `domain.engine.policy` and `domain.engine.approval` production packages.
 - **Outcome:** Member D's test plan, supervision transcript, static policy check, and production-wired AI+Policy integration suite landed cleanly on `main`.
 
 ---
