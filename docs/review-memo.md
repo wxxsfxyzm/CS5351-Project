@@ -187,15 +187,19 @@ in `transcripts/wxxsfxyzm-supervision.md`.
 ### PR #13 — AI advisory interfaces (closed; content landed through #16)
 - **Spec:** an AI advisor over allowlisted evidence, strict fixed-format
   parsing, and classified failures (REQ-IX-FR-003, FR-004, INV-004).
-- **Review (lead's architecture review, relayed in Member E's session S2):**
-  four blocking items:
+- **Review (Member C's architecture review, relayed in Member E's session S2):**
+  drafted in Member C's session (turns 11–12) and re-verified per commit there
+  (turn 13); four blocking items:
   - **E-1 (High, privacy):** `device_api_level` was transmitted, although it
     is a `local_only` allowlist entry (REQ-IX-SEC-004, NFC-OUT-006).
   - **E-2:** isolation test did not cover `data/ai`.
   - **E-3:** the API key was compiled into `BuildConfig`.
   - **E-4:** the five context fields were missing.
 - **Fix:** all four fixed on `fix/pr13-architecture-review`, with a
-  regression guard `request_neverContainsDeviceApiLevel`.
+  regression guard `request_neverContainsDeviceApiLevel`. The two main fix
+  commits (`20da737a`, `85bc6030`) carry the git author `yipu02`.
+- **Lead:** no written review on #13; the lead approved #16, which carried
+  the content, and closed #13 as "completed in #16".
 - **Metadata:** `yuki11111111111`; closed 2026-11-21. Its commits were carried
   into #16, which combined the advisory code with the policy engine.
   AI-yuki11111111111-0002; plan `2026-11-19-pr13-architecture-review-fixes.md`.

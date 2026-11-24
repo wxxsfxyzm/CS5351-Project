@@ -23,7 +23,7 @@ given in the submitted copy of this report. **[TO FILL in the submitted copy
 only]**
 
 Member E's work overlapped with the lead's AI-advisor scope. E implemented
-the lead's review fixes for PR #13, and E's fixed-response advisor (PR #29)
+the fixes from Member C's architecture review of PR #13, and E's fixed-response advisor (PR #29)
 was integrated into the lead's end-to-end slice (PR #30). E's first two AI-use
 log entries (AI-yuki11111111111-0001 and 0002) were labelled "Member A"; the
 label was corrected to Member E on 2026-11-23, confirmed by the lead.
@@ -258,7 +258,7 @@ installation may proceed. This made the acceptance criteria more specific than
 simply asking the agent to implement an AI feature.
 
 The review cycle then tightened both implementation and verification. E relayed
-the lead's four PR #13 findings and directed their correction: remove a local-only
+Member C's four PR #13 architecture findings and directed their correction: remove a local-only
 device field from outbound JSON, scan the data-layer implementation for forbidden
 dependencies, stop compiling the key into BuildConfig, and cover missing
 allowlisted context fields. The changes landed through PR #16; PR #13 itself was
@@ -392,10 +392,10 @@ session findings, not new BUG identifiers in the team bug diary.
 
 | Finding | Correction and verification evidence | Attribution |
 |---|---|---|
-| `device_api_level` was sent even though it was local-only | Removed its outbound field and changed tests to require absence, including `request_neverContainsDeviceApiLevel` | Lead's PR #13 review; E directed the fixes |
-| Static isolation checked only `domain/ai` | Extended `AdvisorIsolationTest` to `data/ai`, restricting provider libraries and excluding backend/privileged references | Lead's PR #13 review; E's correction session |
-| The key could be compiled into `BuildConfig` | Removed the compile-time key field and added a regression guard; later runtime credential storage belongs to the lead's integration slice | Lead's PR #13 review; E's correction session |
-| Five allowlisted context fields were missing | Added installation mode, target-user scope, package source, source confidence, and installer capability to evidence/request support | Lead's PR #13 review; E's correction session |
+| `device_api_level` was sent even though it was local-only | Removed its outbound field and changed tests to require absence, including `request_neverContainsDeviceApiLevel` | Member C's PR #13 architecture review; E directed the fixes |
+| Static isolation checked only `domain/ai` | Extended `AdvisorIsolationTest` to `data/ai`, restricting provider libraries and excluding backend/privileged references | Member C's PR #13 architecture review; E's correction session |
+| The key could be compiled into `BuildConfig` | Removed the compile-time key field and added a regression guard; later runtime credential storage belongs to the lead's integration slice | Member C's PR #13 architecture review; E's correction session |
+| Five allowlisted context fields were missing | Added installation mode, target-user scope, package source, source confidence, and installer capability to evidence/request support | Member C's PR #13 architecture review; E's correction session |
 | Extra response keys and contradictory prompt context weakened the contract | Enforced the four-key response shape, removed the contradictory prompt line, and added `AdapterContractTest` | E-requested audit; implementation findings reported by the agent |
 | Structurally valid JSON with wrong inner types could escape as an exception | Converted malformed responses into explicit invalid results and added `FailureEscalationTest` through the real use case and policy engine | E-requested failure audit and approval of the proposed fixes |
 | The prompt changed without a new version | Added prompt v1.2 before merge | Subsequent reviewer finding; lead's correction on the PR #29 branch |
@@ -582,7 +582,7 @@ From Member B's requirements review transcript for PR #5:
 
 **Member E's supervision.** E explicitly required malformed or missing model
 output to fail rather than default to safe, and instructed the advisor to report
-status without making installation decisions. E then relayed the lead's privacy,
+status without making installation decisions. E then relayed Member C's privacy,
 isolation, and key-handling findings instead of accepting the initial generated
 implementation as complete. Asking the agent to check existing behavior against
 specific failure scenarios led to further parsing and contract fixes; those
