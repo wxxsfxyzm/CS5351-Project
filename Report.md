@@ -280,8 +280,30 @@ Evidence: [Member E transcript](transcripts/memberE-yuki11111111111.md), stages
 1–3; [AI-use log](docs/ai-use-log.yaml), AI-yuki11111111111-0002 to 0006;
 [review memo](docs/review-memo.md), PRs #13, #16 and #29.
 
-**[TO FILL: C: how your part of the process worked or was improved, including
-the architecture review fixes.]**
+#### Member C — architecture artifacts (D2)
+
+Member C ran the D2 work as plan first, then batches. The agent first did a
+gap analysis of the twelve D2 skeletons against D1 rev.6 and stopped with six
+open questions. Member C answered each one (§4.4) and had the answers written
+into `docs/plans/2026-11-17-d2-architecture-population.md`, then gave an
+explicit Gate A approval before any D2 file changed. The artifacts were filled
+in four batches, with a review stop after each. Every Build-mode prompt
+carried the constraint "do not touch `app/`", so architecture edits stayed in
+`docs/` and `architecture-blueprint.md` while the implementation owners kept
+the production code.
+
+Two later steps improved the process. First, Member C asked for a strict
+cross-check of all D2 files against `AGENTS.md`, the structural constraints and
+the registry, which turned the agent from author into auditor and found
+missing ADR links (§4.2). Second, once PRs #16, #18 and #19 had merged, Member
+C had the agent re-check the documents against the merged code instead of
+the plans. That showed ADR-002 still saying "not started" for code already on
+`main`, and Member C limited the fix to an incremental sync of what was
+verifiably merged (PR #20) rather than a rewrite to a predicted end state.
+
+Evidence: [Member C transcript](transcripts/memberC-yipu02.md), turns 1–8 and
+14–17; [review memo](docs/review-memo.md), PRs #6 and #20.
+
 
 ---
 
@@ -402,7 +424,28 @@ and #29; `StrictAiOutputValidator`, `AdvisorIsolationTest`, and
   mismatch with `DefaultAiRiskAdvisor`, and a parallel `spotlessKotlin` run
   raced with the build directory. Both were fixed before PR #25.
 
-**[TO FILL: C: defects found and fixed in your PRs.]**
+**Member C — architecture defects.**
+
+- **Missing ADR links.** The cross-check found 11 trace-matrix rows with no
+  ADR although a decision governed them, the most serious being
+  REQ-IX-FR-007, the gateway requirement. They were reassigned (for example
+  FR-005, SEC-002 and REL-001 to ADR-002.6) and a legend was added for the
+  seven process rows that rightly have none. Fixed before PR #6.
+- **Hard-coded tier counts.** In batch 4 the agent's self-review found tier
+  counts typed by hand in the trace matrix and corrected them.
+- **A duplicate element.** A draft architecture update for PR #13 would have
+  added `DeterministicPolicyEngine` as a new element, although it was already
+  element 5; this would have broken "one element, one package". The draft
+  was changed to a blueprint subsection instead.
+- **Documentation drift.** After PRs #16, #18 and #19 merged, ADR-002 still
+  marked the policy engine and advisor as "not started". Fixed in PR #20.
+- **Errors the agent introduced in PR #20.** An AI-use log entry
+  (AI-memberC-0003) cited a plan file that did not exist, and ADR-002.5
+  called the consent gate implemented when only the gate classes existed.
+  Member C had the reference removed and the status corrected to "partially
+  implemented: wired only in tests". That gap was the cause of BUG-008 two
+  days later, when the app first ran on a device.
+
 
 ### 4.3 Test growth
 
@@ -441,7 +484,17 @@ plan's approval section. Examples:
 | Empty installed-app lookup | Require confirmed absence for the target user before returning `NEW_INSTALL` | PR #18 |
 | Consent withdrawn during assessment | Check consent again before sending the request. Missing or withdrawn consent blocks dispatch | PR #19 |
 
-**[TO FILL: C: ambiguities resolved in the architecture reviews.]**
+Member C's six open questions from the D2 gap analysis were answered before
+Gate A (Member C transcript, turn 2):
+
+| Question | Decision | Where |
+|---|---|---|
+| Optional D2 file names | Rename with `git mv` to the bare course names and keep `[Optional]` as an in-body marker | D2 plan |
+| ADR-001 module choice | Draft Option A, a separate Gradle module, as a proposal marked "requires team decision", with Option B as the evaluated alternative; the lead's review then selected Option B | D2 plan, PR #6 |
+| Language of D2 | English, matching rev.6, keeping the course `[M]`/`[O]` markers | D2 plan |
+| Provisional numbers | Mark the outbound allowlist and COST-001 values as provisional, pending Member A, not as architectural guarantees | D2 plan |
+| Two meanings of "permission model" | `permission-model.md` covers agent access; the runtime isolation of the AI adapter goes in the blueprint; the name overlap is an open question | D2 plan |
+| Scope of the D2 session | All twelve D2 files, in reviewed batches, starting with the blueprint and ADR-001 | D2 plan |
 
 ---
 
@@ -567,7 +620,27 @@ Member E's review.
    integration suite onto them (5.1). The lead's review then removed the
    remaining copy-based suites.
 
-**[TO FILL: C: what you caught in your own sessions.]**
+**Member C's supervision.** From the [Member C transcript](transcripts/memberC-yipu02.md):
+
+1. **A proposal becoming a baseline.** Member C had ADR-001 written as a
+   proposal awaiting a team decision, so the agent could not turn its own
+   recommendation into accepted architecture (turn 2). When the lead chose
+   Option B, Member C carried the decision through eleven D2 documents with
+   no change under `app/` (turn 9).
+2. **Untraced decisions.** The strict cross-check found the 11 rows with no
+   ADR link (turn 8).
+3. **Plans trusted over code.** Member C asked for re-verification against
+   the merged `main` rather than the earlier plans, which exposed the ADR-002
+   drift (turn 14).
+4. **The agent's own overstatement.** The agent reported its sync complete,
+   but Member C checked the code and found the consent gate had no production
+   call site; the ADR was corrected and a dangling log reference removed
+   (turn 17).
+5. **Scope larger than described.** The architecture review of PR #13 found
+   that a PR described as interfaces and models also shipped a live network
+   client and an API-key build field, and split the findings into fixes for
+   the implementer (E-1 to E-4) and architecture updates for Member C (C-1 to
+   C-4) (turns 11–12).
 
 ---
 
